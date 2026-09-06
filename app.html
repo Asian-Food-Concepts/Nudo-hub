@@ -178,10 +178,10 @@
     <div id="login-view">
       <div class="login-box">
         <h2>Bienvenido 👋</h2>
-        <p>Entra con tu número de teléfono. Te mandamos un código por WhatsApp o SMS.</p>
+        <p>Entra con tu correo. Te mandamos un código de 6 dígitos.</p>
         <div class="field">
-          <label>Tu número (con lada, ej. 55 1234 5678)</label>
-          <input type="tel" id="phone" inputmode="tel" placeholder="55 1234 5678">
+          <label>Tu correo</label>
+          <input type="email" id="email" inputmode="email" placeholder="tu@correo.com">
         </div>
         <button class="btn" id="send-code">Enviar código</button>
         <div class="field hidden" id="code-field" style="margin-top:14px;">
@@ -191,7 +191,7 @@
         <button class="btn btn-secondary hidden" id="verify-code" style="margin-top:10px;">Entrar</button>
         <div class="login-links hidden" id="login-links" style="display:flex;justify-content:space-between;margin-top:12px;">
           <button class="link-btn" id="resend-code">↻ Reenviar código</button>
-          <button class="link-btn" id="change-phone">Cambiar número</button>
+          <button class="link-btn" id="change-email">Cambiar correo</button>
         </div>
         <div class="msg hidden" id="login-msg"></div>
       </div>
@@ -360,7 +360,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.11";
+  const APP_VERSION = "v0.12";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -378,13 +378,9 @@
 
   function clearMsg(el) { el.classList.add('hidden'); el.textContent = ''; }
 
-  // Normalize a phone input to E.164 (+52...)
-  function toE164(raw) {
-    let p = raw.replace(/[^0-9]/g, '');
-    if (p.length === 10) p = '+52' + p;
-    else if (!p.startsWith('52')) p = '52' + p;
-    if (!p.startsWith('+')) p = '+' + p;
-    return p;
+  // Normalize an email input (trim + lowercase)
+  function toEmail(raw) {
+    return raw.trim().toLowerCase();
   }
 
   // Show/hide the OTP entry state (resend / change links appear with it)
@@ -394,7 +390,7 @@
     $('login-links').classList.remove('hidden');
     $('send-code').classList.add('hidden');
   }
-  function backToPhoneState() {
+  function backToEmailState() {
     $('code-field').classList.add('hidden');
     $('verify-code').classList.add('hidden');
     $('login-links').classList.add('hidden');
@@ -404,10 +400,10 @@
 
   // ---- LOGIN ----
   $('send-code').addEventListener('click', async () => {
-    const raw = $('phone').value.trim();
-    if (!raw) { showMsg($('login-msg'), 'Escribe tu número', 'err'); return; }
+    const raw = $('email').value.trim();
+    if (!raw) { showMsg($('login-msg'), 'Escribe tu correo', 'err'); return; }
     // TEST PIN bypass: if exactly 123456, sign in directly as the test user
-    // (no SMS needed). This is Ben's test shortcut — do not expose to staff.
+    // (no email needed). This is Ben's test shortcut — do not expose to staff.
     if (raw === '123456') {
       $('send-code').disabled = true;
       showMsg($('login-msg'), 'Entrando con PIN de prueba...', 'info');
@@ -419,49 +415,49 @@
       loadUser();
       return;
     }
-    const p = toE164(raw);
+    const email = toEmail(raw);
     $('send-code').disabled = true;
     showMsg($('login-msg'), 'Enviando código...', 'info');
-    const { error } = await supabase.auth.signInWithOtp({ phone: p });
+    const { error } = await supabase.auth.signInWithOtp({ email });
     if (error) { showMsg($('login-msg'), 'Error: ' + error.message, 'err'); $('send-code').disabled = false; return; }
     enterOtpState();
-    showMsg($('login-msg'), 'Te enviamos un código. Escríbelo abajo.', 'ok');
+    showMsg($('login-msg'), 'Te enviamos un código a tu correo. Escríbelo abajo.', 'ok');
   });
 
   $('verify-code').addEventListener('click', async () => {
-    const p = toE164($('phone').value);
+    const email = toEmail($('email').value);
     const code = $('code').value.trim();
     if (!code) { showMsg($('login-msg'), 'Escribe el código', 'err'); return; }
     $('verify-code').disabled = true;
-    const { error } = await supabase.auth.verifyOtp({ phone: p, token: code, type: 'sms' });
+    const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
     if (error) { showMsg($('login-msg'), 'Código incorrecto: ' + error.message, 'err'); $('verify-code').disabled = false; return; }
     showApp();
     loadUser();
   });
 
   $('resend-code').addEventListener('click', async () => {
-    const p = toE164($('phone').value);
+    const email = toEmail($('email').value);
     $('resend-code').disabled = true;
     showMsg($('login-msg'), 'Reenviando código...', 'info');
-    const { error } = await supabase.auth.signInWithOtp({ phone: p });
+    const { error } = await supabase.auth.signInWithOtp({ email });
     $('resend-code').disabled = false;
     if (error) { showMsg($('login-msg'), 'Error: ' + error.message, 'err'); return; }
-    showMsg($('login-msg'), 'Código reenviado. Revisa tu WhatsApp/SMS.', 'ok');
+    showMsg($('login-msg'), 'Código reenviado. Revisa tu correo.', 'ok');
   });
 
-  $('change-phone').addEventListener('click', () => {
-    backToPhoneState();
+  $('change-email').addEventListener('click', () => {
+    backToEmailState();
     clearMsg($('login-msg'));
     $('code').value = '';
-    $('phone').focus();
+    $('email').focus();
   });
 
   $('logout').addEventListener('click', async () => {
     await supabase.auth.signOut();
     // Reset login form so the next user starts clean
-    $('phone').value = '';
+    $('email').value = '';
     $('code').value = '';
-    backToPhoneState();
+    backToEmailState();
     clearMsg($('login-msg'));
     showLogin();
   });
@@ -475,7 +471,7 @@
     // Look up the profile (name + role) for this user
     const { data } = await supabase.from('profiles').select('name,role').eq('id', user.id).maybeSingle();
     if (data && data.name) currentProfile = data;
-    const displayName = (currentProfile && currentProfile.name) || (user.email === 'test-pin@nudo.hub' ? 'Modo prueba' : (user.phone || 'Equipo'));
+    const displayName = (currentProfile && currentProfile.name) || (user.email === 'test-pin@nudo.hub' ? 'Modo prueba' : (user.email || 'Equipo'));
     const role = (currentProfile && currentProfile.role) || '';
     $('user-name').textContent = displayName + (role ? ' · ' + role : '');
     $('header-sub').textContent = 'Bienvenido';
