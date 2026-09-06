@@ -84,6 +84,7 @@
     background: #fff; color: var(--ink);
   }
   .field textarea { min-height: 80px; resize: vertical; }
+  .t-detail { margin-top: 8px; min-height: 60px !important; }
   .btn {
     width: 100%; padding: 16px; font-size: 1.05rem; font-weight: 600;
     border: none; border-radius: 12px; cursor: pointer;
@@ -280,7 +281,6 @@
             <div class="radio-group">
               <label><input type="radio" name="b-sucursal" value="Roma Norte"><span>Roma Norte</span></label>
               <label><input type="radio" name="b-sucursal" value="Del Valle"><span>Del Valle</span></label>
-              <label><input type="radio" name="b-sucursal" value="Bodega"><span>Bodega</span></label>
             </div>
           </div>
           <div class="field"><label>Corte general</label>
@@ -290,15 +290,55 @@
               <label><input type="radio" name="b-corte" value="No se realizó"><span>❌ No</span></label>
             </div>
           </div>
-          <div class="field"><label>¿En qué área hubo problema?</label>
+          <div class="field"><label>Personal</label>
             <div class="radio-group">
-              <label><input type="radio" name="b-area" value="Barra"><span>Barra</span></label>
-              <label><input type="radio" name="b-area" value="Caja"><span>Caja</span></label>
-              <label><input type="radio" name="b-area" value="Terminales"><span>Terminales</span></label>
-              <label><input type="radio" name="b-area" value="Otro"><span>Otro</span></label>
+              <label><input type="radio" name="t-personal" value="ok"><span>✅ Todo bien</span></label>
+              <label><input type="radio" name="t-personal" value="problema"><span>⚠️ Problema</span></label>
             </div>
+            <textarea class="t-detail hidden" data-for="t-personal" placeholder="Describe el problema de personal"></textarea>
           </div>
-          <div class="field"><label>Descripción del problema</label><textarea id="b-problema"></textarea></div>
+          <div class="field"><label>Servicio</label>
+            <div class="radio-group">
+              <label><input type="radio" name="t-servicio" value="ok"><span>✅ Todo bien</span></label>
+              <label><input type="radio" name="t-servicio" value="problema"><span>⚠️ Problema</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="t-servicio" placeholder="Describe el problema de servicio"></textarea>
+          </div>
+          <div class="field"><label>Comida</label>
+            <div class="radio-group">
+              <label><input type="radio" name="t-comida" value="ok"><span>✅ Todo bien</span></label>
+              <label><input type="radio" name="t-comida" value="problema"><span>⚠️ Problema</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="t-comida" placeholder="Describe el problema de comida"></textarea>
+          </div>
+          <div class="field"><label>Bebidas</label>
+            <div class="radio-group">
+              <label><input type="radio" name="t-bebidas" value="ok"><span>✅ Todo bien</span></label>
+              <label><input type="radio" name="t-bebidas" value="problema"><span>⚠️ Problema</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="t-bebidas" placeholder="Describe el problema de bebidas"></textarea>
+          </div>
+          <div class="field"><label>Instalación</label>
+            <div class="radio-group">
+              <label><input type="radio" name="t-instalacion" value="ok"><span>✅ Todo bien</span></label>
+              <label><input type="radio" name="t-instalacion" value="problema"><span>⚠️ Problema</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="t-instalacion" placeholder="Describe el problema / mantenimiento necesario"></textarea>
+          </div>
+          <div class="field"><label>Limpieza</label>
+            <div class="radio-group">
+              <label><input type="radio" name="t-limpieza" value="ok"><span>✅ Todo bien</span></label>
+              <label><input type="radio" name="t-limpieza" value="problema"><span>⚠️ Problema</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="t-limpieza" placeholder="Describe el problema de limpieza"></textarea>
+          </div>
+          <div class="field"><label>Seguridad</label>
+            <div class="radio-group">
+              <label><input type="radio" name="t-seguridad" value="ok"><span>✅ Todo bien</span></label>
+              <label><input type="radio" name="t-seguridad" value="problema"><span>⚠️ Problema</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="t-seguridad" placeholder="Describe el problema de seguridad"></textarea>
+          </div>
           <div class="field"><label>Afluencia</label>
             <div class="radio-group">
               <label><input type="radio" name="b-afluencia" value="Baja"><span>🟢 Baja</span></label>
@@ -306,8 +346,7 @@
               <label><input type="radio" name="b-afluencia" value="Alta"><span>🔴 Alta</span></label>
             </div>
           </div>
-          <div class="field"><label>Personal / horas extra</label><textarea id="b-personal" placeholder="Quién, cuántas horas, por qué (opcional)"></textarea></div>
-          <div class="field"><label>Cambios de horario</label><textarea id="b-horario" placeholder="Quién, de qué hora a qué hora, por qué (opcional)"></textarea></div>
+          <div class="field"><label>Personal / horas extra / cambios de horario</label><textarea id="b-personal" placeholder="Quién, qué cambió, horas extra, por qué (opcional)"></textarea></div>
           <div class="field"><label>Notas / incidentes</label><textarea id="b-notas"></textarea></div>
           <div class="checkbox-row"><input type="checkbox" id="b-confirm"><label>Confirmo el cierre de la unidad</label></div>
           <button class="btn" id="b-submit">Enviar bitácora</button>
@@ -363,7 +402,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.15";
+  const APP_VERSION = "v0.16";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -517,8 +556,19 @@
     card.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
     card.querySelectorAll('input[type="radio"]').forEach(i => i.checked = false);
     card.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+    card.querySelectorAll('.t-detail').forEach(t => t.classList.add('hidden'));
     $('b-submit').disabled = false;
   }
+
+  // Theme status toggles: show the detail box only when "Problema" is selected
+  document.querySelectorAll('#form-bitacora input[name^="t-"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const t = r.name; // e.g. "t-personal"
+      const box = document.querySelector(`#form-bitacora textarea[data-for="${t}"]`);
+      if (!box) return;
+      box.classList.toggle('hidden', r.value !== 'problema');
+    });
+  });
 
   document.querySelectorAll('[data-form]').forEach(a => {
     a.addEventListener('click', e => {
@@ -562,18 +612,24 @@
     const sucursal = document.querySelector('input[name="b-sucursal"]:checked');
     if (!sucursal || !corte || !afluencia) { showMsg($('b-msg'), 'Selecciona sucursal, corte y afluencia', 'err'); return; }
     if (!$('b-confirm').checked) { showMsg($('b-msg'), 'Confirma el cierre', 'err'); return; }
+    // Build the temas object from all 8 theme toggles + their detail texts
+    const temas = {};
+    ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad'].forEach(t => {
+      const sel = document.querySelector(`input[name="t-${t}"]:checked`);
+      if (!sel) { temas[t] = { ok: null }; return; }
+      const detailEl = document.querySelector(`textarea[data-for="t-${t}"]`);
+      temas[t] = { ok: sel.value === 'ok', detalle: (detailEl && detailEl.value.trim()) || '' };
+    });
     let user; try { user = await requireUser(); } catch(e) { return; }
     $('b-submit').disabled = true;
     const { error } = await supabase.from('bitacora').insert({
       submitted_by: user.id,
       branch: sucursal.value,
       corte: corte.value,
-      area: (document.querySelector('input[name="b-area"]:checked') || {}).value || '',
-      problema: $('b-problema').value,
       afluencia: afluencia.value,
       personal: $('b-personal').value,
-      horario: $('b-horario').value,
       notas: $('b-notas').value,
+      temas: temas,
       confirmacion: true
     });
     if (error) { showMsg($('b-msg'), 'Error: ' + error.message, 'err'); $('b-submit').disabled = false; return; }
