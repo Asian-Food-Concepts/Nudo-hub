@@ -283,6 +283,13 @@
               <label><input type="radio" name="b-sucursal" value="Del Valle"><span>Del Valle</span></label>
             </div>
           </div>
+          <div class="field"><label>Afluencia</label>
+            <div class="radio-group">
+              <label><input type="radio" name="b-afluencia" value="Baja"><span>🟢 Baja</span></label>
+              <label><input type="radio" name="b-afluencia" value="Media"><span>🟡 Media</span></label>
+              <label><input type="radio" name="b-afluencia" value="Alta"><span>🔴 Alta</span></label>
+            </div>
+          </div>
           <div class="field"><label>¿Cómo fue el día?</label>
             <div class="radio-group">
               <label><input type="radio" name="b-corte" value="Bien"><span>Bien</span></label>
@@ -338,13 +345,6 @@
               <label><input type="radio" name="t-seguridad" value="problema"><span>⚠️ Problema</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="t-seguridad" placeholder="Describe el problema de seguridad"></textarea>
-          </div>
-          <div class="field"><label>Afluencia</label>
-            <div class="radio-group">
-              <label><input type="radio" name="b-afluencia" value="Baja"><span>🟢 Baja</span></label>
-              <label><input type="radio" name="b-afluencia" value="Media"><span>🟡 Media</span></label>
-              <label><input type="radio" name="b-afluencia" value="Alta"><span>🔴 Alta</span></label>
-            </div>
           </div>
           <div class="field"><label>Personal / horas extra / cambios de horario</label><textarea id="b-personal" placeholder="Quién, qué cambió, horas extra, por qué (opcional)"></textarea></div>
           <div class="field"><label>Notas / incidentes</label><textarea id="b-notas"></textarea></div>
@@ -402,7 +402,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.17";
+  const APP_VERSION = "v0.18";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
