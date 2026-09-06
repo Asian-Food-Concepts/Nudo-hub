@@ -353,6 +353,20 @@
             </div>
             <textarea class="t-detail hidden" data-for="t-seguridad" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de seguridad" placeholder="Describe el problema de seguridad"></textarea>
           </div>
+          <div class="field"><label>Descuentos</label>
+            <div class="radio-group">
+              <label><input type="radio" name="t-descuentos" value="ok"><span>✅ Ninguno</span></label>
+              <label><input type="radio" name="t-descuentos" value="problema"><span>⚠️ Sí hubo</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="t-descuentos" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué descuento y por qué?" placeholder="¿Qué descuento y por qué?"></textarea>
+          </div>
+          <div class="field"><label>Cortesías</label>
+            <div class="radio-group">
+              <label><input type="radio" name="t-cortesias" value="ok"><span>✅ Ninguna</span></label>
+              <label><input type="radio" name="t-cortesias" value="problema"><span>⚠️ Sí hubo</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="t-cortesias" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué cortesía y por qué?" placeholder="¿Qué cortesía y por qué?"></textarea>
+          </div>
           <div class="field"><label>Personal / horas extra / cambios de horario</label><textarea id="b-personal" placeholder="Quién, qué cambió, horas extra, por qué (opcional)"></textarea></div>
           <div class="field"><label>Notas / incidentes</label><textarea id="b-notas"></textarea></div>
           <div class="checkbox-row"><input type="checkbox" id="b-confirm"><label>Confirmo el cierre de la unidad</label></div>
@@ -409,7 +423,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.20";
+  const APP_VERSION = "v0.21";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -624,9 +638,9 @@
     const sucursal = document.querySelector('input[name="b-sucursal"]:checked');
     if (!sucursal || !corte || !afluencia) { showMsg($('b-msg'), 'Selecciona sucursal, corte y afluencia', 'err'); return; }
     if (!$('b-confirm').checked) { showMsg($('b-msg'), 'Confirma el cierre', 'err'); return; }
-    // Build the temas object from all 8 theme toggles + their detail texts
+    // Build the temas object from all 9 theme toggles + their detail texts
     const temas = {};
-    ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad'].forEach(t => {
+    ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','descuentos','cortesias'].forEach(t => {
       const sel = document.querySelector(`input[name="t-${t}"]:checked`);
       if (!sel) { temas[t] = { ok: null }; return; }
       const detailEl = document.querySelector(`textarea[data-for="t-${t}"]`);
