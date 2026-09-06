@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Nudo Hub</title>
-<link rel="manifest" href="/nudo-hub/manifest.json">
+<link rel="manifest" href="/Nudo-hub/manifest.json">
 <meta name="theme-color" content="#2f3a2f">
 <style>
   :root {
@@ -169,7 +169,7 @@
 </head>
 <body>
   <header>
-    <h1><a href="/nudo-hub/">Nudo Hub</a></h1>
+    <h1><a href="/Nudo-hub/">Nudo Hub</a></h1>
     <p id="header-sub">Acceso del equipo</p>
   </header>
 
@@ -241,17 +241,17 @@
 
         <div class="section-title">Guía</div>
         <div class="card-list">
-          <a class="card" href="#" data-guide="/nudo-hub/reglas.html">
+          <a class="card" href="#" data-guide="/Nudo-hub/reglas.html">
             <div class="icon icon-doc">📄</div>
             <div class="text"><div class="title">Reglas y Políticas</div><div class="sub">Manual del equipo</div></div>
             <div class="arrow">›</div>
           </a>
-          <a class="card" href="#" data-guide="/nudo-hub/guia.html">
+          <a class="card" href="#" data-guide="/Nudo-hub/guia.html">
             <div class="icon icon-doc">📘</div>
             <div class="text"><div class="title">Guía Operativa</div><div class="sub">Referencia operativa</div></div>
             <div class="arrow">›</div>
           </a>
-          <a class="card" href="#" data-guide="/nudo-hub/contactos.html">
+          <a class="card" href="#" data-guide="/Nudo-hub/contactos.html">
             <div class="icon icon-sheet">📞</div>
             <div class="text"><div class="title">Contactos de servicios</div><div class="sub">Electricista, plomero y más</div></div>
             <div class="arrow">›</div>
@@ -597,7 +597,7 @@
   (function loadHubLiveSections() {
     const target = $('hub-live-sections');
     if (!target) return;
-    fetch('/nudo-hub/index.html')
+    fetch('/Nudo-hub/index.html')
       .then(r => r.text())
       .then(html => {
         const perf = (html.match(/<!-- NUDO_PERF_START -->([\s\S]*?)<!-- NUDO_PERF_END -->/) || [])[1] || '';
@@ -617,7 +617,7 @@
   // PWA: register service worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/nudo-hub/sw.js').catch(() => {});
+      navigator.serviceWorker.register('/Nudo-hub/sw.js').catch(() => {});
     });
   }
   } // end initApp
