@@ -347,8 +347,7 @@
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card">
           <h2>🗓️ Mi horario</h2>
-          <p style="font-size:0.9rem;color:var(--muted);margin-bottom:14px;">El horario de la semana se publica aquí.</p>
-          <div class="msg info" id="sched-msg">Aún no hay horario publicado. Pregunta a tu capitán o gerente.</div>
+          <div class="msg info" id="sched-msg">🚧 Horario en construcción — pronto estará disponible aquí. Mientras tanto, pregunta a tu capitán o gerente.</div>
           <iframe class="sched-frame hidden" id="sched-frame"></iframe>
         </div>
       </div>
@@ -364,7 +363,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.14";
+  const APP_VERSION = "v0.15";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
