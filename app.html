@@ -277,7 +277,11 @@
         <div class="form-card" id="card-bitacora">
           <h2>📓 Bitácora de Cierre</h2>
           <div class="field"><label>Sucursal</label>
-            <select id="b-sucursal"><option>Roma Norte</option><option>Del Valle</option><option>Bodega</option></select>
+            <div class="radio-group">
+              <label><input type="radio" name="b-sucursal" value="Roma Norte"><span>Roma Norte</span></label>
+              <label><input type="radio" name="b-sucursal" value="Del Valle"><span>Del Valle</span></label>
+              <label><input type="radio" name="b-sucursal" value="Bodega"><span>Bodega</span></label>
+            </div>
           </div>
           <div class="field"><label>Corte general</label>
             <div class="radio-group">
@@ -360,7 +364,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.13";
+  const APP_VERSION = "v0.14";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -556,13 +560,14 @@
   $('b-submit').addEventListener('click', async () => {
     const corte = document.querySelector('input[name="b-corte"]:checked');
     const afluencia = document.querySelector('input[name="b-afluencia"]:checked');
-    if (!corte || !afluencia) { showMsg($('b-msg'), 'Selecciona corte y afluencia', 'err'); return; }
+    const sucursal = document.querySelector('input[name="b-sucursal"]:checked');
+    if (!sucursal || !corte || !afluencia) { showMsg($('b-msg'), 'Selecciona sucursal, corte y afluencia', 'err'); return; }
     if (!$('b-confirm').checked) { showMsg($('b-msg'), 'Confirma el cierre', 'err'); return; }
     let user; try { user = await requireUser(); } catch(e) { return; }
     $('b-submit').disabled = true;
     const { error } = await supabase.from('bitacora').insert({
       submitted_by: user.id,
-      branch: $('b-sucursal').value,
+      branch: sucursal.value,
       corte: corte.value,
       area: (document.querySelector('input[name="b-area"]:checked') || {}).value || '',
       problema: $('b-problema').value,
