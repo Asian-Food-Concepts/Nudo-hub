@@ -283,11 +283,11 @@
               <label><input type="radio" name="b-sucursal" value="Del Valle"><span>Del Valle</span></label>
             </div>
           </div>
-          <div class="field"><label>Corte general</label>
+          <div class="field"><label>¿Cómo fue el día?</label>
             <div class="radio-group">
-              <label><input type="radio" name="b-corte" value="Se realizó bien"><span>✅ Bien</span></label>
-              <label><input type="radio" name="b-corte" value="Con problemas"><span>⚠️ Problemas</span></label>
-              <label><input type="radio" name="b-corte" value="No se realizó"><span>❌ No</span></label>
+              <label><input type="radio" name="b-corte" value="Bien"><span>Bien</span></label>
+              <label><input type="radio" name="b-corte" value="Más o menos"><span>Maso</span></label>
+              <label><input type="radio" name="b-corte" value="Mal"><span>Mal</span></label>
             </div>
           </div>
           <div class="field"><label>Personal</label>
@@ -402,7 +402,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.16";
+  const APP_VERSION = "v0.17";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
