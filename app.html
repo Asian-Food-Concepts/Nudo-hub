@@ -285,9 +285,9 @@
           </div>
           <div class="field"><label>Afluencia</label>
             <div class="radio-group">
-              <label><input type="radio" name="b-afluencia" value="Baja"><span>🟢 Baja</span></label>
+              <label><input type="radio" name="b-afluencia" value="Alta"><span>🟢 Alta</span></label>
               <label><input type="radio" name="b-afluencia" value="Media"><span>🟡 Media</span></label>
-              <label><input type="radio" name="b-afluencia" value="Alta"><span>🔴 Alta</span></label>
+              <label><input type="radio" name="b-afluencia" value="Baja"><span>🔴 Baja</span></label>
             </div>
           </div>
           <div class="field"><label>¿Cómo fue el día?</label>
@@ -448,7 +448,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.25";
+  const APP_VERSION = "v0.26";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
