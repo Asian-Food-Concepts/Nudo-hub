@@ -486,7 +486,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.35";
+  const APP_VERSION = "v0.36";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -608,8 +608,13 @@
     if (!user) return;
     currentProfile = null;
     // Look up the profile (name + role) for this user
-    const { data } = await supabase.from('profiles').select('name,role').eq('id', user.id).maybeSingle();
+    const { data } = await supabase.from('profiles').select('name,role,active').eq('id', user.id).maybeSingle();
     if (data && data.name) currentProfile = data;
+    // If this staffer has been deactivated, force them out immediately
+    if (data && data.active === false) {
+      await forceLogout('Tu acceso fue desactivado. Contacta al dueño.');
+      return;
+    }
     const displayName = (currentProfile && currentProfile.name) || (user.email === 'test-pin@nudo.hub' ? 'Modo prueba' : (user.email || 'Equipo'));
     const role = (currentProfile && currentProfile.role) || '';
     $('user-name').textContent = displayName + (role ? ' · ' + role : '');
@@ -623,6 +628,19 @@
     }
   }
 
+  // Force a signed-out, logged-in user back to the login screen (used when a
+  // staffer's profile is deactivated). Reusable by requireUser() too.
+  async function forceLogout(message) {
+    try { await supabase.auth.signOut(); } catch (e) {}
+    $('email').value = '';
+    $('code').value = '';
+    backToEmailState();
+    clearMsg($('login-msg'));
+    showLogin();
+    if (message) showMsg($('login-msg'), message, 'err');
+    throw new Error('deactivated');
+  }
+
   // Guard for expired/missing session on form submit
   async function requireUser() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -630,6 +648,11 @@
       showLogin();
       showMsg($('login-msg'), 'Tu sesión terminó. Entra de nuevo.', 'err');
       throw new Error('no-session');
+    }
+    // Even with a valid session, a deactivated staffer is bounced immediately
+    const { data: prof, error } = await supabase.from('profiles').select('active').eq('id', user.id).maybeSingle();
+    if (!error && prof && prof.active === false) {
+      await forceLogout('Tu acceso fue desactivado. Contacta al dueño.');
     }
     return user;
   }
