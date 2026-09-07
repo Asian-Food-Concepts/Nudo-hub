@@ -645,7 +645,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.40";
+  const APP_VERSION = "v0.41";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1013,12 +1013,23 @@
   // week here; warnings fire live (too few / too many per role) and can be
   // overridden. Runs alongside the Google Sheet (sheet stays source of truth
   // until Ben flips over).
-  const PLAN_ROLES = ['Capitán', 'Piso', 'Barra', 'Cocina', 'Producción', 'Loza'];
+  const PLAN_ROLES = ['Capitán', 'Mesero', 'Barra', 'Cocina', 'Producción', 'Loza'];
   const PLAN_DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  // Normalize the varied role strings in `profiles` into a display group.
+  function planRoleGroup(role) {
+    const r = (role || '').trim().toLowerCase();
+    if (r.includes('capit')) return 'Capitán';
+    if (r.includes('mesero') || r.includes('piso') || r.includes('floor')) return 'Mesero';
+    if (r.includes('barra') || r.includes('bar')) return 'Barra';
+    if (r.includes('cocina') || r.includes('cocin') || r.includes('produccion') || r.includes('producción')) return 'Cocina';
+    if (r.includes('loza') || r.includes('lava')) return 'Loza';
+    if (r.includes('gerente') || r.includes('dueño') || r.includes('dueno') || r.includes('admin')) return 'Capitán';
+    return 'Mesero';
+  }
   // Daily minimums per branch (from the Reglas tab MÍNIMOS DIARIOS).
   const PLAN_MIN = {
-    'Roma Norte': { 'Capitán':[1,1,1,1,2,2,2], 'Piso':[2,2,2,2,3,4,3], 'Barra':[2,3,3,2,3,4,3], 'Cocina':[3,2,2,3,3,4,3] },
-    'Del Valle':  { 'Capitán':[1,1,1,1,2,2,2], 'Piso':[2,2,2,2,3,4,3], 'Barra':[2,2,2,3,3,4,4], 'Cocina':[4,3,3,4,5,6,5], 'Producción':[1,1,1,1,0,0,0] }
+    'Roma Norte': { 'Capitán':[1,1,1,1,2,2,2], 'Mesero':[2,2,2,2,3,4,3], 'Barra':[2,3,3,2,3,4,3], 'Cocina':[3,2,2,3,3,4,3] },
+    'Del Valle':  { 'Capitán':[1,1,1,1,2,2,2], 'Mesero':[2,2,2,2,3,4,3], 'Barra':[2,2,2,3,3,4,4], 'Cocina':[4,3,3,4,5,6,5], 'Producción':[1,1,1,1,0,0,0] }
   };
 
   let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [] };
@@ -1071,11 +1082,13 @@
 
   function planRender() {
     const grid = $('plan-grid');
-    const staff = planState.staff.filter(s => !s.branch || s.branch === planState.branch || s.branch === 'Ambos');
-    // group by role
+    // Show staff whose branch matches, or who are "Ambos" (float both). Exclude
+    // branch=null (Dueño/admin accounts — not scheduled staff).
+    const staff = planState.staff.filter(s => s.branch === planState.branch || s.branch === 'Ambos');
+    // group by normalized role
     const byRole = {};
     PLAN_ROLES.forEach(r => byRole[r] = []);
-    staff.forEach(s => { const r = s.role || 'Piso'; (byRole[r] = byRole[r] || []).push(s); });
+    staff.forEach(s => { const r = planRoleGroup(s.role); (byRole[r] = byRole[r] || []).push(s); });
 
     let html = '<table class="plan-table"><thead><tr><th>Equipo</th>';
     PLAN_DAYS.forEach((d,i) => {
@@ -1153,17 +1166,26 @@
     if (!planCell) return;
     const { staffId, dayIdx, date, name } = planCell._ctx;
     const staff = planState.staff.find(s => s.id === staffId);
-    const role = staff ? (staff.role || 'Piso') : 'Piso';
+    const role = planRoleGroup(staff ? staff.role : '');
     const existing = planShiftFor(staffId, dayIdx);
+    let err = null;
     try {
       if (status === 'clear') {
-        if (existing) await supabase.from('shifts').delete().eq('id', existing.id);
+        if (existing) { const r = await supabase.from('shifts').delete().eq('id', existing.id); if (r.error) err = r.error; }
       } else if (existing) {
-        await supabase.from('shifts').update({ status, start_time: start, end_time: end, role }).eq('id', existing.id);
+        const r = await supabase.from('shifts').update({ status, start_time: start, end_time: end, role }).eq('id', existing.id);
+        if (r.error) err = r.error;
       } else {
-        await supabase.from('shifts').insert({ staff_id: staffId, shift_date: date, branch: planState.branch, role, status, start_time: start, end_time: end });
+        const r = await supabase.from('shifts').insert({ staff_id: staffId, shift_date: date, branch: planState.branch, role, status, start_time: start, end_time: end });
+        if (r.error) err = r.error;
       }
-    } catch(e) { /* non-fatal */ }
+    } catch(e) { err = e; }
+    if (err) {
+      const box = $('plan-warnings');
+      box.innerHTML = `<div class="plan-warn red">⚠️ No se pudo guardar: ${err.message || err}</div>` + box.innerHTML;
+      planCloseModal();
+      return;
+    }
     await planLoadShifts();
     planRender();
     planCloseModal();
