@@ -246,6 +246,16 @@
 
         <div class="section-title">Guía</div>
         <div class="card-list">
+          <!-- Cross-guide search: searches all guide content at once -->
+          <div class="card" style="padding:12px;cursor:text;">
+            <div style="display:flex;align-items:center;gap:8px;width:100%;">
+              <span style="font-size:1.2rem;">🔎</span>
+              <input id="guide-search-input" type="search" placeholder="Buscar en la Guía (reglas, guía, contactos)…"
+                style="flex:1;border:none;outline:none;background:transparent;font-size:0.95rem;color:var(--text);" />
+              <button id="guide-search-btn" class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;">Buscar</button>
+            </div>
+            <div id="guide-search-results"></div>
+          </div>
           <a class="card" href="#" data-guide="/Nudo-hub/reglas.html">
             <div class="icon icon-doc">📄</div>
             <div class="text"><div class="title">Reglas y Políticas</div><div class="sub">Manual del equipo</div></div>
@@ -476,7 +486,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.32";
+  const APP_VERSION = "v0.33";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -682,6 +692,98 @@
   document.querySelectorAll('[data-guide-back]').forEach(b => {
     b.addEventListener('click', () => { goHome(); });
   });
+
+  // ---- CROSS-GUIDE SEARCH ----
+  // Searches all guide pages' content simultaneously, shows matches, and opens
+  // the right page scrolled to the first matching element when tapped.
+  const GUIDE_DOCS = {
+    '/Nudo-hub/reglas.html': { title: 'Reglas y Políticas', icon: '📄' },
+    '/Nudo-hub/guia.html':   { title: 'Guía Operativa',    icon: '📘' },
+    '/Nudo-hub/contactos.html': { title: 'Contactos de servicios', icon: '📞' },
+  };
+  const GUIDE_INDEXES = {}; // url -> {text:[{el,id}], html}
+  let guideCacheLoaded = false;
+
+  async function ensureGuideCache() {
+    if (guideCacheLoaded) return;
+    guideCacheLoaded = true;
+    await Promise.all(Object.keys(GUIDE_DOCS).map(async (url) => {
+      try {
+        const html = await (await fetch(url)).text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        // Index section anchors PLUS any text-bearing block (so pages without
+        // ids, like contactos, still get searched). Deep-link only when the
+        // element (or a close ancestor) has an id, else fall back to 'top'.
+        const targets = [];
+        doc.querySelectorAll('[id], h1, h2, h3, h4, p, li, td').forEach(el => {
+          const txt = (el.textContent || '').trim();
+          if (!txt) return;
+          // Skip tiny/duplicate text (pure whitespace or 1-2 chars)
+          if (txt.length < 3) return;
+          // Find nearest id on this el or its ancestors for deep-linking
+          let n = el, id = null;
+          while (n && n !== doc.body) {
+            if (n.id) { id = n.id; break; }
+            n = n.parentElement;
+          }
+          targets.push({ el, id: id || 'top', txt });
+        });
+        GUIDE_INDEXES[url] = { document: doc, targets, html };
+      } catch (_) { GUIDE_INDEXES[url] = null; }
+    }));
+  }
+
+  function normalize(s) {
+    return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function runGuideSearch() {
+    const q = normalize($('guide-search-input').value.trim());
+    const resultsEl = $('guide-search-results');
+    if (!q) { resultsEl.innerHTML = ''; return; }
+    ensureGuideCache().then(() => {
+      const results = [];
+      Object.keys(GUIDE_INDEXES).forEach(url => {
+        const idx = GUIDE_INDEXES[url];
+        if (!idx) return;
+        const meta = GUIDE_DOCS[url];
+        idx.targets.forEach(t => {
+          const nText = normalize(t.txt || t.el.textContent || '');
+          if (nText.includes(q)) {
+            const snippet = (t.txt || t.el.textContent || '').trim().slice(0, 90) + '…';
+            results.push({ url, id: t.id, title: meta.title, icon: meta.icon, snippet });
+          }
+        });
+      });
+      if (!results.length) { resultsEl.innerHTML = '<p style="margin:8px 0 4px;font-size:0.85rem;color:var(--muted);">Sin resultados.</p>'; return; }
+      resultsEl.innerHTML = results.slice(0, 8).map(r => {
+        const safe = r.snippet.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        return `<div data-search-hit="${encodeURIComponent(r.url)}|${encodeURIComponent(r.id)}" style="padding:8px 4px;border-bottom:1px solid var(--border);cursor:pointer;">
+          <div style="font-weight:600;font-size:0.9rem;">${r.icon} ${r.title}</div>
+          <div style="font-size:0.8rem;color:var(--muted);">${safe}</div>
+        </div>`;
+      }).join('');
+    });
+  }
+
+  $('guide-search-btn').addEventListener('click', runGuideSearch);
+  $('guide-search-input').addEventListener('keydown', e => { if (e.key === 'Enter') runGuideSearch(); });
+
+  // Click a search result -> open the doc and jump to the section
+  document.getElementById('guide-search-results').addEventListener('click', async (e) => {
+    const hit = e.target.closest('[data-search-hit]');
+    if (!hit) return;
+    const [url, id] = hit.getAttribute('data-search-hit').split('|').map(decodeURIComponent);
+    // Open the guide iframe to the section anchor
+    document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
+    $('home-view').style.display = 'none';
+    $('guide-frame').src = url + '#' + id;
+    $('form-guide').classList.add('active');
+    $('guide-search-input').value = '';
+    $('guide-search-results').innerHTML = '';
+  });
+
   document.querySelectorAll('[data-back]').forEach(b => {
     b.addEventListener('click', () => { goHome(); });
   });
