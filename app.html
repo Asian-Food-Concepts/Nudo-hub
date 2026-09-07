@@ -224,6 +224,11 @@
             <div class="text"><div class="title">Solicitud de Compras</div><div class="sub">Solicita compras o insumos</div></div>
             <div class="arrow">›</div>
           </a>
+          <a class="card" href="#" data-form="estatus">
+            <div class="icon icon-form">📋</div>
+            <div class="text"><div class="title">Estatus de solicitudes</div><div class="sub">Da seguimiento a tus solicitudes</div></div>
+            <div class="arrow">›</div>
+          </a>
           <a class="card" href="#" data-form="buzon">
             <div class="icon icon-form">💬</div>
             <div class="text"><div class="title">Buzón de Sugerencias</div><div class="sub">Anónimo y opcional</div></div>
@@ -439,6 +444,17 @@
           <iframe class="sched-frame hidden" id="sched-frame"></iframe>
         </div>
       </div>
+
+      <!-- ESTATUS DE SOLICITUDES -->
+      <div id="form-estatus" class="form-page">
+        <button class="back" data-back><span class="chev">‹</span> Volver</button>
+        <div class="form-card">
+          <h2>📋 Estatus de solicitudes</h2>
+          <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">Mantenimiento y compras enviadas desde la app.</p>
+          <div id="estatus-msg" class="msg hidden"></div>
+          <div id="estatus-list"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -451,7 +467,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.27";
+  const APP_VERSION = "v0.28";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -633,6 +649,7 @@
       $('home-view').style.display = 'none';
       $('form-' + f).classList.add('active');
       if (f === 'horario') loadSchedule();
+      if (f === 'estatus') loadEstatus();
     });
   });
   // Guide cards open an in-app iframe (back stays inside the app)
@@ -659,6 +676,129 @@
     // const { data } = await supabase.storage.from('schedules').list();
     // For now show the message
   }
+
+  // ---- ESTATUS DE SOLICITUDES ----
+  // Loads maintenance + purchases requests from Supabase and renders them
+  // grouped by outlet. Dueño/Gerente see all + can flip status inline.
+  const STATUS_META = {
+    'Pendiente': { label: '🔴 Pendiente', next: 'En proceso' },
+    'En proceso': { label: '🟡 En proceso', next: 'Resuelto' },
+    'Resuelto':  { label: '🟢 Resuelto',  next: null }
+  };
+  const ADMIN_ROLES = ['Dueño', 'Gerente'];
+
+  async function loadEstatus() {
+    const listEl = $('estatus-list');
+    const msgEl = $('estatus-msg');
+    listEl.innerHTML = '<p style="color:var(--muted);">Cargando…</p>';
+    msgEl.classList.add('hidden');
+
+    let user, profileRole = '';
+    try { user = await requireUser(); } catch(e) { return; }
+    const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (prof && prof.role) profileRole = prof.role;
+    const isAdmin = ADMIN_ROLES.includes(profileRole);
+
+    // Fetch both request tables (newest first)
+    const { data: mant, error: em } = await supabase
+      .from('maintenance_requests')
+      .select('id, branch, area, description, priority, status, submitted_by, created_at')
+      .order('created_at', { ascending: false });
+    const { data: comp, error: ec } = await supabase
+      .from('purchases')
+      .select('id, branch, item, vendor, amount, link, notes, status, submitted_by, created_at')
+      .order('created_at', { ascending: false });
+    if (em || ec) {
+      showMsg(msgEl, 'Error al cargar solicitudes: ' + (em ? em.message : ec.message), 'err');
+      listEl.innerHTML = '';
+      return;
+    }
+
+    // Normalize to a single array [{kind,label,data,...}]
+    const rows = [];
+    (mant || []).forEach(r => rows.push({
+      kind: 'mant', typeLabel: '🔧 Mantenimiento', title: r.area || 'Solicitud',
+      detail: r.description || '', priority: r.priority || 'Normal',
+      branch: r.branch, status: r.status, created_at: r.created_at,
+      id: r.id, table: 'maintenance_requests', submitted_by: r.submitted_by
+    }));
+    (comp || []).forEach(r => rows.push({
+      kind: 'comp', typeLabel: '🛒 Compra', title: r.item || 'Compra',
+      detail: (r.vendor ? 'Proveedor: ' + r.vendor + ' · ' : '') + (r.amount ? '$' + Number(r.amount).toLocaleString('es-MX') + ' MXN' : ''),
+      priority: '', branch: r.branch, status: r.status, created_at: r.created_at,
+      id: r.id, table: 'purchases', submitted_by: r.submitted_by
+    }));
+    rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // Staff see their own + their outlet's; admins see all
+    const visible = isAdmin ? rows : rows.filter(r =>
+      r.submitted_by === user.id || (prof && prof.branch && r.branch === prof.branch)
+    );
+
+    if (!visible.length) {
+      listEl.innerHTML = '<p style="color:var(--muted);">No hay solicitudes todavía.</p>';
+      return;
+    }
+
+    // Group by outlet, preserving order (Roma Norte then Del Valle)
+    const groups = { 'Roma Norte': [], 'Del Valle': [], 'Bodega': [], other: [] };
+    visible.forEach(r => { (groups[r.branch] || groups.other).push(r); });
+
+    let html = '';
+    ['Roma Norte', 'Del Valle', 'Bodega', 'other'].forEach(branch => {
+      const list = groups[branch];
+      if (!list.length) return;
+      html += `<div class="section-title" style="margin-top:6px;">${branch === 'other' ? 'Otra' : branch}</div>`;
+      list.forEach(r => {
+        html += `<div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div style="font-weight:600;">${r.typeLabel} · ${esc(r.title)}</div>
+            <div style="font-size:0.8rem;color:var(--muted);white-space:nowrap;">${fmtAgo(r.created_at)}</div>
+          </div>
+          ${r.detail ? `<div style="font-size:0.9rem;color:var(--muted);margin:6px 0;">${esc(r.detail)}</div>` : ''}
+          ${r.priority ? `<div style="font-size:0.85rem;margin-bottom:4px;">Prioridad: ${esc(r.priority)}</div>` : ''}
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:8px;">`;
+        if (isAdmin && STATUS_META[r.status] && STATUS_META[r.status].next) {
+          html += `<div>Status: <span style="font-weight:600;">${STATUS_META[r.status].label}</span></div>
+            <button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;" data-set-status="${r.table}|${r.id}|${STATUS_META[r.status].next}">Marcar ${STATUS_META[r.status].next}</button>`;
+        } else {
+          html += `<div>Status: <span style="font-weight:600;">${STATUS_META[r.status] ? STATUS_META[r.status].label : esc(r.status)}</span></div>`;
+        }
+        html += `</div></div>`;
+      });
+    });
+
+    listEl.innerHTML = html;
+  }
+
+  // Escapes HTML in user-provided strings before injecting into the DOM
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+  }
+
+  // Relative time ("hace 5 min", "hace 2 h", "hace 3 d")
+  function fmtAgo(iso) {
+    if (!iso) return '';
+    const diff = (Date.now() - new Date(iso).getTime()) / 60000;
+    if (diff < 1) return 'ahora';
+    if (diff < 60) return `hace ${Math.floor(diff)} min`;
+    if (diff < 1440) return `hace ${Math.floor(diff / 60)} h`;
+    return `hace ${Math.floor(diff / 1440)} d`;
+  }
+
+  // Inline status change (admins): update the row, then re-render
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-set-status]');
+    if (!btn) return;
+    const [table, id, newStatus] = btn.getAttribute('data-set-status').split('|');
+    let user; try { user = await requireUser(); } catch(err) { return; }
+    btn.disabled = true;
+    const { error } = await supabase.from(table).update({ status: newStatus }).eq('id', id);
+    if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); btn.disabled = false; return; }
+    loadEstatus();
+  });
 
   // ---- BITACORA ----
   $('b-submit').addEventListener('click', async () => {
