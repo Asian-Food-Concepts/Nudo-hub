@@ -6,11 +6,22 @@
 <title>Nudo Hub</title>
 <link rel="manifest" href="/Nudo-hub/manifest.json">
 <meta name="theme-color" content="#2f3a2f">
+<script>
+  // Apply saved theme before first paint to avoid a flash of the wrong mode.
+  (function () {
+    try {
+      var m = localStorage.getItem('nudo_theme') || 'system';
+      if (m !== 'system') document.documentElement.setAttribute('data-theme', m);
+    } catch (e) {}
+  })();
+</script>
 <style>
   :root {
+    color-scheme: light;
     --bg: #f7f5f0;
     --card: #ffffff;
     --ink: #1a1a1a;
+    --text: #1a1a1a;
     --muted: #6b6b6b;
     --accent: #2f3a2f;
     --accent2: #4a5d4a;
@@ -19,6 +30,64 @@
     --green: #2e7d32;
     --red: #c62828;
     --amber: #e8a13a;
+    --input-bg: #ffffff;
+    --msg-err-bg: #fdecea;
+    --msg-ok-bg: #e8f5e9;
+    --msg-info-bg: #eef1fb;
+    --checked-bg: #eef1fb;
+    --frame-bg: #ffffff;
+    --dot: #d5d2c8;
+    --icon-doc: #eef1fb;
+    --icon-form: #e6f6ec;
+    --icon-sheet: #e9f4ef;
+    --shadow: rgba(0,0,0,0.05);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #12171a;
+    --card: #1e2528;
+    --ink: #e6e9ea;
+    --text: #e6e9ea;
+    --muted: #9aa7ad;
+    --accent: #6f8f77;
+    --accent2: #7d9c85;
+    --border: #2c3538;
+    --input-bg: #263034;
+    --msg-err-bg: #3a2222;
+    --msg-ok-bg: #21352a;
+    --msg-info-bg: #27303f;
+    --checked-bg: #263441;
+    --frame-bg: #1a2226;
+    --dot: #46504f;
+    --icon-doc: #262f41;
+    --icon-form: #234032;
+    --icon-sheet: #26413a;
+    --shadow: rgba(0,0,0,0.45);
+  }
+  /* System mode (auto): follow the OS theme when no data-theme is set */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+      color-scheme: dark;
+      --bg: #12171a;
+      --card: #1e2528;
+      --ink: #e6e9ea;
+      --text: #e6e9ea;
+      --muted: #9aa7ad;
+      --accent: #6f8f77;
+      --accent2: #7d9c85;
+      --border: #2c3538;
+      --input-bg: #263034;
+      --msg-err-bg: #3a2222;
+      --msg-ok-bg: #21352a;
+      --msg-info-bg: #27303f;
+      --checked-bg: #263441;
+      --frame-bg: #1a2226;
+      --dot: #46504f;
+      --icon-doc: #262f41;
+      --icon-form: #234032;
+      --icon-sheet: #26413a;
+      --shadow: rgba(0,0,0,0.45);
+    }
   }
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
@@ -50,7 +119,7 @@
     background: var(--card); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 18px;
     text-decoration: none; color: var(--ink);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 3px var(--shadow);
     transition: transform 0.08s ease;
   }
   a.card:active { transform: scale(0.98); }
@@ -59,9 +128,9 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 1.6rem; flex-shrink: 0;
   }
-  .icon-doc { background: #eef1fb; }
-  .icon-form { background: #e6f6ec; }
-  .icon-sheet { background: #e9f4ef; }
+  .icon-doc { background: var(--icon-doc); }
+  .icon-form { background: var(--icon-form); }
+  .icon-sheet { background: var(--icon-sheet); }
   .card .text { flex: 1; }
   .card .title { font-size: 1.05rem; font-weight: 600; }
   .card .sub { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
@@ -71,7 +140,7 @@
   .login-box {
     background: var(--card); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 28px 22px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 3px var(--shadow);
     margin-top: 20px;
   }
   .login-box h2 { font-size: 1.2rem; margin-bottom: 6px; }
@@ -81,7 +150,7 @@
   .field input, .field select, .field textarea {
     width: 100%; padding: 14px; font-size: 1rem;
     border: 1px solid var(--border); border-radius: 12px;
-    background: #fff; color: var(--ink);
+    background: var(--input-bg); color: var(--ink);
   }
   .field textarea { min-height: 80px; resize: vertical; }
   .t-detail { margin-top: 8px; min-height: 60px !important; }
@@ -96,9 +165,9 @@
   .btn-secondary { background: var(--accent2); }
   .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--ink); }
   .msg { font-size: 0.9rem; margin-top: 12px; padding: 10px; border-radius: 10px; }
-  .msg.err { background: #fdecea; color: var(--red); }
-  .msg.ok { background: #e8f5e9; color: var(--green); }
-  .msg.info { background: #eef1fb; color: var(--accent); }
+  .msg.err { background: var(--msg-err-bg); color: var(--red); }
+  .msg.ok { background: var(--msg-ok-bg); color: var(--green); }
+  .msg.info { background: var(--msg-info-bg); color: var(--accent); }
 
   /* User bar */
   .userbar {
@@ -107,6 +176,13 @@
   }
   .userbar .who { font-size: 0.9rem; font-weight: 600; }
   .userbar .logout { font-size: 0.85rem; color: var(--accent); background: none; border: none; cursor: pointer; }
+  .userbar-right { display: flex; align-items: center; gap: 10px; }
+  .theme-switch { display: flex; align-items: center; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 3px; }
+  .theme-switch button {
+    background: none; border: none; cursor: pointer; font-size: 0.95rem;
+    padding: 3px 7px; border-radius: 14px; line-height: 1; opacity: 0.5; transition: opacity 0.15s, background 0.15s;
+  }
+  .theme-switch button[aria-pressed="true"] { opacity: 1; background: var(--accent); }
 
   /* Form page */
   .form-page { display: none; }
@@ -118,7 +194,7 @@
     padding: 14px 16px; margin: 0 0 12px 0;
     background: var(--card); color: var(--accent);
     border: 1px solid var(--border); border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 3px var(--shadow);
     font-size: 0.95rem; font-weight: 600; cursor: pointer;
     text-align: left;
   }
@@ -134,7 +210,7 @@
   }
   .radio-group input { display: none; }
   .radio-group input:checked + span { color: var(--accent); font-weight: 700; }
-  .radio-group label:has(input:checked) { border-color: var(--accent); background: #eef1fb; }
+  .radio-group label:has(input:checked) { border-color: var(--accent); background: var(--checked-bg); }
   .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
   .checkbox-row input { width: 22px; height: 22px; }
   .link-btn { background: none; border: none; color: var(--accent); font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 6px 0; }
@@ -147,10 +223,10 @@
   .photo-preview .ph-x { position: absolute; top: -6px; right: -6px; background: var(--red); color: #fff; width: 20px; height: 20px; border-radius: 50%; border: none; font-size: 0.75rem; line-height: 20px; text-align: center; cursor: pointer; }
 
   /* In-app guide view */
-  .guide-frame { width: 100%; border: 1px solid var(--border); border-radius: 12px; min-height: 70vh; background: #fff; }
+  .guide-frame { width: 100%; border: 1px solid var(--border); border-radius: 12px; min-height: 70vh; background: var(--frame-bg); }
 
   /* Schedule */
-  .sched-frame { width: 100%; border: 1px solid var(--border); border-radius: 12px; min-height: 400px; background: #fff; }
+  .sched-frame { width: 100%; border: 1px solid var(--border); border-radius: 12px; min-height: 400px; background: var(--frame-bg); }
 
   footer { text-align: center; padding: 20px; color: var(--muted); font-size: 0.8rem; }
   /* Reviews slider (pulled from the hub) */
@@ -163,7 +239,7 @@
   .rv-author { font-size: 0.8rem; color: var(--muted); margin-top: 10px; }
   .rv-author a { color: var(--accent); text-decoration: none; }
   .rv-dots { display: flex; justify-content: center; gap: 6px; padding: 12px 0 14px; }
-  .rv-dot { width: 7px; height: 7px; border-radius: 50%; background: #d5d2c8; transition: background 0.2s; cursor: pointer; }
+  .rv-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dot); transition: background 0.2s; cursor: pointer; }
   .rv-dot.active { background: var(--accent); }
   .hidden { display: none !important; }
 </style>
@@ -202,7 +278,14 @@
     <div id="app-view" class="hidden">
       <div class="userbar">
         <span class="who" id="user-name">Equipo</span>
-        <button class="logout" id="logout">Salir</button>
+        <div class="userbar-right">
+          <div class="theme-switch" id="theme-switch" role="group" aria-label="Tema">
+            <button type="button" data-theme-opt="light" title="Claro">☀️</button>
+            <button type="button" data-theme-opt="dark" title="Oscuro">🌙</button>
+            <button type="button" data-theme-opt="system" title="Sistema">🖥️</button>
+          </div>
+          <button class="logout" id="logout">Salir</button>
+        </div>
       </div>
 
       <!-- HOME -->
@@ -486,12 +569,36 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.36";
+  const APP_VERSION = "v0.37";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
   const $ = id => document.getElementById(id);
   const views = { login: $('login-view'), app: $('app-view') };
+
+  // ---- THEME (light / dark / system) ----
+  const THEME_KEY = 'nudo_theme';
+  const themeSwitch = $('theme-switch');
+  function applyTheme(mode) {
+    // store it
+    try { localStorage.setItem(THEME_KEY, mode); } catch (e) {}
+    // 'system' removes data-theme so the @media(prefers-color-scheme) rule takes over
+    if (mode === 'system') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', mode);
+    // highlight the active pill
+    if (themeSwitch) themeSwitch.querySelectorAll('button').forEach(b => {
+      b.setAttribute('aria-pressed', b.getAttribute('data-theme-opt') === mode);
+    });
+  }
+  function initTheme() {
+    let mode = 'system';
+    try { mode = localStorage.getItem(THEME_KEY) || 'system'; } catch (e) {}
+    applyTheme(mode);
+    if (themeSwitch) themeSwitch.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => applyTheme(b.getAttribute('data-theme-opt')));
+    });
+  }
+  initTheme();
 
   function showLogin() { views.login.classList.remove('hidden'); views.app.classList.add('hidden'); }
   function showApp() { views.login.classList.add('hidden'); views.app.classList.remove('hidden'); }
