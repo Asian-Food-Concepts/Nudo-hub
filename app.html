@@ -569,7 +569,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.37";
+  const APP_VERSION = "v0.38";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -951,11 +951,11 @@
     // Fetch both request tables (newest first)
     const { data: mant, error: em } = await supabase
       .from('maintenance_requests')
-      .select('id, branch, area, description, priority, status, submitted_by, created_at')
+      .select('id, branch, area, description, priority, status, submitted_by, created_at, photo_urls')
       .order('created_at', { ascending: false });
     const { data: comp, error: ec } = await supabase
       .from('purchases')
-      .select('id, branch, item, vendor, amount, link, notes, status, submitted_by, created_at')
+      .select('id, branch, item, vendor, amount, link, notes, status, submitted_by, created_at, photo_urls')
       .order('created_at', { ascending: false });
     if (em || ec) {
       showMsg(msgEl, 'Error al cargar solicitudes: ' + (em ? em.message : ec.message), 'err');
@@ -969,13 +969,13 @@
       kind: 'mant', typeLabel: '🔧 Mantenimiento', title: r.area || 'Solicitud',
       detail: r.description || '', priority: r.priority || 'Normal',
       branch: r.branch, status: r.status, created_at: r.created_at,
-      id: r.id, table: 'maintenance_requests', submitted_by: r.submitted_by
+      id: r.id, table: 'maintenance_requests', submitted_by: r.submitted_by, link: '', photo_urls: r.photo_urls || []
     }));
     (comp || []).forEach(r => rows.push({
       kind: 'comp', typeLabel: '🛒 Compra', title: r.item || 'Compra',
       detail: (r.vendor ? 'Proveedor: ' + r.vendor + ' · ' : '') + (r.amount ? '$' + Number(r.amount).toLocaleString('es-MX') + ' MXN' : ''),
       priority: '', branch: r.branch, status: r.status, created_at: r.created_at,
-      id: r.id, table: 'purchases', submitted_by: r.submitted_by
+      id: r.id, table: 'purchases', submitted_by: r.submitted_by, link: r.link || '', photo_urls: r.photo_urls || []
     }));
     rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -997,6 +997,8 @@
       if (!list.length) return;
       html += `<div class="section-title" style="margin-top:6px;">${branch === 'other' ? 'Otra' : branch}</div>`;
       list.forEach(r => {
+        const linkHtml = r.link ? `<div style="margin:6px 0 4px;"><a href="${escAttr(r.link)}" target="_blank" rel="noopener" style="color:var(--accent);font-size:0.9rem;font-weight:600;">🔗 Abrir enlace</a></div>` : '';
+        const photosHtml = (r.photo_urls && r.photo_urls.length) ? `<div style="display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;">${r.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" onclick="window.open('${escAttr(u)}','_blank')" />`).join('')}</div>` : '';
         html += `<div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card);">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;">
             <div style="font-weight:600;">${r.typeLabel} · ${esc(r.title)}</div>
@@ -1004,12 +1006,18 @@
           </div>
           ${r.detail ? `<div style="font-size:0.9rem;color:var(--muted);margin:6px 0;">${esc(r.detail)}</div>` : ''}
           ${r.priority ? `<div style="font-size:0.85rem;margin-bottom:4px;">Prioridad: ${esc(r.priority)}</div>` : ''}
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:8px;">`;
+          ${linkHtml}
+          ${photosHtml}
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:8px;flex-wrap:wrap;">`;
         if (isAdmin && STATUS_META[r.status] && STATUS_META[r.status].next) {
           html += `<div>Status: <span style="font-weight:600;">${STATUS_META[r.status].label}</span></div>
-            <button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;" data-set-status="${r.table}|${r.id}|${STATUS_META[r.status].next}">Marcar ${STATUS_META[r.status].next}</button>`;
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;background:transparent;border:1px solid var(--border);color:var(--ink);" data-dl-pdf="${r.table}|${r.id}">📄 PDF</button>
+              <button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;" data-set-status="${r.table}|${r.id}|${STATUS_META[r.status].next}">Marcar ${STATUS_META[r.status].next}</button>
+            </div>`;
         } else {
-          html += `<div>Status: <span style="font-weight:600;">${STATUS_META[r.status] ? STATUS_META[r.status].label : esc(r.status)}</span></div>`;
+          html += `<div>Status: <span style="font-weight:600;">${STATUS_META[r.status] ? STATUS_META[r.status].label : esc(r.status)}</span></div>
+            ${isAdmin ? `<button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;background:transparent;border:1px solid var(--border);color:var(--ink);" data-dl-pdf="${r.table}|${r.id}">📄 PDF</button>` : ''}`;
         }
         html += `</div></div>`;
       });
@@ -1020,6 +1028,12 @@
 
   // Escapes HTML in user-provided strings before injecting into the DOM
   function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+  }
+  // Escape for use inside an HTML attribute value (URLs, etc.)
+  function escAttr(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
       { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
     ));
@@ -1046,6 +1060,71 @@
     if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); btn.disabled = false; return; }
     loadEstatus();
   });
+
+  // Download a request as a printable/filterable PDF (admins only) — opens a
+  // clean print view so the user can "Save as PDF" or share for a provider.
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-dl-pdf]');
+    if (!btn) return;
+    let user; try { user = await requireUser(); } catch(err) { return; }
+    const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (!ADMIN_ROLES.includes(prof && prof.role)) { showMsg($('estatus-msg'), 'Solo el Dueño puede descargar PDFs', 'err'); return; }
+    const [table, id] = btn.getAttribute('data-dl-pdf').split('|');
+    btn.disabled = true;
+    const q = table === 'purchases'
+      ? { cols: 'id, item, vendor, amount, link, notes, status, branch, submitted_by, created_at, photo_urls', titleField: 'item' }
+      : { cols: 'id, area, description, priority, status, branch, submitted_by, created_at, photo_urls', titleField: 'area' };
+    const { data, error } = await supabase.from(table).select(q.cols).eq('id', id).maybeSingle();
+    btn.disabled = false;
+    if (error || !data) { showMsg($('estatus-msg'), 'No se pudo cargar la solicitud', 'err'); return; }
+    openPdfWindow(table, data, q.titleField);
+  });
+
+  // Build a print-ready document for a request and trigger the native print/PDF
+  function openPdfWindow(table, d, titleField) {
+    const w = window.open('', '_blank', 'width=800,height=900');
+    if (!w) { showMsg($('estatus-msg'), 'Permite las ventanas emergentes para descargar el PDF', 'err'); return; }
+    const branch = d.branch || '—';
+    const date = d.created_at ? new Date(d.created_at).toLocaleString('es-MX') : '—';
+    const statusLabel = (STATUS_META[d.status] && STATUS_META[d.status].label) || d.status || '—';
+    const title = table === 'purchases' ? 'Solicitud de Compra' : 'Solicitud de Mantenimiento (Reparación)';
+    const kind = table === 'purchases' ? 'Compra' : 'Reparación';
+    const rows = table === 'purchases'
+      ? [
+          ['Artículo', d.item], ['Proveedor', d.vendor], ['Monto', d.amount ? '$' + Number(d.amount).toLocaleString('es-MX') + ' MXN' : '—'],
+          ['Notas', d.notes], ['Enlace', d.link]
+        ]
+      : [
+          ['Área', d.area], ['Descripción', d.description], ['Prioridad', d.priority]
+        ];
+    const safe = s => String(s == null ? '' : s).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+    const bodyRows = rows.map(([l,v]) => `<tr><td style="padding:8px 10px;border-bottom:1px solid #eee;font-weight:600;width:130px;vertical-align:top;color:#1f3d2e;">${safe(l)}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;vertical-align:top;">${safe(v) || '—'}</td></tr>`).join('');
+    const photos = (d.photo_urls && d.photo_urls.length)
+      ? `<p style="margin:14px 0 6px;font-weight:700;color:#1f3d2e;">Fotos</p>` + d.photo_urls.map(u => `<div style="margin-bottom:8px;">${safe(u) ? `<a href="${safe(u)}" style="color:#1f7a4d;">Ver foto</a>` : ''}</div><img src="${safe(u)}" style="max-width:100%;border-radius:8px;border:1px solid #ddd;" />`).join('')
+      : '';
+    w.document.write(`<!DOCTYPE html><html><head><title>${safe(title)}</title><style>
+      body{font-family:Arial,Helvetica,sans-serif;color:#222;margin:0;padding:24px;}
+      h1{font-size:18px;margin:0 0 4px;}
+      h2{margin:24px 0 4px;font-size:14px;color:#1f3d2e;font-weight:700;}
+      .brand{font-size:22px;font-weight:800;color:#1f3d2e;margin-bottom:2px;}
+      .meta{color:#666;font-size:12px;margin-bottom:6px;}
+      table{width:100%;border-collapse:collapse;margin-top:10px;}
+      hr{border:none;border-top:1px solid #ddd;margin:14px 0;}
+      @media print{ body{padding:16px;} }
+    </style></head><body>
+      <div class="brand">🍜 Nudo Hub</div>
+      <div style="color:#999;font-size:11px;">Nudo — Ramen y Boba · CDMX</div>
+      <h2>${safe(title)}</h2>
+      <div class="meta">Sucursal: ${safe(branch)} · Fecha: ${safe(date)} · Status: ${statusLabel}</div>
+      <hr/>
+      <table>${bodyRows}</table>
+      ${photos}
+      <hr/>
+      <p style="font-size:10px;color:#999;">Generado por Nudo Hub · ${new Date().toLocaleString('es-MX')}</p>
+      <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 400); };<\/script>
+    </body></html>`);
+    w.document.close();
+  }
 
   // ---- BITACORA ----
   $('b-submit').addEventListener('click', async () => {
