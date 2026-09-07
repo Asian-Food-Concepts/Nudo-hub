@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  // If this page loads with a Supabase auth token in the URL hash (magic-link
+  // login landed here), forward it to the app so the session is picked up.
+  // This happens when an OTP "Iniciar sesión" button opens the site root.
+  (function () {
+    var h = window.location.hash;
+    // Supabase OAuth/magic-link tokens arrive as #access_token=... or #error=...
+    if (h && (h.indexOf('access_token=') !== -1 || h.indexOf('error=') !== -1)) {
+      window.location.replace('/Nudo-hub/app.html' + h);
+    }
+  })();
+</script>
 <title>Nudo Hub</title>
 <style>
   :root {
