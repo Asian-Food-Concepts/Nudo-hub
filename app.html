@@ -262,6 +262,12 @@
   .plan-modal input[type="time"] { flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg, transparent); color: var(--ink); }
   .plan-modal .actions { display: flex; gap: 8px; margin-top: 14px; }
   .plan-modal .actions button { flex: 1; }
+  .plan-add { border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 12px; background: var(--frame-bg); }
+  .plan-add-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .plan-add-row:last-child { margin-bottom: 0; }
+  .plan-add select { flex: 1; min-width: 120px; padding: 7px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg, transparent); color: var(--ink); font-size: 0.85rem; }
+  .plan-add label { font-size: 0.8rem; color: var(--muted); }
+  .plan-add input[type="time"] { padding: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg, transparent); color: var(--ink); }
 
   footer { text-align: center; padding: 20px; color: var(--muted); font-size: 0.8rem; }
   /* Reviews slider (pulled from the hub) */
@@ -604,6 +610,20 @@
               <button id="plan-next">›</button>
             </div>
           </div>
+
+          <!-- ADD SHIFT FORM (dropdown entry) -->
+          <div class="plan-add" id="plan-add">
+            <div class="plan-add-row">
+              <select id="plan-add-person"><option value="">— Persona —</option></select>
+              <select id="plan-add-day"><option value="">— Día —</option></select>
+            </div>
+            <div class="plan-add-row">
+              <label>Entra</label><input type="time" id="plan-add-start">
+              <label>Sale</label><input type="time" id="plan-add-end">
+              <button class="btn" id="plan-add-btn">Agregar</button>
+            </div>
+          </div>
+
           <div id="plan-warnings"></div>
           <div class="plan-grid" id="plan-grid"></div>
         </div>
@@ -645,7 +665,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.41";
+  const APP_VERSION = "v0.42";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1118,10 +1138,37 @@
     html += '</tbody></table>';
     grid.innerHTML = html;
     planRenderWarnings();
+    planPopulateAddForm(staff);
     // bind cells
     grid.querySelectorAll('.plan-cell').forEach(c => {
       c.addEventListener('click', () => planOpenCell(c));
     });
+  }
+
+  // Fill the "add shift" dropdowns (person + day) for the current branch/week.
+  function planPopulateAddForm(staff) {
+    const personSel = $('plan-add-person');
+    const daySel = $('plan-add-day');
+    // preserve current selection if still valid
+    const curPerson = personSel.value;
+    const curDay = daySel.value;
+    personSel.innerHTML = '<option value="">— Persona —</option>';
+    staff.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = `${s.name} (${planRoleGroup(s.role)})`;
+      personSel.appendChild(opt);
+    });
+    daySel.innerHTML = '<option value="">— Día —</option>';
+    PLAN_DAYS.forEach((d,i) => {
+      const dt = new Date(planState.weekStart.getTime() + i*86400000);
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = `${d} ${dt.getDate()}`;
+      daySel.appendChild(opt);
+    });
+    if (curPerson && [...personSel.options].some(o => o.value === curPerson)) personSel.value = curPerson;
+    if (curDay && [...daySel.options].some(o => o.value === curDay)) daySel.value = curDay;
   }
 
   function planRenderWarnings() {
@@ -1196,6 +1243,43 @@
   $('plan-descanso').addEventListener('click', () => planSaveShift('descanso', '', ''));
   $('plan-clear').addEventListener('click', () => planSaveShift('clear', '', ''));
   $('plan-modal').addEventListener('click', e => { if (e.target === $('plan-modal')) planCloseModal(); });
+
+  // "Agregar" button — add a shift from the dropdown form
+  $('plan-add-btn').addEventListener('click', async () => {
+    const staffId = $('plan-add-person').value;
+    const dayIdx = parseInt($('plan-add-day').value, 10);
+    const start = $('plan-add-start').value;
+    const end = $('plan-add-end').value;
+    if (!staffId || isNaN(dayIdx)) {
+      const box = $('plan-warnings');
+      box.innerHTML = '<div class="plan-warn red">⚠️ Elige persona y día.</div>' + box.innerHTML;
+      return;
+    }
+    const staff = planState.staff.find(s => s.id === staffId);
+    const role = planRoleGroup(staff ? staff.role : '');
+    const date = fmtDate(new Date(planState.weekStart.getTime() + dayIdx*86400000));
+    const existing = planShiftFor(staffId, dayIdx);
+    let err = null;
+    try {
+      if (existing) {
+        const r = await supabase.from('shifts').update({ status: 'programado', start_time: start, end_time: end, role }).eq('id', existing.id);
+        if (r.error) err = r.error;
+      } else {
+        const r = await supabase.from('shifts').insert({ staff_id: staffId, shift_date: date, branch: planState.branch, role, status: 'programado', start_time: start, end_time: end });
+        if (r.error) err = r.error;
+      }
+    } catch(e) { err = e; }
+    if (err) {
+      const box = $('plan-warnings');
+      box.innerHTML = `<div class="plan-warn red">⚠️ No se pudo guardar: ${err.message || err}</div>` + box.innerHTML;
+      return;
+    }
+    // clear the time fields, keep person/day for rapid entry
+    $('plan-add-start').value = '';
+    $('plan-add-end').value = '';
+    await planLoadShifts();
+    planRender();
+  });
 
   // branch + week nav
   document.querySelectorAll('#plan-branch-seg button').forEach(b => {
