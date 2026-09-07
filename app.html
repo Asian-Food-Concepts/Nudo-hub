@@ -467,7 +467,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.29";
+  const APP_VERSION = "v0.30";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -685,7 +685,8 @@
     'En proceso': { label: '🟡 En proceso', next: 'Resuelto' },
     'Resuelto':  { label: '🟢 Resuelto',  next: null }
   };
-  const ADMIN_ROLES = ['Dueño', 'Gerente'];
+  // ADMIN_ROLES = who can CHANGE status (Dueño only for now, per Ben)
+  const ADMIN_ROLES = ['Dueño'];
 
   async function loadEstatus() {
     const listEl = $('estatus-list');
