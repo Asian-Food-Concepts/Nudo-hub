@@ -224,14 +224,13 @@
             <div class="text"><div class="title">Solicitud de Compras</div><div class="sub">Solicita compras o insumos</div></div>
             <div class="arrow">›</div>
           </a>
+        </div>
+
+        <div class="section-title">Seguimiento</div>
+        <div class="card-list">
           <a class="card" href="#" data-form="estatus">
             <div class="icon icon-form">📋</div>
             <div class="text"><div class="title">Estatus de solicitudes</div><div class="sub">Da seguimiento a tus solicitudes</div></div>
-            <div class="arrow">›</div>
-          </a>
-          <a class="card" href="#" data-form="buzon">
-            <div class="icon icon-form">💬</div>
-            <div class="text"><div class="title">Buzón de Sugerencias</div><div class="sub">Anónimo y opcional</div></div>
             <div class="arrow">›</div>
           </a>
         </div>
@@ -267,6 +266,16 @@
         <!-- Live sections pulled from the hub (Desempeño + Opiniones) so the
              app's bottom matches the public hub automatically. -->
         <div id="hub-live-sections"></div>
+
+        <!-- Buzón sits at the very bottom, after everything else. -->
+        <div class="section-title" style="margin-top:24px;">Sugerencias</div>
+        <div class="card-list">
+          <a class="card" href="#" data-form="buzon">
+            <div class="icon icon-form">💬</div>
+            <div class="text"><div class="title">Buzón de Sugerencias</div><div class="sub">Anónimo y opcional</div></div>
+            <div class="arrow">›</div>
+          </a>
+        </div>
       </div>
 
       <!-- GUIDE VIEW (in-app, so back stays inside the app) -->
@@ -467,7 +476,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.31";
+  const APP_VERSION = "v0.32";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
