@@ -486,7 +486,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.34";
+  const APP_VERSION = "v0.35";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -849,8 +849,8 @@
     }));
     rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // Staff see ONLY their own requests; admins see all (requester visibility)
-    const visible = isAdmin ? rows : rows.filter(r => r.submitted_by === user.id);
+    // Everyone sees ALL requests (requester visibility); only admins can flip status inline
+    const visible = rows;
 
     if (!visible.length) {
       listEl.innerHTML = '<p style="color:var(--muted);">No hay solicitudes todavía.</p>';
