@@ -365,15 +365,33 @@
           <div class="checkbox-row"><input type="checkbox" id="b-confirm"><label>Confirmo el cierre de la unidad</label></div>
           <button class="btn" id="b-submit">Enviar bitácora</button>
           <div class="msg hidden" id="b-msg"></div>
-        </div>
       </div>
+    </div>
 
-      <div id="form-mantenimiento" class="form-page">
+          <div id="form-mantenimiento" class="form-page">
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card" id="card-mantenimiento">
           <h2>🔧 Solicitud de Mantenimiento</h2>
-          <p style="font-size:0.9rem;color:var(--muted);margin-bottom:14px;">Reporta problemas o averías. Se abre en una pestaña nueva.</p>
-          <a class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSd5j_I_g19rR6oCoX69ylOO2tfabzEufmXyZSt9w2eAqj65Rg/viewform" target="_blank" rel="noopener" style="display:block;text-align:center;">Abrir Solicitud de Mantenimiento</a>
+          <div class="field"><label>Sucursal</label>
+            <div class="radio-group">
+              <label><input type="radio" name="m-sucursal" value="Roma Norte"><span>Roma Norte</span></label>
+              <label><input type="radio" name="m-sucursal" value="Del Valle"><span>Del Valle</span></label>
+            </div>
+          </div>
+          <div class="field"><label>Área / equipo</label><input type="text" id="m-area" placeholder="Ej. Barra, Caja, Terminales, Cocina, Baño…" style="width:100%"></div>
+          <div class="field"><label>Describe el problema</label><textarea id="m-desc" placeholder="¿Qué se descompuso? ¿Desde cuándo?"></textarea></div>
+          <div class="field"><label>Prioridad</label>
+            <div class="radio-group">
+              <label><input type="radio" name="m-prioridad" value="Urgente"><span>🔴 Urgente</span></label>
+              <label><input type="radio" name="m-prioridad" value="Normal"><span>🟡 Normal</span></label>
+              <label><input type="radio" name="m-prioridad" value="Baja"><span>🟢 Baja</span></label>
+            </div>
+          </div>
+          <div class="field"><label>📷 Foto (opcional)</label>
+            <input type="file" id="m-photo" accept="image/*">
+          </div>
+          <button class="btn" id="m-submit">Enviar solicitud</button>
+          <div class="msg hidden" id="m-msg"></div>
         </div>
       </div>
 
@@ -381,8 +399,22 @@
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card" id="card-compras">
           <h2>🛒 Solicitud de Compras</h2>
-          <p style="font-size:0.9rem;color:var(--muted);margin-bottom:14px;">Solicita compras o insumos. Se abre en una pestaña nueva.</p>
-          <a class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSdRgq_aQImR3Qcjfv_giYzOU6_NfbJSm0IDnR-A55ERAu4ilg/viewform" target="_blank" rel="noopener" style="display:block;text-align:center;">Abrir Solicitud de Compras</a>
+          <div class="field"><label>Sucursal</label>
+            <div class="radio-group">
+              <label><input type="radio" name="c-sucursal" value="Roma Norte"><span>Roma Norte</span></label>
+              <label><input type="radio" name="c-sucursal" value="Del Valle"><span>Del Valle</span></label>
+            </div>
+          </div>
+          <div class="field"><label>Artículo</label><input type="text" id="c-item" placeholder="¿Qué necesitas comprar?" style="width:100%"></div>
+          <div class="field"><label>Proveedor / tienda</label><input type="text" id="c-vendor" placeholder="¿Dónde lo compramos?" style="width:100%"></div>
+          <div class="field"><label>Monto aprox. (MXN)</label><input type="number" id="c-amount" placeholder="Ej. 350" style="width:100%"></div>
+          <div class="field"><label>🔗 Link (opcional)</label><input type="url" id="c-link" placeholder="Amazon / MercadoLibre nacional — deja vacío si no aplica" style="width:100%"></div>
+          <div class="field"><label>📷 Foto (opcional)</label>
+            <input type="file" id="c-photo" accept="image/*">
+          </div>
+          <div class="field"><label>Notas</label><textarea id="c-notes" placeholder="Cantidad, marca, urgencia…"></textarea></div>
+          <button class="btn" id="c-submit">Enviar solicitud</button>
+          <div class="msg hidden" id="c-msg"></div>
         </div>
       </div>
 
@@ -416,7 +448,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.22";
+  const APP_VERSION = "v0.23";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -658,6 +690,80 @@
       resetForm('bitacora');
       clearMsg($('b-msg'));
       goHome();
+    }, 1200);
+  });
+
+  // ---- MAINTENANCE ----
+  // Upload a photo to Supabase Storage; returns public URL or '' if none.
+  async function uploadPhoto(file, prefix) {
+    if (!file) return '';
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${prefix}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('maintenance-photos').upload(path, file);
+    if (error) throw error;
+    return supabase.storage.from('maintenance-photos').getPublicUrl(path).data.publicUrl;
+  }
+
+  $('m-submit').addEventListener('click', async () => {
+    const sucursal = document.querySelector('input[name="m-sucursal"]:checked');
+    const area = $('m-area').value.trim();
+    const desc = $('m-desc').value.trim();
+    const prioridad = document.querySelector('input[name="m-prioridad"]:checked');
+    if (!sucursal || !area || !desc) { showMsg($('m-msg'), 'Completa sucursal, área y descripción', 'err'); return; }
+    let user; try { user = await requireUser(); } catch(e) { return; }
+    $('m-submit').disabled = true;
+    let photoUrls = [];
+    try {
+      const f = $('m-photo').files[0];
+      if (f) { const url = await uploadPhoto(f, 'mant'); photoUrls = [url]; }
+    } catch(e) { showMsg($('m-msg'), 'Error al subir la foto: ' + e.message, 'err'); $('m-submit').disabled = false; return; }
+    const { error } = await supabase.from('maintenance_requests').insert({
+      submitted_by: user.id,
+      branch: sucursal.value,
+      area,
+      description: desc,
+      priority: prioridad ? prioridad.value : 'Normal',
+      photo_url: photoUrls[0] || '',
+      photo_urls: photoUrls,
+      status: 'Pendiente'
+    });
+    if (error) { showMsg($('m-msg'), 'Error: ' + error.message, 'err'); $('m-submit').disabled = false; return; }
+    $('m-msg').textContent = '✅ Solicitud de mantenimiento enviada'; $('m-msg').className = 'msg ok'; $('m-msg').classList.remove('hidden');
+    setTimeout(() => {
+      resetForm('mantenimiento'); $('m-photo').value = '';
+      clearMsg($('m-msg')); goHome();
+    }, 1200);
+  });
+
+  // ---- COMPRAS ----
+  $('c-submit').addEventListener('click', async () => {
+    const sucursal = document.querySelector('input[name="c-sucursal"]:checked');
+    const item = $('c-item').value.trim();
+    if (!sucursal || !item) { showMsg($('c-msg'), 'Completa sucursal y artículo', 'err'); return; }
+    let user; try { user = await requireUser(); } catch(e) { return; }
+    $('c-submit').disabled = true;
+    let photoUrls = [];
+    try {
+      const f = $('c-photo').files[0];
+      if (f) { const url = await uploadPhoto(f, 'compra'); photoUrls = [url]; }
+    } catch(e) { showMsg($('c-msg'), 'Error al subir la foto: ' + e.message, 'err'); $('c-submit').disabled = false; return; }
+    const amountVal = $('c-amount').value.trim();
+    const { error } = await supabase.from('purchases').insert({
+      submitted_by: user.id,
+      branch: sucursal.value,
+      item,
+      vendor: $('c-vendor').value.trim(),
+      amount: amountVal ? Number(amountVal) : null,
+      link: $('c-link').value.trim(),
+      notes: $('c-notes').value.trim(),
+      photo_urls: photoUrls,
+      status: 'Pendiente'
+    });
+    if (error) { showMsg($('c-msg'), 'Error: ' + error.message, 'err'); $('c-submit').disabled = false; return; }
+    $('c-msg').textContent = '✅ Solicitud de compra enviada'; $('c-msg').className = 'msg ok'; $('c-msg').classList.remove('hidden');
+    setTimeout(() => {
+      resetForm('compras'); $('c-photo').value = '';
+      clearMsg($('c-msg')); goHome();
     }, 1200);
   });
 
