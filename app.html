@@ -228,6 +228,41 @@
   /* Schedule */
   .sched-frame { width: 100%; border: 1px solid var(--border); border-radius: 12px; min-height: 400px; background: var(--frame-bg); }
 
+  /* ---- Captain schedule planner ---- */
+  .plan-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .plan-toolbar .seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .plan-toolbar .seg button { border: none; background: transparent; color: var(--ink); padding: 7px 12px; font-size: 0.85rem; cursor: pointer; }
+  .plan-toolbar .seg button.on { background: var(--accent); color: #fff; }
+  .plan-week-nav { display: flex; align-items: center; gap: 8px; }
+  .plan-week-nav button { border: 1px solid var(--border); background: transparent; color: var(--ink); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 0.9rem; }
+  .plan-week-label { font-weight: 600; font-size: 0.9rem; min-width: 150px; text-align: center; }
+  .plan-warn { border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; margin-bottom: 10px; }
+  .plan-warn.red { background: rgba(220,80,60,0.12); color: #b33; border: 1px solid rgba(220,80,60,0.3); }
+  .plan-warn.yellow { background: rgba(220,160,40,0.12); color: #a70; border: 1px solid rgba(220,160,40,0.3); }
+  .plan-warn.ok { background: rgba(60,180,90,0.12); color: #2a7; border: 1px solid rgba(60,180,90,0.3); }
+  .plan-grid { overflow-x: auto; }
+  .plan-table { border-collapse: collapse; width: 100%; min-width: 640px; }
+  .plan-table th, .plan-table td { border: 1px solid var(--border); padding: 6px; text-align: center; font-size: 0.8rem; }
+  .plan-table th { background: var(--frame-bg); position: sticky; top: 0; }
+  .plan-table th.day { min-width: 74px; }
+  .plan-table td.name { text-align: left; white-space: nowrap; font-weight: 600; }
+  .plan-table td.role { color: var(--muted); font-size: 0.72rem; }
+  .plan-cell { cursor: pointer; border-radius: 6px; min-height: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+  .plan-cell.shift { background: rgba(60,140,220,0.14); }
+  .plan-cell.descanso { background: rgba(150,150,150,0.12); color: var(--muted); }
+  .plan-cell.empty { color: var(--muted); }
+  .plan-cell .t { font-weight: 600; font-size: 0.78rem; }
+  .plan-cell .h { font-size: 0.68rem; color: var(--muted); }
+  .plan-role-head { background: var(--frame-bg); font-weight: 700; text-align: left; padding: 6px; font-size: 0.8rem; }
+  .plan-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .plan-modal .box { background: var(--card-bg, #fff); border-radius: 12px; padding: 18px; width: 100%; max-width: 340px; }
+  .plan-modal h3 { margin: 0 0 12px; font-size: 1rem; }
+  .plan-modal .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .plan-modal label { font-size: 0.8rem; color: var(--muted); min-width: 52px; }
+  .plan-modal input[type="time"] { flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg, transparent); color: var(--ink); }
+  .plan-modal .actions { display: flex; gap: 8px; margin-top: 14px; }
+  .plan-modal .actions button { flex: 1; }
+
   footer { text-align: center; padding: 20px; color: var(--muted); font-size: 0.8rem; }
   /* Reviews slider (pulled from the hub) */
   .rv-card { padding: 0; overflow: hidden; }
@@ -323,6 +358,11 @@
           <a class="card" href="#" data-form="horario">
             <div class="icon icon-sheet">🗓️</div>
             <div class="text"><div class="title">Mi horario</div><div class="sub">Consulta tu semana</div></div>
+            <div class="arrow">›</div>
+          </a>
+          <a class="card" href="#" data-form="plan" id="plan-card" style="display:none;">
+            <div class="icon icon-sheet">📝</div>
+            <div class="text"><div class="title">Planear horario</div><div class="sub">Arma la semana del equipo</div></div>
             <div class="arrow">›</div>
           </a>
         </div>
@@ -547,6 +587,42 @@
         </div>
       </div>
 
+      <!-- CAPTAIN SCHEDULE PLANNER -->
+      <div id="form-plan" class="form-page">
+        <button class="back" data-back><span class="chev">‹</span> Volver</button>
+        <div class="form-card">
+          <h2>🗓️ Planear horario</h2>
+          <p style="font-size:0.85rem;color:var(--muted);margin-bottom:10px;">Arma la semana. Toca una casilla para poner turno o descanso. Las alertas son avisos — puedes ignorarlas.</p>
+          <div class="plan-toolbar">
+            <div class="seg" id="plan-branch-seg">
+              <button data-branch="Roma Norte">Roma</button>
+              <button data-branch="Del Valle">Del Valle</button>
+            </div>
+            <div class="plan-week-nav">
+              <button id="plan-prev">‹</button>
+              <span class="plan-week-label" id="plan-week-label"></span>
+              <button id="plan-next">›</button>
+            </div>
+          </div>
+          <div id="plan-warnings"></div>
+          <div class="plan-grid" id="plan-grid"></div>
+        </div>
+      </div>
+
+      <!-- PLAN CELL MODAL -->
+      <div class="plan-modal hidden" id="plan-modal">
+        <div class="box">
+          <h3 id="plan-modal-title"></h3>
+          <div class="row"><label>Entra</label><input type="time" id="plan-start"></div>
+          <div class="row"><label>Sale</label><input type="time" id="plan-end"></div>
+          <div class="actions">
+            <button class="btn btn-secondary" id="plan-descanso">Descanso</button>
+            <button class="btn btn-secondary" id="plan-clear">Quitar</button>
+            <button class="btn" id="plan-save">Guardar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ESTATUS DE SOLICITUDES -->
       <div id="form-estatus" class="form-page">
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
@@ -569,7 +645,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.39";
+  const APP_VERSION = "v0.40";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -733,6 +809,12 @@
       if (allowed.includes(role)) { bitCard.style.display = ''; }
       else { bitCard.style.display = 'none'; }
     }
+    // Role-gate the schedule planner: Dueño, Capitán, Gerente
+    const planCard = document.getElementById('plan-card');
+    if (planCard) {
+      if (allowed.includes(role)) { planCard.style.display = ''; }
+      else { planCard.style.display = 'none'; }
+    }
   }
 
   // Force a signed-out, logged-in user back to the login screen (used when a
@@ -806,6 +888,7 @@
       $('form-' + f).classList.add('active');
       if (f === 'horario') loadSchedule();
       if (f === 'estatus') loadEstatus();
+      if (f === 'plan') loadPlanner();
     });
   });
   // Guide cards open an in-app iframe (back stays inside the app)
@@ -924,6 +1007,180 @@
     // const { data } = await supabase.storage.from('schedules').list();
     // For now show the message
   }
+
+  // ---- CAPTAIN SCHEDULE PLANNER ----
+  // Structured schedule: one `shifts` row per (staff, day). Captains build the
+  // week here; warnings fire live (too few / too many per role) and can be
+  // overridden. Runs alongside the Google Sheet (sheet stays source of truth
+  // until Ben flips over).
+  const PLAN_ROLES = ['Capitán', 'Piso', 'Barra', 'Cocina', 'Producción', 'Loza'];
+  const PLAN_DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  // Daily minimums per branch (from the Reglas tab MÍNIMOS DIARIOS).
+  const PLAN_MIN = {
+    'Roma Norte': { 'Capitán':[1,1,1,1,2,2,2], 'Piso':[2,2,2,2,3,4,3], 'Barra':[2,3,3,2,3,4,3], 'Cocina':[3,2,2,3,3,4,3] },
+    'Del Valle':  { 'Capitán':[1,1,1,1,2,2,2], 'Piso':[2,2,2,2,3,4,3], 'Barra':[2,2,2,3,3,4,4], 'Cocina':[4,3,3,4,5,6,5], 'Producción':[1,1,1,1,0,0,0] }
+  };
+
+  let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [] };
+
+  function planMonday() {
+    const now = new Date();
+    const d = now.getDay(); // 0=Sun
+    const diff = (d === 0 ? -6 : 1 - d);
+    const m = new Date(now); m.setDate(now.getDate() + diff); m.setHours(0,0,0,0);
+    return m;
+  }
+  function fmtDate(d) { return d.toISOString().slice(0,10); }
+  function planWeekLabel() {
+    const s = planState.weekStart;
+    const e = new Date(s); e.setDate(e.getDate() + 6);
+    const mo = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return `${s.getDate()} ${mo[s.getMonth()]} – ${e.getDate()} ${mo[e.getMonth()]}`;
+  }
+
+  async function loadPlanner() {
+    if (!planState.weekStart) planState.weekStart = planMonday();
+    // branch seg
+    document.querySelectorAll('#plan-branch-seg button').forEach(b => {
+      b.classList.toggle('on', b.getAttribute('data-branch') === planState.branch);
+    });
+    $('plan-week-label').textContent = planWeekLabel();
+    try { await requireUser(); } catch(e) { return; }
+    // load active staff
+    const { data: staff, error } = await supabase.from('profiles')
+      .select('id,name,role,branch').eq('active', true).order('name');
+    if (error) { $('plan-grid').innerHTML = '<p style="color:var(--muted);">No se pudo cargar el equipo.</p>'; return; }
+    planState.staff = staff || [];
+    await planLoadShifts();
+    planRender();
+  }
+
+  async function planLoadShifts() {
+    const s = fmtDate(planState.weekStart);
+    const e = fmtDate(new Date(planState.weekStart.getTime() + 6*86400000));
+    const { data, error } = await supabase.from('shifts')
+      .select('*').eq('branch', planState.branch)
+      .gte('shift_date', s).lte('shift_date', e);
+    planState.shifts = (error ? [] : (data || []));
+  }
+
+  function planShiftFor(staffId, dayIdx) {
+    const date = fmtDate(new Date(planState.weekStart.getTime() + dayIdx*86400000));
+    return planState.shifts.find(x => x.staff_id === staffId && x.shift_date === date);
+  }
+
+  function planRender() {
+    const grid = $('plan-grid');
+    const staff = planState.staff.filter(s => !s.branch || s.branch === planState.branch || s.branch === 'Ambos');
+    // group by role
+    const byRole = {};
+    PLAN_ROLES.forEach(r => byRole[r] = []);
+    staff.forEach(s => { const r = s.role || 'Piso'; (byRole[r] = byRole[r] || []).push(s); });
+
+    let html = '<table class="plan-table"><thead><tr><th>Equipo</th>';
+    PLAN_DAYS.forEach((d,i) => {
+      const dt = new Date(planState.weekStart.getTime() + i*86400000);
+      html += `<th class="day">${d}<br><span style="font-weight:400;color:var(--muted);">${dt.getDate()}</span></th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    PLAN_ROLES.forEach(role => {
+      const list = byRole[role] || [];
+      if (!list.length) return;
+      html += `<tr><td class="plan-role-head" colspan="8">${role}</td></tr>`;
+      list.forEach(s => {
+        html += `<tr><td class="name">${s.name}</td>`;
+        for (let i=0;i<7;i++) {
+          const sh = planShiftFor(s.id, i);
+          let cls = 'plan-cell empty', inner = '·';
+          if (sh) {
+            if (sh.status === 'descanso') { cls = 'plan-cell descanso'; inner = 'D'; }
+            else { cls = 'plan-cell shift'; inner = `<span class="t">${sh.start_time||''}</span><span class="h">${sh.end_time||''}</span>`; }
+          }
+          html += `<td><div class="${cls}" data-staff="${s.id}" data-day="${i}" data-name="${s.name.replace(/"/g,'&quot;')}">${inner}</div></td>`;
+        }
+        html += '</tr>';
+      });
+    });
+    html += '</tbody></table>';
+    grid.innerHTML = html;
+    planRenderWarnings();
+    // bind cells
+    grid.querySelectorAll('.plan-cell').forEach(c => {
+      c.addEventListener('click', () => planOpenCell(c));
+    });
+  }
+
+  function planRenderWarnings() {
+    const box = $('plan-warnings');
+    const warns = [];
+    PLAN_DAYS.forEach((d,i) => {
+      const date = fmtDate(new Date(planState.weekStart.getTime() + i*86400000));
+      PLAN_ROLES.forEach(role => {
+        const min = (PLAN_MIN[planState.branch] && PLAN_MIN[planState.branch][role]) ? PLAN_MIN[planState.branch][role][i] : 0;
+        if (!min) return;
+        const count = planState.shifts.filter(x => x.shift_date === date && x.role === role && x.status !== 'descanso').length;
+        if (count < min) warns.push({ type:'red', text:`🔴 ${d}: ${role} tiene ${count}/${min} (faltan ${min-count})` });
+        else if (count > min + 1) warns.push({ type:'yellow', text:`🟡 ${d}: ${role} tiene ${count} (mínimo ${min})` });
+      });
+    });
+    if (!warns.length) {
+      box.innerHTML = '<div class="plan-warn ok">✅ Todo cubierto según los mínimos.</div>';
+    } else {
+      box.innerHTML = warns.map(w => `<div class="plan-warn ${w.type}">${w.text}</div>`).join('');
+    }
+  }
+
+  let planCell = null;
+  function planOpenCell(cell) {
+    planCell = cell;
+    const staffId = cell.getAttribute('data-staff');
+    const dayIdx = parseInt(cell.getAttribute('data-day'), 10);
+    const name = cell.getAttribute('data-name');
+    const date = fmtDate(new Date(planState.weekStart.getTime() + dayIdx*86400000));
+    const sh = planShiftFor(staffId, dayIdx);
+    $('plan-modal-title').textContent = `${name} · ${PLAN_DAYS[dayIdx]}`;
+    $('plan-start').value = sh && sh.start_time ? sh.start_time : '';
+    $('plan-end').value = sh && sh.end_time ? sh.end_time : '';
+    $('plan-modal').classList.remove('hidden');
+    // stash context
+    planCell._ctx = { staffId, dayIdx, date, name };
+  }
+
+  function planCloseModal() { $('plan-modal').classList.add('hidden'); planCell = null; }
+
+  async function planSaveShift(status, start, end) {
+    if (!planCell) return;
+    const { staffId, dayIdx, date, name } = planCell._ctx;
+    const staff = planState.staff.find(s => s.id === staffId);
+    const role = staff ? (staff.role || 'Piso') : 'Piso';
+    const existing = planShiftFor(staffId, dayIdx);
+    try {
+      if (status === 'clear') {
+        if (existing) await supabase.from('shifts').delete().eq('id', existing.id);
+      } else if (existing) {
+        await supabase.from('shifts').update({ status, start_time: start, end_time: end, role }).eq('id', existing.id);
+      } else {
+        await supabase.from('shifts').insert({ staff_id: staffId, shift_date: date, branch: planState.branch, role, status, start_time: start, end_time: end });
+      }
+    } catch(e) { /* non-fatal */ }
+    await planLoadShifts();
+    planRender();
+    planCloseModal();
+  }
+
+  // modal buttons
+  $('plan-save').addEventListener('click', () => planSaveShift('programado', $('plan-start').value, $('plan-end').value));
+  $('plan-descanso').addEventListener('click', () => planSaveShift('descanso', '', ''));
+  $('plan-clear').addEventListener('click', () => planSaveShift('clear', '', ''));
+  $('plan-modal').addEventListener('click', e => { if (e.target === $('plan-modal')) planCloseModal(); });
+
+  // branch + week nav
+  document.querySelectorAll('#plan-branch-seg button').forEach(b => {
+    b.addEventListener('click', () => { planState.branch = b.getAttribute('data-branch'); loadPlanner(); });
+  });
+  $('plan-prev').addEventListener('click', () => { planState.weekStart = new Date(planState.weekStart.getTime() - 7*86400000); loadPlanner(); });
+  $('plan-next').addEventListener('click', () => { planState.weekStart = new Date(planState.weekStart.getTime() + 7*86400000); loadPlanner(); });
 
   // ---- ESTATUS DE SOLICITUDES ----
   // Loads maintenance + purchases requests from Supabase and renders them
