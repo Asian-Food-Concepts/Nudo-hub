@@ -569,7 +569,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.38";
+  const APP_VERSION = "v0.39";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1259,6 +1259,34 @@
     const { data: { session } } = await supabase.auth.getSession();
     if (session) { showApp(); loadUser(); }
     else showLogin();
+  })();
+
+  // ---- LIVE REALTIME REFRESH ----
+  // Keep the Estatus view current without manual refresh: when a new
+  // request (Compras/Mantenimiento) or bitácora row lands, reload the list
+  // if it's currently open. Auto-reconnects (Supabase realtime SDK retries).
+  let rtChannel = null;
+  function setupRealtime() {
+    try {
+      if (rtChannel) supabase.removeChannel(rtChannel).catch(() => {});
+      rtChannel = supabase
+        .channel('app-live-' + (Math.random().toString(36).slice(2)))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases' },
+            () => { if (!$('form-estatus').classList.contains('hidden')) loadEstatus(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance_requests' },
+            () => { if (!$('form-estatus').classList.contains('hidden')) loadEstatus(); })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bitacora' },
+            () => { /* bitácora live event — Estatus shows requests; keep for future use */ })
+        .subscribe();
+    } catch (e) { /* realtime unavailable — non-fatal */ }
+  }
+  // Subscribe once a session exists; re-subscribe on auth change.
+  (async () => {
+    await supabase.auth.getSession();
+    supabase.auth.onAuthStateChange((ev, sess) => {
+      if (ev === 'SIGNED_IN' && sess) setupRealtime();
+      if (ev === 'SIGNED_OUT') { if (rtChannel) supabase.removeChannel(rtChannel).catch(() => {}); rtChannel = null; }
+    });
   })();
 
   // Pull the hub's live sections (Desempeño + Opiniones) so the app's bottom
