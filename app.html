@@ -362,6 +362,9 @@
           </div>
           <div class="field"><label>Personal / horas extra / cambios de horario</label><textarea id="b-personal" placeholder="Quién, qué cambió, horas extra, por qué (opcional)"></textarea></div>
           <div class="field"><label>Notas / incidentes <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label><textarea id="b-notas"></textarea></div>
+          <div class="field"><label>📷 Foto <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label>
+            <input type="file" id="b-photo" accept="image/*" style="width:100%">
+          </div>
           <div class="checkbox-row"><input type="checkbox" id="b-confirm"><label>Confirmo el cierre de la unidad</label></div>
           <button class="btn" id="b-submit">Enviar bitácora</button>
           <div class="msg hidden" id="b-msg"></div>
@@ -448,7 +451,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.26";
+  const APP_VERSION = "v0.27";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -604,6 +607,7 @@
     card.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
     card.querySelectorAll('.t-detail').forEach(t => t.classList.add('hidden'));
     $('b-submit').disabled = false;
+    const ph = $('b-photo'); if (ph) ph.value = '';
   }
 
   // Theme status toggles: show the detail box only when "Problema" or "Todo bien + nota" is selected
@@ -673,6 +677,18 @@
     });
     let user; try { user = await requireUser(); } catch(e) { return; }
     $('b-submit').disabled = true;
+    // Upload optional photo first (uploadPhoto is hoisted from the Maintenance section)
+    let photoUrl = '';
+    const bPhoto = $('b-photo').files[0];
+    if (bPhoto) {
+      try {
+        photoUrl = await uploadPhoto(bPhoto, 'bitacora');
+      } catch(e) {
+        showMsg($('b-msg'), 'Error al subir la foto: ' + e.message, 'err');
+        $('b-submit').disabled = false;
+        return;
+      }
+    }
     const { error } = await supabase.from('bitacora').insert({
       submitted_by: user.id,
       branch: sucursal.value,
@@ -681,6 +697,7 @@
       personal: $('b-personal').value,
       notas: $('b-notas').value,
       temas: temas,
+      photo: photoUrl,
       confirmacion: true
     });
     if (error) { showMsg($('b-msg'), 'Error: ' + error.message, 'err'); $('b-submit').disabled = false; return; }
