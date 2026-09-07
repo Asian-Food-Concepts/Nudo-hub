@@ -551,19 +551,9 @@
     const email = toEmail(raw);
     $('send-code').disabled = true;
     showMsg($('login-msg'), 'Enviando código...', 'info');
-    // Look up the sender's name from profiles so the magic-link email can
-    // greet them by name (better than a generic/spammy-looking message).
-    let userName = '';
-    try {
-      const { data: prof } = await supabase.from('profiles').select('name').eq('email', email).maybeSingle();
-      if (prof && prof.name) userName = prof.name;
-    } catch (_) { /* fall back to generic greeting */ }
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        redirectTo: 'https://asian-food-concepts.github.io/Nudo-hub/app.html',
-        data: { user_name: userName },
-      }
+      options: { redirectTo: 'https://asian-food-concepts.github.io/Nudo-hub/app.html' }
     });
     if (error) { showMsg($('login-msg'), 'Error: ' + error.message, 'err'); $('send-code').disabled = false; return; }
     enterOtpState();
