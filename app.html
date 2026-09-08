@@ -522,7 +522,7 @@
           <div class="field"><label>Propinas</label>
             <div class="radio-group">
               <label><input type="radio" name="b-propinas" value="normal"><span>✅ Normales</span></label>
-              <label><input type="radio" name="b-propinas" value="no_normal"><span>⚠️ No normales</span></label>
+              <label><input type="radio" name="b-propinas" value="no_normal"><span>⚠️ Irregulares</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="b-propinas" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)" placeholder="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)"></textarea>
           </div>
@@ -665,7 +665,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.45";
+  const APP_VERSION = "v0.46";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
