@@ -372,11 +372,11 @@
             <div class="text"><div class="title">Mi horario</div><div class="sub">Próximamente</div></div>
             <div class="arrow">›</div>
           </div>
-          <a class="card" href="#" data-form="plan" id="plan-card" style="display:none;">
+          <div class="card" id="plan-card" style="display:none;opacity:0.5;cursor:not-allowed;filter:grayscale(0.6);">
             <div class="icon icon-sheet">📝</div>
-            <div class="text"><div class="title">Planear horario</div><div class="sub">Arma la semana del equipo</div></div>
+            <div class="text"><div class="title">Planear horario</div><div class="sub">Próximamente</div></div>
             <div class="arrow">›</div>
-          </a>
+          </div>
         </div>
 
         <div class="section-title">Guía</div>
@@ -665,7 +665,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.48";
+  const APP_VERSION = "v0.49";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
