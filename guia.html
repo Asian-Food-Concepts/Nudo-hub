@@ -74,12 +74,23 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
   .doc-now.show { opacity:1; transform:translateY(0); }
   /* scrollspy active state on TOC */
   .doc-toc li a.active { background:#eef1eb; color:#2f3a2f; font-weight:700; border-radius:6px; padding:2px 6px; margin-left:-6px; }
+
+  .doc-toc { background:#fff; border:1px solid #e3e0d8; border-radius:12px; padding:16px 18px; margin:0 0 24px; }
+  .doc-toc-title { font-size:0.85rem; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:#6b6b6b; margin-bottom:10px; }
+  .doc-toc ul { list-style:none; margin:0; padding:0; }
+  .doc-toc li { margin:6px 0; line-height:1.4; }
+  .doc-toc a { color:#2f3a2f; text-decoration:none; font-weight:500; }
+  .doc-toc a:hover { text-decoration:underline; }
+  .doc-toc .toc-h3 { padding-left:16px; font-size:0.92rem; }
+  .doc-toc .toc-h2 { font-weight:600; }
+  .doc-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:16px 0; }
+  .doc-table-wrap table { margin:0; min-width:100%; }
 </style>
 </head>
 <body>
   <header>
     <h1>Guía Operativa</h1>
-    <p style="margin-top:4px;"><a href="/nudo-hub/">← Volver a Nudo Hub</a></p>
+    <p style="margin-top:4px;"><a href="/Nudo-hub/">← Volver a Nudo Hub</a></p>
   </header>
   <div class="doc-page" id="top">
 
@@ -161,7 +172,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </li></ul>
 <p>
 </p>
-<div class="doc-table-wrap"><table><tr><th><p>Métrica Clave
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>Métrica Clave
 </p></th><th><p>Acción para el Equipo
 </p></th><th><p>Resultado Esperado
 </p></th></tr><tr><td><p><b>LTV (Lifetime Value)</b>
@@ -173,7 +184,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p></td></tr><tr><td><p><b>Autenticidad</b>
 </p></td><td><p>Cuidar la <b>Calidad e Ingredientes</b> (temperatura, presentación) como si fuera tu propio ramen.
 </p></td><td><p>El cliente percibe el valor y la justificación del precio.
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <p><b>
 </b></p>
 <h3 class="doc-h3" id="misi-n-y-visi-n">Misión y Visión
@@ -270,7 +281,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </li></ul>
 <p><b>¿De dónde vienen los tés que usamos?
 </b></p>
-<div class="doc-table-wrap"><table><tr><th><p><b>Tipo de té</b>
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p><b>Tipo de té</b>
 </p></th><th><p><b>Origen</b>
 </p></th></tr><tr><td><p>Té Jazmín
 </p></td><td><p>Taiwán
@@ -284,12 +295,12 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p></td><td><p>India
 </p></td></tr><tr><td><p>Matcha
 </p></td><td><p>Japón, Uji
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <p>
 </p>
 <h3 class="doc-h3" id="entradas">Entradas 
 </h3>
-<div class="doc-table-wrap"><table><tr><th><p><b>Platillo</b>
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p><b>Platillo</b>
 </p></th><th><p><b>Pitch corto</b>
 </p></th><th><p><b>Pitch largo</b>
 </p></th><th><p><b>Recomendaciones clave</b>
@@ -319,10 +330,10 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p></td><td><p>Trozos de pastel de arroz glutinoso cocidos y sazonados con una mezcla de carne de cerdo deshebrada, camarón seco, setas shiitake y cilantro, servidos con salsa picante de la casa. Un platillo reconfortante, suave por dentro y muy sabroso.
 </p></td><td><p><b>Muy recomendable para niños</b>: sugerir <b>salsa aparte</b>. Ideal para quienes no desean fideos o buscan una entrada completa.
 </p></td><td><p>Cerdo, Camarón / mariscos, Hongos, Cilantro, Gluten
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <h3 class="doc-h3" id="ramen">Ramen
 </h3>
-<div class="doc-table-wrap"><table><tr><th><p><b>Plato / Nivel de Picante / Fideos</b>
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p><b>Plato / Nivel de Picante / Fideos</b>
 </p></th><th><p><b>Pitch Corto</b>
 </p></th><th><p><b>Pitch Largo</b>
 </p></th><th><p><b>Recomendaciones Clave</b>
@@ -357,12 +368,12 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p></td><td><p>Descubre la intensidad del Biangbiang Mien, un plato estilo Xi’an sin caldo. Consiste en fideos anchos, gruesos y hechos de harina de trigo vegana, cubiertos con una potente salsa de aceite rojo y chiles secos. Es una pasta salteada intensa, auténtica y con un nivel de picante significativo. Es la opción ideal para quienes buscan sabores muy fuertes y picantes, y un plato más sustancioso que una sopa.
 </p></td><td><p>Amantes del picante y sabores intensos. <b>No lleva caldo</b> (es una pasta salteada).
 </p></td><td><p>Trigo, Soya (En salsa)
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <h3 class="doc-h3"><b>
 </b></h3>
 <h3 class="doc-h3" id="descripciones-para-fideos">Descripciones para Fideos 
 </h3>
-<div class="doc-table-wrap"><table><tr><th><p><b>Fideos</b>
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p><b>Fideos</b>
 </p></th><th><p><b>Uso Principal</b>
 </p></th><th><p><b>Ingredientes Principales</b>
 </p></th><th><p><b>Gluten</b>
@@ -397,10 +408,10 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p></td><td><p>
 </p></td><td><p>“Son fideos elaborados con raíz de konjac, una planta asiática. No tienen gluten ni calorías, y su textura es más elástica y ligera. Son una excelente opción si el cliente busca algo más saludable o bajo en carbohidratos.”
 </p></td><td><p>Aclarar que <b>no es la opción tradicional</b>, pero puede ser un <b>sustituto sin gluten ni calorías</b> en casi cualquier plato.
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <h3 class="doc-h3" id="salsas">Salsas
 </h3>
-<div class="doc-table-wrap"><table><tr><th><p><b>Salsa</b>
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p><b>Salsa</b>
 </p></th><th><p><b>Descripción Corta</b>
 </p></th><th><p><b>Uso en Nudo</b>
 </p></th><th><p><b>Posibles Alérgenos</b>
@@ -420,14 +431,14 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p></td><td><p>Base de varios caldos y marinados (<i>Ramen de Res Taiwanés</i>, <i>Tonkotsu Japonés</i>, <i>Chashu</i>). También se puede ofrecer al cliente para resaltar el sabor umami.
 </p></td><td><p>Soya, Gluten (por el trigo fermentado)
 </p></td><td><p>Ideal para <b>realzar sabores sin agregar picante</b>. Ofrecer solo en pequeñas cantidades; es naturalmente salada.
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <p>
 </p>
 <h3 class="doc-h3"><b>
 </b></h3>
 <h3 class="doc-h3" id="estrategia-de-recomendaci-n-seg-n-perfil-de-cliente">Estrategia de Recomendación según Perfil de Cliente
 </h3>
-<div class="doc-table-wrap"><table><tr><th><p><b>Perfil del Cliente</b>
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p><b>Perfil del Cliente</b>
 </p></th><th><p><b>Qué Recomendar</b>
 </p></th><th><p><b>Frase Sugerida para Decir</b>
 </p></th><th><p><b>Nota Interna (Importante)</b>
@@ -479,7 +490,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p> <p>• Pastel de Arroz, Pepinillo Refresh, Edamame Picante
 </p></td><td><p>“Si prefieren algo sin caldo, los Biang Biang son ideales: fideos anchos con aceite rojo y mucha textura.”
 </p></td><td><p>Recalcar: <b>Biang Biang no tiene sopa</b>.
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <div class="doc-backtop"><a href="#top">↑ Volver arriba</a></div>
 <h2 class="doc-h2" id="servicio">Servicio
 </h2>
@@ -523,26 +534,26 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p>
 <ul><li><b>Bienvenida (0–1 min):</b> saludo, pregunta el numero de invitados para asignar una mesa.
 </li></ul>
-<div class="doc-table-wrap"><table><tr><th><p>“Bienvenidos a Nudo”
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>“Bienvenidos a Nudo”
 </p> <p>
 </p> <p>“¿Cuantos son?”
-</p></th></tr></table></div>
+</p></th></tr></table></div></div>
 <ul><li><b>Asignación de mesa:</b> <u>Guiar, acompañar y acomodar</u> los invitados a su mesa. no señalar de lejos; preguntar por necesidades especiales. Al sentar, llevar cubito de cubiertos y porta palillos. Si no hay menú físico disponible, indicar menú por QR.
 </li></ul>
-<div class="doc-table-wrap"><table><tr><th><p>“Soy [NOMBRE], ahorita regreso con la carta” 
-</p></th></tr></table></div>
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>“Soy [NOMBRE], ahorita regreso con la carta” 
+</p></th></tr></table></div></div>
 <ul><li><b>Detectar si es primera visita:</b> 
 </li></ul>
-<div class="doc-table-wrap"><table><tr><th><p>“¿Es la primera vez que nos visitan?” 
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>“¿Es la primera vez que nos visitan?” 
 </p> <p>Si sí → usar pitch de Nudo + 1 recomendación concreta.
 </p></th><th><p><b>Versión 15 s:</b> “Bienvenidos a Nudo. Somos un concepto asiático de ramen y boba. Tenemos un menú compacto con 5 entradas y 6 platos fuertes, cada uno inspirado en un país de Asia. En bebidas, también tenemos boba y tés con sabores de varios países asiáticos.”
 </p> <p><b>Versión 30 s:</b> “Bienvenidos a Nudo. Somos un restaurante asiático enfocado en dos cosas: ramen/noodles y boba tea. Nuestro menú es intencionalmente corto: 5 entradas y 6 platos fuertes, y cada fuerte representa un país de Asia, así pueden probar sabores diferentes en una sola visita. En bebidas tenemos boba y tés representativos de varias partes de Asia, además de los clásicos, para que siempre haya algo conocido y algo para explorar.”
-</p></th></tr></table></div>
+</p></th></tr></table></div></div>
 <p><b>
 </b></p>
 <ul><li><b>Primera oferta (Bebidas):</b> 
 </li></ul>
-<div class="doc-table-wrap"><table><tr><th><p>“Antes de que veamos los platos, ¿les traigo algo para tomar?
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>“Antes de que veamos los platos, ¿les traigo algo para tomar?
 </p> <p>Aquí tenemos nuestras <b>bebidas estilo Asia</b>.
 </p> <p>¿Prefieren <b>algo más refrescante</b> como nuestros fruity ice tea o slush,
 </p> <p>o <b>algo con leche </b>como chai o thai rojo?”
@@ -561,10 +572,10 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </li> <li>Okinawa Brown Sugar Tea
 </li> <li>Okinawa Brown Sugar
 </li> <li>Taiwanese Classic
-</li></th></tr></table></div>
+</li></th></tr></table></div></div>
 <p><b>Segunda oferta (Entradas):</b> 
 </p>
-<div class="doc-table-wrap"><table><tr><th><p>“¿Prefieren algo <b>ligero</b> como Pepinillo Refresh y Edamame Picante, o algo <b>más sustancioso</b> como Wontons y Pollo Frito para compartir?”
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>“¿Prefieren algo <b>ligero</b> como Pepinillo Refresh y Edamame Picante, o algo <b>más sustancioso</b> como Wontons y Pollo Frito para compartir?”
 </p> <p>
 </p> <p>“Para la mesa recomiendo pedir <b>una entrada más completo </b>mientras llegan los ramen. Puede ser <b>Wontons</b> y <b>Pollo Frito</b> para compartir,o algo más <b>ligero</b> como Pepinillo y Edamame.
 </p> <p>¿Con cuál empezamos?”
@@ -576,18 +587,18 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </b></p> <li><b>Wontons en Salsa Roja</b> — suaves, sabrosos, se pueden pedir con salsa aparte
 </li> <li><b>Pollo Frito Lemongrass</b> — crujiente y aromático, ideal para la mesa
 </li> <li><b>Pastel de Arroz
-</b></li></th></tr></table></div>
+</b></li></th></tr></table></div></div>
 <ul><li><b>Degustación de caldos (opcional): 
 </b></li></ul>
-<div class="doc-table-wrap"><table><tr><th><p>“Perfecto, mientras se preparan sus entradas, ¿quieren probar una <b>degustación de nuestros caldos</b>? Es una forma sencilla de descubrir cuál les gusta más <b>antes de pedir el ramen completo</b>.”<b>
-</b></p></th></tr></table></div>
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>“Perfecto, mientras se preparan sus entradas, ¿quieren probar una <b>degustación de nuestros caldos</b>? Es una forma sencilla de descubrir cuál les gusta más <b>antes de pedir el ramen completo</b>.”<b>
+</b></p></th></tr></table></div></div>
 <ul><li><b>Toma de orden (3–5 min):</b> usar comanda, <u>repetir orden completa</u> y aclarar modificaciones.
 </li><li><b>Captura en sistema / comanda:</b> usar el POS o comanda móvil.
 </li><li><b>Entrega de bebidas y estar al pendiente:</b> entregar y observar. Ir un paso adelante: traer salsa si la mencionan, cambiar palillos si se cayeron, rellenar agua sin que lo pidan.
 </li><li><b>Entrega de alimentos:</b> primero calientes, luego fríos; confirmar condimentos.
 </li><li><b>Chequeo (2–3 min):</b> 
 </li></ul>
-<div class="doc-table-wrap"><table><tr><th><p>“¿Cómo están los ramen / el caldo / la bebida?” Si algo no está bien → script de recuperación.
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>“¿Cómo están los ramen / el caldo / la bebida?” Si algo no está bien → script de recuperación.
 </p></th><th><p><b>Línea 1 (reconocer):</b> “Gracias por decírmelo / gracias por avisarnos, no es lo que queremos que pase.”
 </p> <p><b>Línea 2 (solución):</b> “Se lo puedo cambiar ahora mismo / se lo puedo rehacer / se lo puedo descontar de la cuenta.”
 </p> <p>Este formato sirve porque baja la molestia del cliente primero y luego da una salida clara.
@@ -596,12 +607,12 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </li> <li><b>Tardó mucho:</b> “Gracias por avisarme, el tiempo sí se nos fue.” → “Le ofrezco cambiarle a algo que salga más rápido / ajustar la cuenta.”
 </li> <li><b>Bebida no era lo que esperaba:</b> “Gracias por decirlo, la boba debe salir igual siempre.” → “Se la puedo rehacer con otro sabor sin costo.”
 </li> <p><b>Reglas:</b> agradecer primero, nombrar el error, ofrecer <b>solo 1</b> solución concreta, y escalar al capitán si la mesa sigue molesta o si es un grupo grande.
-</p></th></tr></table></div>
+</p></th></tr></table></div></div>
 <ul><li><b>Cuenta y cobro:</b> presentar cuenta, confirmar forma de pago, cobrar ahí mismo; revisar cambio y ticket.
 </li><li><b>Feedback y reseña (a criterio):</b> 
 </li></ul>
-<div class="doc-table-wrap"><table><tr><th><p>“¿Les gustó la comida y el servicio?” Si sí: “¿Nos ayudarían con una reseña en Google Maps? Le ayuda a más gente a encontrarnos como <i>Nudo – ramen y boba</i>.” Alternativa: “Si les gustó, una reseña rápida en Google nos ayuda muchísimo.” Si no: preguntar motivo, disculparse y decir que esperamos verlos de nuevo para hacerlo mejor.
-</p></th></tr></table></div>
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>“¿Les gustó la comida y el servicio?” Si sí: “¿Nos ayudarían con una reseña en Google Maps? Le ayuda a más gente a encontrarnos como <i>Nudo – ramen y boba</i>.” Alternativa: “Si les gustó, una reseña rápida en Google nos ayuda muchísimo.” Si no: preguntar motivo, disculparse y decir que esperamos verlos de nuevo para hacerlo mejor.
+</p></th></tr></table></div></div>
 <ul><li><b>Despedida y montaje:</b> despedir, limpiar y resetear mesa para que quede en estándar.
 </li></ul>
 <h3 class="doc-h3" id="uso-de-vasos-para-llevar-para-consumo-en-el-salon">Uso de vasos para llevar para consumo en el salon
@@ -651,7 +662,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </li></ol>
 <p>
 </p>
-<div class="doc-table-wrap"><table><tr><th><p>Cortesía sugerida
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>Cortesía sugerida
 </p></th><th><p>Consideración de Operación
 </p></th><th><p>Descripción para el cliente (Sugerencia)
 </p></th></tr><tr><td><p><b>Pepinillo Refresh</b>
@@ -660,7 +671,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p></td></tr><tr><td><p><b>Juego de Té Caliente</b> (menos costoso para Nudo)
 </p></td><td><p>Preferir cuando la <b>cocina</b> esté más ocupada que la barra, o si el clima lo amerita.
 </p></td><td><p>&quot;Disculpe la espera, la cocina está al máximo. Queremos regalarles un <b>Juego de Té Caliente</b> de la casa para que disfruten mientras llegan sus platos.&quot;
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <p>
 </p>
 <p><b>Objetivo:</b> La cortesía debe ser un acto de hospitalidad <b>proactivo</b>, sin que el cliente tenga que solicitarla, para transformar una posible queja en una experiencia de servicio positiva.
@@ -682,7 +693,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </li></ol>
 <p>
 </p>
-<div class="doc-table-wrap"><table><tr><th><p>Mentalidad de Recuperación
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>Mentalidad de Recuperación
 </p></th><th><p>Acción Correcta
 </p></th></tr><tr><td><p><b>Objetivo</b>
 </p></td><td><p>Asegurar que el cliente pruebe un producto nuevo y genere un vínculo positivo con la marca.
@@ -690,7 +701,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p></td><td><p><b>Asegurar Cliente Recurrente (High LTV)</b>.
 </p></td></tr><tr><td><p><b>Enfoque</b>
 </p></td><td><p>No descontar ítems ya ordenados, sino regalar un <b>ítem nuevo/extra</b> para mejorar la experiencia.
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <p>
 </p>
 <p><b>Importante:</b> La recuperación de servicio es una inversión para asegurar la lealtad del cliente. Un cliente que recibe una respuesta proactiva y generosa ante un error es más propenso a regresar. La meta principal es asegurar un cliente recurrente.
@@ -727,7 +738,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </li><li><b>Tom Kha Tailandés y Laksa Singapurense</b> deben enviarse <b>SIEMPRE</b> con una selección de proteína: <b>Mixto, Camarón, Pollo, Vegetariano o Vegano.</b>
 </li><li><b>Uso Correcto de Extras:</b> Para evitar duplicidades y costos incorrectos, use el botón específico para el extra.
 </li></ul>
-<div class="doc-table-wrap"><table><tr><th><p>Situación
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>Situación
 </p></th><th><p>Acción Correcta en POS
 </p></th><th><p>Verificación de Costo
 </p></th></tr><tr><td><p>El cliente pide <b>Camarón</b> en su Laksa.
@@ -741,7 +752,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p> <p>
 </p> <p>No existe 75% (agregando 25% y 50%)
 </p></td><td><p>
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <ul><li><b>Verificación de Costo:</b> <b>Siempre revise el precio final del plato en la pantalla del POS</b> después de agregar modificadores para asegurarse de que el cargo por extras sea correcto.
 </li><li><b>Comentarios de Cocina:</b> Use la función de comentarios/notas solo para solicitudes especiales que no tengan un botón predefinido (ej. &quot;caldo muy caliente&quot;, &quot;salsa a un lado, porción doble&quot;).
 </li></ul>
@@ -749,7 +760,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </h3>
 <p><b>Roma Norte
 </b></p>
-<div class="doc-table-wrap"><table><tr><th><p><b>Ubicación</b>
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p><b>Ubicación</b>
 </p></th><th><p><b>Días</b>
 </p></th><th><p><b>Método de Pago</b>
 </p></th></tr><tr><td><p><b>Salón</b>
@@ -761,14 +772,14 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p></td></tr><tr><td><p><b>Mostrador para llevar</b>
 </p></td><td><p>Todos los días
 </p></td><td><p>Netpay
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <p><b>
 </b></p>
 <p><b>Del Valle</b>
 </p>
 <p><b>
 </b></p>
-<div class="doc-table-wrap"><table><tr><th><p><b>Ubicación</b>
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p><b>Ubicación</b>
 </p></th><th><p><b>Días</b>
 </p></th><th><p><b>Método de Pago</b>
 </p></th></tr><tr><td><p><b>Salón</b>
@@ -780,7 +791,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p></td></tr><tr><td><p><b>Mostrador para llevar</b>
 </p></td><td><p>Todos los días
 </p></td><td><p>GetNet
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <p>
 </p>
 <h3 class="doc-h3" id="pol-tica-de-reservaciones">Política de Reservaciones 
@@ -843,7 +854,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 <div class="doc-backtop"><a href="#top">↑ Volver arriba</a></div>
 <h2 class="doc-h2" id="contactos-de-provedores-de-servicios-claves">Contactos de provedores de servicios claves
 </h2>
-<div class="doc-table-wrap"><table><tr><th><p>Area
+<div class="doc-table-wrap"><div class="doc-table-wrap"><table><tr><th><p>Area
 </p></th><th><p>Contacto
 </p></th><th><p>Comentarios
 </p></th></tr><tr><td><p>Electrista
@@ -923,7 +934,7 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 </p></td><td><p>Luis Alberto/Daniela 
 </p> <p>+52 1 55 6787 9641
 </p></td><td><p>
-</p></td></tr></table></div>
+</p></td></tr></table></div></div>
 <p>
 </p>
 <div class="doc-backtop"><a href="#top">↑ Volver arriba</a></div>
