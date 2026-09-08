@@ -351,7 +351,7 @@
           </a>
           <a class="card" href="#" data-form="compras">
             <div class="icon icon-form">🛒</div>
-            <div class="text"><div class="title">Solicitud de Compras</div><div class="sub">Solicita compras o insumos</div></div>
+            <div class="text"><div class="title">Solicitud de Compras y Reposición</div><div class="sub">Solicita compras o reposición de insumos</div></div>
             <div class="arrow">›</div>
           </a>
         </div>
@@ -567,7 +567,7 @@
       <div id="form-compras" class="form-page">
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card" id="card-compras">
-          <h2>🛒 Solicitud de Compras</h2>
+          <h2>🛒 Solicitud de Compras y Reposición</h2>
           <div class="field"><label>Sucursal</label>
             <div class="radio-group">
               <label><input type="radio" name="c-sucursal" value="Roma Norte"><span>Roma Norte</span></label>
@@ -665,7 +665,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.47";
+  const APP_VERSION = "v0.48";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
