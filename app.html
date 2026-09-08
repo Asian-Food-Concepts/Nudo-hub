@@ -121,6 +121,7 @@
     text-decoration: none; color: var(--ink);
     box-shadow: 0 1px 3px var(--shadow);
     transition: transform 0.08s ease;
+    position: relative;
   }
   a.card:active { transform: scale(0.98); }
   .icon {
@@ -362,6 +363,7 @@
             <div class="icon icon-form">📋</div>
             <div class="text"><div class="title">Estatus de solicitudes</div><div class="sub">Da seguimiento a tus solicitudes</div></div>
             <div class="arrow">›</div>
+            <span id="estatus-badge" class="badge hidden" style="position:absolute;top:8px;right:34px;background:#e53935;color:#fff;border-radius:999px;min-width:20px;height:20px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 6px;"></span>
           </a>
         </div>
 
@@ -665,7 +667,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.51";
+  const APP_VERSION = "v0.52";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -837,6 +839,26 @@
       if (isLeader) { planCard.style.display = ''; }
       else { planCard.style.display = 'none'; }
     }
+    // Owner follow-up badge on Estatus de solicitudes (Dueño only)
+    if (role === 'Dueño') updateEstatusBadge();
+  }
+
+  // Count requests needing owner follow-up (non-terminal status) and show a
+  // red badge on the Estatus card. Terminal = Entregado (compra) / Completado (mant).
+  async function updateEstatusBadge() {
+    const badge = document.getElementById('estatus-badge');
+    if (!badge) return;
+    try {
+      const [m, c] = await Promise.all([
+        supabase.from('maintenance_requests').select('status'),
+        supabase.from('purchases').select('status')
+      ]);
+      const mantOpen = (m.data || []).filter(r => r.status && r.status !== 'Completado').length;
+      const compOpen = (c.data || []).filter(r => r.status && r.status !== 'Entregado').length;
+      const n = mantOpen + compOpen;
+      if (n > 0) { badge.textContent = n > 99 ? '99+' : n; badge.classList.remove('hidden'); }
+      else { badge.classList.add('hidden'); }
+    } catch(e) { /* non-fatal */ }
   }
 
   // Force a signed-out, logged-in user back to the login screen (used when a
