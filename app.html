@@ -667,7 +667,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.53";
+  const APP_VERSION = "v0.54";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1433,15 +1433,22 @@
       return;
     }
 
-    // Group by outlet, preserving order (Roma Norte then Del Valle)
-    const groups = { 'Roma Norte': [], 'Del Valle': [], 'Bodega': [], other: [] };
-    visible.forEach(r => { (groups[r.branch] || groups.other).push(r); });
+    // Group by STATUS (all Solicitado together, all in-process together, then
+    // completed), so the owner sees the follow-up queue at a glance.
+    const statusOrder = ['Solicitado', 'Comprado', 'Comunicado con proveedor', 'Entregado', 'Completado'];
+    const groups = {};
+    visible.forEach(r => {
+      const key = r.status || 'Otro';
+      (groups[key] = groups[key] || []).push(r);
+    });
 
     let html = '';
-    ['Roma Norte', 'Del Valle', 'Bodega', 'other'].forEach(branch => {
-      const list = groups[branch];
-      if (!list.length) return;
-      html += `<div class="section-title" style="margin-top:6px;">${branch === 'other' ? 'Otra' : branch}</div>`;
+    statusOrder.forEach(st => {
+      const list = groups[st];
+      if (!list || !list.length) return;
+      const label = statusMeta({ kind: 'comp' })[st] ? statusMeta({ kind: 'comp' })[st].label
+        : (statusMeta({ kind: 'mant' })[st] ? statusMeta({ kind: 'mant' })[st].label : st);
+      html += `<div class="section-title" style="margin-top:6px;">${label}</div>`;
       list.forEach(r => {
         const linkHtml = r.link ? `<div style="margin:6px 0 4px;"><a href="${escAttr(r.link)}" target="_blank" rel="noopener" style="color:var(--accent);font-size:0.9rem;font-weight:600;">🔗 Abrir enlace</a></div>` : '';
         const photosHtml = (r.photo_urls && r.photo_urls.length) ? `<div style="display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;">${r.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" onclick="window.open('${escAttr(u)}','_blank')" />`).join('')}</div>` : '';
