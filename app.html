@@ -665,7 +665,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.46";
+  const APP_VERSION = "v0.47";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -824,15 +824,17 @@
     $('header-sub').textContent = 'Bienvenido';
     // Role-gate the Bitácora card: only Dueño, Capitán, Gerente see it
     const allowed = ['Dueño', 'Capitán', 'Gerente'];
+    const roleGroup = planRoleGroup(role);
+    const isLeader = allowed.includes(role) || roleGroup === 'Capitán';
     const bitCard = document.querySelector('[data-form="bitacora"]');
     if (bitCard) {
-      if (allowed.includes(role)) { bitCard.style.display = ''; }
+      if (isLeader) { bitCard.style.display = ''; }
       else { bitCard.style.display = 'none'; }
     }
     // Role-gate the schedule planner: Dueño, Capitán, Gerente
     const planCard = document.getElementById('plan-card');
     if (planCard) {
-      if (allowed.includes(role)) { planCard.style.display = ''; }
+      if (isLeader) { planCard.style.display = ''; }
       else { planCard.style.display = 'none'; }
     }
   }
@@ -1126,6 +1128,20 @@
   function planShiftForSlot(slot, dayIdx) {
     const date = fmtDate(new Date(planState.weekStart.getTime() + dayIdx*86400000));
     return planState.shifts.find(x => x.slot === slot && x.shift_date === date);
+  }
+
+  // Normalize a profile role string to a canonical planner group.
+  // Real values vary: 'Capitán de Piso'/'Capitána de Piso'/'Capitán'/'Capitána',
+  // 'Mesero', 'Encargada/Encargado de Barra'/'Barra', 'Cocina', 'Gerente Regional'/'Gerente'.
+  function planRoleGroup(role) {
+    const r = (role || '').toLowerCase();
+    if (r.includes('capit')) return 'Capitán';
+    if (r.includes('mesero') || r.includes('piso') || r.includes('floor')) return 'Mesero';
+    if (r.includes('barra') || r.includes('bar')) return 'Barra';
+    if (r.includes('cocina') || r.includes('produccion')) return 'Cocina';
+    if (r.includes('loza') || r.includes('lava')) return 'Loza';
+    if (r.includes('gerente') || r.includes('dueño') || r.includes('admin')) return 'Capitán';
+    return 'Mesero';
   }
 
   // Staff eligible for a role (normalized role match + branch match).
