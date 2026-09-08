@@ -665,7 +665,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.49";
+  const APP_VERSION = "v0.50";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1332,11 +1332,21 @@
 // ---- ESTATUS DE SOLICITUDES ----
   // Loads maintenance + purchases requests from Supabase and renders them
   // grouped by outlet. Dueño/Gerente see all + can flip status inline.
+  // Per-type status flows. Compras: Solicitado → Comprado → Entregado.
+  // Mantenimiento: Solicitado → Completado. Keyed by row kind ('comp'/'mant').
   const STATUS_META = {
-    'Pendiente': { label: '🔴 Pendiente', next: 'En proceso' },
-    'En proceso': { label: '🟡 En proceso', next: 'Resuelto' },
-    'Resuelto':  { label: '🟢 Resuelto',  next: null }
+    comp: {
+      'Solicitado': { label: '🔴 Solicitado', next: 'Comprado' },
+      'Comprado':   { label: '🟡 Comprado',   next: 'Entregado' },
+      'Entregado':  { label: '🟢 Entregado',  next: null }
+    },
+    mant: {
+      'Solicitado':  { label: '🔴 Solicitado',  next: 'Completado' },
+      'Completado':  { label: '🟢 Completado',  next: null }
+    }
   };
+  // Look up the status meta for a row by its kind.
+  function statusMeta(r) { return STATUS_META[r.kind] || {}; }
   // ADMIN_ROLES = who can CHANGE status (Dueño only for now, per Ben)
   const ADMIN_ROLES = ['Dueño'];
 
@@ -1413,14 +1423,14 @@
           ${linkHtml}
           ${photosHtml}
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:8px;flex-wrap:wrap;">`;
-        if (isAdmin && STATUS_META[r.status] && STATUS_META[r.status].next) {
-          html += `<div>Status: <span style="font-weight:600;">${STATUS_META[r.status].label}</span></div>
+        if (isAdmin && statusMeta(r)[r.status] && statusMeta(r)[r.status].next) {
+          html += `<div>Status: <span style="font-weight:600;">${statusMeta(r)[r.status].label}</span></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;background:transparent;border:1px solid var(--border);color:var(--ink);" data-dl-pdf="${r.table}|${r.id}">📄 PDF</button>
-              <button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;" data-set-status="${r.table}|${r.id}|${STATUS_META[r.status].next}">Marcar ${STATUS_META[r.status].next}</button>
+              <button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;" data-set-status="${r.table}|${r.id}|${statusMeta(r)[r.status].next}">Marcar ${statusMeta(r)[r.status].next}</button>
             </div>`;
         } else {
-          html += `<div>Status: <span style="font-weight:600;">${STATUS_META[r.status] ? STATUS_META[r.status].label : esc(r.status)}</span></div>
+          html += `<div>Status: <span style="font-weight:600;">${statusMeta(r)[r.status] ? statusMeta(r)[r.status].label : esc(r.status)}</span></div>
             ${isAdmin ? `<button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;background:transparent;border:1px solid var(--border);color:var(--ink);" data-dl-pdf="${r.table}|${r.id}">📄 PDF</button>` : ''}`;
         }
         html += `</div></div>`;
@@ -1490,7 +1500,7 @@
     if (!w) { showMsg($('estatus-msg'), 'Permite las ventanas emergentes para descargar el PDF', 'err'); return; }
     const branch = d.branch || '—';
     const date = d.created_at ? new Date(d.created_at).toLocaleString('es-MX') : '—';
-    const statusLabel = (STATUS_META[d.status] && STATUS_META[d.status].label) || d.status || '—';
+    const statusLabel = (statusMeta({ kind: table === 'purchases' ? 'comp' : 'mant' })[d.status] && statusMeta({ kind: table === 'purchases' ? 'comp' : 'mant' })[d.status].label) || d.status || '—';
     const title = table === 'purchases' ? 'Solicitud de Compra' : 'Solicitud de Mantenimiento (Reparación)';
     const kind = table === 'purchases' ? 'Compra' : 'Reparación';
     const rows = table === 'purchases'
@@ -1614,7 +1624,7 @@
       priority: prioridad ? prioridad.value : 'Normal',
       photo_url: photoUrls[0] || '',
       photo_urls: photoUrls,
-      status: 'Pendiente'
+      status: 'Solicitado'
     });
     if (error) { showMsg($('m-msg'), 'Error: ' + error.message, 'err'); $('m-submit').disabled = false; return; }
     $('m-msg').textContent = '✅ Solicitud de mantenimiento enviada'; $('m-msg').className = 'msg ok'; $('m-msg').classList.remove('hidden');
@@ -1646,7 +1656,7 @@
       link: $('c-link').value.trim(),
       notes: $('c-notes').value.trim(),
       photo_urls: photoUrls,
-      status: 'Pendiente'
+      status: 'Solicitado'
     });
     if (error) { showMsg($('c-msg'), 'Error: ' + error.message, 'err'); $('c-submit').disabled = false; return; }
     $('c-msg').textContent = '✅ Solicitud de compra enviada'; $('c-msg').className = 'msg ok'; $('c-msg').classList.remove('hidden');
