@@ -519,6 +519,13 @@
             </div>
             <textarea class="t-detail hidden" data-for="t-promos" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué descuentos y cortesías, y por qué?" placeholder="¿Qué descuentos y cortesías, y por qué?"></textarea>
           </div>
+          <div class="field"><label>Propinas</label>
+            <div class="radio-group">
+              <label><input type="radio" name="b-propinas" value="normal"><span>✅ Normales</span></label>
+              <label><input type="radio" name="b-propinas" value="no_normal"><span>⚠️ No normales</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="b-propinas" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)" placeholder="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)"></textarea>
+          </div>
           <div class="field"><label>Personal / horas extra / cambios de horario</label><textarea id="b-personal" placeholder="Quién, qué cambió, horas extra, por qué (opcional)"></textarea></div>
           <div class="field"><label>Notas / incidentes <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label><textarea id="b-notas"></textarea></div>
           <div class="field"><label>📷 Foto <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label>
@@ -658,7 +665,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.44";
+  const APP_VERSION = "v0.45";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -889,6 +896,17 @@
       if (show) {
         box.placeholder = (r.value === 'ok_nota') ? (box.dataset.phOk || '') : (box.dataset.phProblema || '');
       }
+    });
+  });
+
+  // Propinas toggle: show the detail box only when "No normales" is selected
+  document.querySelectorAll('#form-bitacora input[name="b-propinas"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const box = document.querySelector('#form-bitacora textarea[data-for="b-propinas"]');
+      if (!box) return;
+      const show = (r.value === 'no_normal');
+      box.classList.toggle('hidden', !show);
+      if (show) box.placeholder = box.dataset.phProblema || '';
     });
   });
 
@@ -1533,6 +1551,8 @@
       personal: $('b-personal').value,
       notas: $('b-notas').value,
       temas: temas,
+      propinas: (document.querySelector('input[name="b-propinas"]:checked') || {}).value || 'normal',
+      propinas_detalle: (document.querySelector('textarea[data-for="b-propinas"]') || {}).value || '',
       photo: photoUrl,
       confirmacion: true
     });
