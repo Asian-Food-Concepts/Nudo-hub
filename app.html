@@ -206,10 +206,10 @@
   .notif-toggle:active { opacity: 0.85; }
 
   /* Form page */
-  .form-page { display: none; }
+  .form-page { display: none; padding: 16px; }
   .form-page.active { display: block; animation: pageIn 0.22s ease; }
   @keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  #home-view { animation: pageIn 0.22s ease; }
+  #home-view { animation: pageIn 0.22s ease; padding: 16px; }
   .back {
     position: sticky; top: 0; z-index: 20;
     display: flex; align-items: center; gap: 8px;
@@ -382,6 +382,15 @@
 
       <!-- HOME -->
       <div id="home-view">
+        <div class="card-list" style="margin-bottom:4px;">
+          <div class="card" style="cursor:default;">
+            <div class="icon icon-form">🔑</div>
+            <div class="text">
+              <div class="title">Códigos de sucursal</div>
+              <div class="sub">Roma Norte: <b>5626</b> · Del Valle: <b>139678</b></div>
+            </div>
+          </div>
+        </div>
         <div class="section-title">Formularios</div>
         <div class="card-list">
           <a class="card" href="#" data-form="bitacora">
@@ -723,7 +732,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.62";
+  const APP_VERSION = "v0.63";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
