@@ -184,6 +184,27 @@
   }
   .theme-switch button[aria-pressed="true"] { opacity: 1; background: var(--accent); }
 
+  /* Push notification toggle (iOS-style switch) */
+  .notif-toggle {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 10px; cursor: pointer;
+    user-select: none; -webkit-user-select: none;
+  }
+  .notif-toggle .notif-label { font-size: 0.8rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .notif-toggle .switch {
+    position: relative; width: 40px; height: 24px; flex-shrink: 0;
+    background: var(--dot); border-radius: 12px; transition: background 0.2s ease;
+  }
+  .notif-toggle .switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 20px; height: 20px; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s ease;
+  }
+  .notif-toggle.on .switch { background: var(--green); }
+  .notif-toggle.on .switch::after { transform: translateX(16px); }
+  .notif-toggle:active { opacity: 0.85; }
+
   /* Form page */
   .form-page { display: none; }
   .form-page.active { display: block; animation: pageIn 0.22s ease; }
@@ -340,7 +361,10 @@
       <div class="userbar">
         <span class="who" id="user-name">Equipo</span>
         <div class="userbar-right">
-          <button class="notif-btn" id="notif-btn" title="Activar notificaciones" style="background:none;border:none;font-size:1.2rem;cursor:pointer;padding:4px;">🔔</button>
+          <div class="notif-toggle" id="notif-toggle" role="switch" aria-checked="false" aria-label="Notificaciones" title="Recibe avisos en tu teléfono">
+            <span class="notif-label">🔔 Notificaciones</span>
+            <span class="switch"></span>
+          </div>
           <div class="theme-switch" id="theme-switch" role="group" aria-label="Tema">
             <button type="button" data-theme-opt="light" title="Claro">☀️</button>
             <button type="button" data-theme-opt="dark" title="Oscuro">🌙</button>
@@ -693,7 +717,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.56";
+  const APP_VERSION = "v0.57";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1875,7 +1899,12 @@
 
   // ---- PUSH NOTIFICATIONS ----
   const VAPID_PUBLIC = 'BDoOetZXhZRlNEPW10oucp4Y_vgCZaafyb2SDlxz_aJymKD9bGnZvgclTPiHHj11FjluYYVjhlgjum5wq0yqqOQ';
-  const notifBtn = $('notif-btn');
+  const notifToggle = $('notif-toggle');
+
+  function setNotifState(on) {
+    notifToggle.classList.toggle('on', on);
+    notifToggle.setAttribute('aria-checked', on ? 'true' : 'false');
+  }
 
   function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -1912,10 +1941,10 @@
         auth: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth'))))
       }, { onConflict: 'endpoint' });
       if (error) throw error;
-      notifBtn.textContent = '🔔';
-      notifBtn.title = 'Notificaciones activadas';
+      setNotifState(true);
       haptic(8);
     } catch (e) {
+      setNotifState(false);
       showMsg($('login-msg'), 'No se pudieron activar las notificaciones: ' + e.message, 'err');
     }
   }
@@ -1929,12 +1958,11 @@
       if (user) {
         await supabase.from('push_subscriptions').delete().eq('user_id', user.id);
       }
-      notifBtn.textContent = '🔕';
-      notifBtn.title = 'Activar notificaciones';
+      setNotifState(false);
     } catch (e) { /* non-fatal */ }
   }
 
-  notifBtn.addEventListener('click', async () => {
+  notifToggle.addEventListener('click', async () => {
     const sub = await getPushSubscription();
     if (sub) await unsubscribeFromPush();
     else await subscribeToPush();
@@ -1943,8 +1971,7 @@
   // On load, reflect the current subscription state
   (async function initNotifState() {
     const sub = await getPushSubscription();
-    if (sub) { notifBtn.textContent = '🔔'; notifBtn.title = 'Notificaciones activadas'; }
-    else { notifBtn.textContent = '🔕'; notifBtn.title = 'Activar notificaciones'; }
+    setNotifState(!!sub);
   })();
 
   // ---- INIT ----
