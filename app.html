@@ -723,7 +723,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.60";
+  const APP_VERSION = "v0.61";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1663,16 +1663,24 @@
     const afluencia = document.querySelector('input[name="b-afluencia"]:checked');
     const sucursal = document.querySelector('input[name="b-sucursal"]:checked');
     if (!sucursal || !corte || !afluencia) { showMsg($('b-msg'), 'Selecciona sucursal, corte y afluencia', 'err'); return; }
+    // All theme toggles + propinas are mandatory (Ben 2026-09-08)
+    const requiredThemes = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','promos'];
+    const missingTheme = requiredThemes.find(t => !document.querySelector(`input[name="t-${t}"]:checked`));
+    if (missingTheme) {
+      const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', promos:'Descuentos y cortesías' };
+      showMsg($('b-msg'), `Falta calificar: ${themeLabels[missingTheme]}`, 'err'); return;
+    }
+    const propinasSel = document.querySelector('input[name="b-propinas"]:checked');
+    if (!propinasSel) { showMsg($('b-msg'), 'Selecciona el estado de las propinas', 'err'); return; }
     if (!$('b-confirm').checked) { showMsg($('b-msg'), 'Confirma el cierre', 'err'); return; }
     // Build the temas object from all 8 theme toggles + their detail texts
     const temas = {};
-    ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','promos'].forEach(t => {
+    requiredThemes.forEach(t => {
       const sel = document.querySelector(`input[name="t-${t}"]:checked`);
-      if (!sel) { temas[t] = { ok: null }; return; }
       const detailEl = document.querySelector(`textarea[data-for="t-${t}"]`);
       temas[t] = { ok: (sel.value === 'ok' || sel.value === 'ok_nota'), detalle: (detailEl && detailEl.value.trim()) || '' };
     });
-    const propinas = (document.querySelector('input[name="b-propinas"]:checked') || {}).value || 'normal';
+    const propinas = propinasSel.value;
     const propinasDetalle = (document.querySelector('textarea[data-for="b-propinas"]') || {}).value || '';
     const personal = $('b-personal').value;
     const notas = $('b-notas').value;
