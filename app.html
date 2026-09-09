@@ -52,6 +52,7 @@
     --accent: #6f8f77;
     --accent2: #7d9c85;
     --border: #2c3538;
+    --radius: 16px;
     --input-bg: #263034;
     --msg-err-bg: #3a2222;
     --msg-ok-bg: #21352a;
@@ -76,6 +77,7 @@
       --accent: #6f8f77;
       --accent2: #7d9c85;
       --border: #2c3538;
+      --radius: 16px;
       --input-bg: #263034;
       --msg-err-bg: #3a2222;
       --msg-ok-bg: #21352a;
@@ -237,9 +239,9 @@
   .form-card h2 { font-size: 1.2rem; margin-bottom: 16px; }
   .radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
   .radio-group label {
-    flex: 1; min-width: 90px; text-align: center; padding: 12px 8px;
+    flex: 1; min-width: 90px; text-align: center; padding: 10px 6px;
     border: 1px solid var(--border); border-radius: 12px; cursor: pointer;
-    font-size: 0.9rem; font-weight: 500;
+    font-size: 0.85rem; font-weight: 500;
   }
   .radio-group input { display: none; }
   .radio-group input:checked + span { color: var(--accent); font-weight: 700; }
@@ -536,56 +538,56 @@
           </div>
           <div class="field"><label>Personal</label>
             <div class="radio-group">
-              <label><input type="radio" name="t-personal" value="ok"><span>✅ Todo bien</span></label>
-              <label><input type="radio" name="t-personal" value="ok_nota"><span>✅ Todo bien + nota</span></label>
+              <label><input type="radio" name="t-personal" value="ok"><span>✅ Bien</span></label>
+              <label><input type="radio" name="t-personal" value="ok_nota"><span>✅ Bien + nota</span></label>
               <label><input type="radio" name="t-personal" value="problema"><span>⚠️ Problema</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="t-personal" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de personal" placeholder="Describe el problema de personal"></textarea>
           </div>
           <div class="field"><label>Servicio</label>
             <div class="radio-group">
-              <label><input type="radio" name="t-servicio" value="ok"><span>✅ Todo bien</span></label>
-              <label><input type="radio" name="t-servicio" value="ok_nota"><span>✅ Todo bien + nota</span></label>
+              <label><input type="radio" name="t-servicio" value="ok"><span>✅ Bien</span></label>
+              <label><input type="radio" name="t-servicio" value="ok_nota"><span>✅ Bien + nota</span></label>
               <label><input type="radio" name="t-servicio" value="problema"><span>⚠️ Problema</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="t-servicio" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de servicio" placeholder="Describe el problema de servicio"></textarea>
           </div>
           <div class="field"><label>Comida</label>
             <div class="radio-group">
-              <label><input type="radio" name="t-comida" value="ok"><span>✅ Todo bien</span></label>
-              <label><input type="radio" name="t-comida" value="ok_nota"><span>✅ Todo bien + nota</span></label>
+              <label><input type="radio" name="t-comida" value="ok"><span>✅ Bien</span></label>
+              <label><input type="radio" name="t-comida" value="ok_nota"><span>✅ Bien + nota</span></label>
               <label><input type="radio" name="t-comida" value="problema"><span>⚠️ Problema</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="t-comida" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de comida" placeholder="Describe el problema de comida"></textarea>
           </div>
           <div class="field"><label>Bebidas</label>
             <div class="radio-group">
-              <label><input type="radio" name="t-bebidas" value="ok"><span>✅ Todo bien</span></label>
-              <label><input type="radio" name="t-bebidas" value="ok_nota"><span>✅ Todo bien + nota</span></label>
+              <label><input type="radio" name="t-bebidas" value="ok"><span>✅ Bien</span></label>
+              <label><input type="radio" name="t-bebidas" value="ok_nota"><span>✅ Bien + nota</span></label>
               <label><input type="radio" name="t-bebidas" value="problema"><span>⚠️ Problema</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="t-bebidas" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de bebidas" placeholder="Describe el problema de bebidas"></textarea>
           </div>
           <div class="field"><label>Mantenimiento</label>
             <div class="radio-group">
-              <label><input type="radio" name="t-instalacion" value="ok"><span>✅ Todo bien</span></label>
-              <label><input type="radio" name="t-instalacion" value="ok_nota"><span>✅ Todo bien + nota</span></label>
+              <label><input type="radio" name="t-instalacion" value="ok"><span>✅ Bien</span></label>
+              <label><input type="radio" name="t-instalacion" value="ok_nota"><span>✅ Bien + nota</span></label>
               <label><input type="radio" name="t-instalacion" value="problema"><span>⚠️ Problema</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="t-instalacion" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema / mantenimiento necesario" placeholder="Describe el problema / mantenimiento necesario"></textarea>
           </div>
           <div class="field"><label>Limpieza</label>
             <div class="radio-group">
-              <label><input type="radio" name="t-limpieza" value="ok"><span>✅ Todo bien</span></label>
-              <label><input type="radio" name="t-limpieza" value="ok_nota"><span>✅ Todo bien + nota</span></label>
+              <label><input type="radio" name="t-limpieza" value="ok"><span>✅ Bien</span></label>
+              <label><input type="radio" name="t-limpieza" value="ok_nota"><span>✅ Bien + nota</span></label>
               <label><input type="radio" name="t-limpieza" value="problema"><span>⚠️ Problema</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="t-limpieza" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de limpieza" placeholder="Describe el problema de limpieza"></textarea>
           </div>
           <div class="field"><label>Seguridad</label>
             <div class="radio-group">
-              <label><input type="radio" name="t-seguridad" value="ok"><span>✅ Todo bien</span></label>
-              <label><input type="radio" name="t-seguridad" value="ok_nota"><span>✅ Todo bien + nota</span></label>
+              <label><input type="radio" name="t-seguridad" value="ok"><span>✅ Bien</span></label>
+              <label><input type="radio" name="t-seguridad" value="ok_nota"><span>✅ Bien + nota</span></label>
               <label><input type="radio" name="t-seguridad" value="problema"><span>⚠️ Problema</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="t-seguridad" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de seguridad" placeholder="Describe el problema de seguridad"></textarea>
@@ -755,7 +757,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.67";
+  const APP_VERSION = "v0.68";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
