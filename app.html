@@ -784,7 +784,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.75";
+  const APP_VERSION = "v0.76";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1526,6 +1526,16 @@
   // ADMIN_ROLES = who can CHANGE status (Dueño only for now, per Ben)
   const ADMIN_ROLES = ['Dueño'];
 
+  // Shared priority -> label/color map (used by both the card badge and the
+  // detail modal). Single source of truth so the two never drift.
+  const PRIO_META = {
+    'Urgente': { c: '#d93025', bg: '#fce8e6', label: '🔴 Urgente' },
+    'Alta':    { c: '#e37400', bg: '#fef7e0', label: '🟠 Alta' },
+    'Normal':  { c: '#1a73e8', bg: '#e8f0fe', label: '🟡 Normal' },
+    'Baja':    { c: '#188038', bg: '#e6f4ea', label: '🟢 Baja' }
+  };
+  function prioMeta(p) { return PRIO_META[p] || PRIO_META['Normal']; }
+
   async function loadEstatus() {
     const listEl = $('estatus-list');
     const msgEl = $('estatus-msg');
@@ -1559,13 +1569,15 @@
       kind: 'mant', typeLabel: '🔧 Mantenimiento', title: r.area || 'Solicitud',
       detail: r.description || '', priority: r.priority || 'Normal',
       branch: r.branch, status: r.status, created_at: r.created_at,
-      id: r.id, table: 'maintenance_requests', submitted_by: r.submitted_by, link: '', photo_urls: r.photo_urls || []
+      id: r.id, table: 'maintenance_requests', submitted_by: r.submitted_by,
+      link: '', photo_urls: r.photo_urls || [], vendor: '', amount: null
     }));
     (comp || []).forEach(r => rows.push({
       kind: 'comp', typeLabel: '🛒 Compra', title: r.item || 'Compra',
       detail: (r.vendor ? 'Proveedor: ' + r.vendor + ' · ' : '') + (r.amount ? '$' + Number(r.amount).toLocaleString('es-MX') + ' MXN' : ''),
       priority: r.priority || 'Normal', branch: r.branch, status: r.status, created_at: r.created_at,
-      id: r.id, table: 'purchases', submitted_by: r.submitted_by, link: r.link || '', photo_urls: r.photo_urls || []
+      id: r.id, table: 'purchases', submitted_by: r.submitted_by, link: r.link || '',
+      photo_urls: r.photo_urls || [], vendor: r.vendor || '', amount: r.amount || null
     }));
     rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -1590,15 +1602,9 @@
       (groups[key] = groups[key] || []).push(r);
     });
 
-    // Priority badge color + label
+    // Priority badge color + label (uses the shared PRIO_META map)
     function prioBadge(p) {
-      const map = {
-        'Urgente': { c: '#d93025', bg: '#fce8e6', label: '🔴 Urgente' },
-        'Alta':    { c: '#e37400', bg: '#fef7e0', label: '🟠 Alta' },
-        'Normal':  { c: '#1a73e8', bg: '#e8f0fe', label: '🟡 Normal' },
-        'Baja':    { c: '#188038', bg: '#e6f4ea', label: '🟢 Baja' }
-      };
-      const m = map[p] || map['Normal'];
+      const m = prioMeta(p);
       return `<span style="display:inline-block;background:${m.bg};color:${m.c};font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">${m.label}</span>`;
     }
 
@@ -1613,8 +1619,9 @@
         const statusLabel = statusMeta(r)[r.status] ? statusMeta(r)[r.status].label : esc(r.status);
         // Strip the leading colored-dot emoji from the status label on the card —
         // the priority badge already carries the color, so a second colored dot
-        // reads as duplicate status info (Ben 2026-09-09).
-        const statusPlain = statusLabel.replace(/^[^\s]+\s/, '');
+        // reads as duplicate status info (Ben 2026-09-09). Only strip when there
+        // IS an emoji prefix (legacy statuses like "Pendiente" have none).
+        const statusPlain = /^[^\s]+\s/.test(statusLabel) ? statusLabel.replace(/^[^\s]+\s/, '') : statusLabel;
         // Whole card is tappable -> opens the detail modal
         html += `<div class="estatus-card" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card);cursor:pointer;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
@@ -1648,13 +1655,12 @@
     if (!row) return;
     const isAdmin = estatusAdminFlag;
     const statusLabel = statusMeta(row)[row.status] ? statusMeta(row)[row.status].label : esc(row.status);
-    const prioMap = { 'Urgente':'🔴 Urgente', 'Alta':'🟠 Alta', 'Normal':'🟡 Normal', 'Baja':'🟢 Baja' };
-    const prio = prioMap[row.priority] || '🟡 Normal';
+    const prio = prioMeta(row.priority).label;
     const linkHtml = row.link ? `<div class="rv-row"><div class="rv-label">Enlace</div><div class="rv-value"><a href="${escAttr(row.link)}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600;">🔗 Abrir enlace</a></div></div>` : '';
     const photosHtml = (row.photo_urls && row.photo_urls.length) ? `<div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap;">${row.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" onclick="window.open('${escAttr(u)}','_blank')" />`).join('')}</div>` : '';
     const detailRows = row.kind === 'mant'
       ? [['Tipo','🔧 Mantenimiento'], ['Área / equipo', row.title], ['Descripción', row.detail], ['Prioridad', prio], ['Sucursal', row.branch], ['Status', statusLabel], ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]]
-      : [['Tipo','🛒 Compra'], ['Artículo', row.title], ['Proveedor', row.detail.split('Proveedor: ')[1] ? row.detail.split('Proveedor: ')[1].split(' · ')[0] : '—'], ['Monto', row.detail.match(/\$[\d,.]+ MXN/) ? row.detail.match(/\$[\d,.]+ MXN/)[0] : '—'], ['Prioridad', prio], ['Sucursal', row.branch], ['Status', statusLabel], ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]];
+      : [['Tipo','🛒 Compra'], ['Artículo', row.title], ['Proveedor', row.vendor || '—'], ['Monto', row.amount ? '$' + Number(row.amount).toLocaleString('es-MX') + ' MXN' : '—'], ['Prioridad', prio], ['Sucursal', row.branch], ['Status', statusLabel], ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]];
     $('estatus-detail-title').textContent = row.typeLabel + ' · ' + row.title;
     $('estatus-detail-body').innerHTML = detailRows.map(r => `<div class="rv-row"><div class="rv-label">${esc(r[0])}</div><div class="rv-value">${r[1] || '—'}</div></div>`).join('') + linkHtml + photosHtml;
     const actions = $('estatus-detail-actions');
@@ -1746,37 +1752,6 @@
     if (diff < 1440) return `hace ${Math.floor(diff / 60)} h`;
     return `hace ${Math.floor(diff / 1440)} d`;
   }
-
-  // Inline status change (admins): update the row, then re-render
-  document.addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-set-status]');
-    if (!btn) return;
-    const [table, id, newStatus] = btn.getAttribute('data-set-status').split('|');
-    let user; try { user = await requireUser(); } catch(err) { return; }
-    btn.disabled = true;
-    const { error } = await supabase.from(table).update({ status: newStatus }).eq('id', id);
-    if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); btn.disabled = false; return; }
-    loadEstatus();
-  });
-
-  // Download a request as a printable/filterable PDF (admins only) — opens a
-  // clean print view so the user can "Save as PDF" or share for a provider.
-  document.addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-dl-pdf]');
-    if (!btn) return;
-    let user; try { user = await requireUser(); } catch(err) { return; }
-    const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-    if (!ADMIN_ROLES.includes(prof && prof.role)) { showMsg($('estatus-msg'), 'Solo el Dueño puede descargar PDFs', 'err'); return; }
-    const [table, id] = btn.getAttribute('data-dl-pdf').split('|');
-    btn.disabled = true;
-    const q = table === 'purchases'
-      ? { cols: 'id, item, vendor, amount, link, notes, status, branch, submitted_by, created_at, photo_urls', titleField: 'item' }
-      : { cols: 'id, area, description, priority, status, branch, submitted_by, created_at, photo_urls', titleField: 'area' };
-    const { data, error } = await supabase.from(table).select(q.cols).eq('id', id).maybeSingle();
-    btn.disabled = false;
-    if (error || !data) { showMsg($('estatus-msg'), 'No se pudo cargar la solicitud', 'err'); return; }
-    openPdfWindow(table, data, q.titleField);
-  });
 
   // Build a print-ready document for a request and trigger the native print/PDF
   function openPdfWindow(table, d, titleField) {
