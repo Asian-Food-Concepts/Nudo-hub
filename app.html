@@ -547,13 +547,13 @@
               <label><input type="radio" name="b-corte" value="Mal"><span>🔴 Mal</span></label>
             </div>
           </div>
-          <div class="field"><label>Personal</label>
+          <div class="field"><label>Personal <span style="color:var(--muted);font-size:0.8rem;">(faltas, tardanzas, horas extra)</span></label>
             <div class="radio-group">
               <label><input type="radio" name="t-personal" value="ok"><span>✅</span></label>
               <label><input type="radio" name="t-personal" value="ok_nota"><span>✅ + comentario</span></label>
               <label><input type="radio" name="t-personal" value="problema"><span>⚠️ + comentario</span></label>
             </div>
-            <textarea class="t-detail hidden" data-for="t-personal" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de personal" placeholder="Describe el problema de personal"></textarea>
+            <textarea class="t-detail hidden" data-for="t-personal" data-ph-ok="Faltas, tardanzas, horas extra — quién, qué, por qué (opcional)" data-ph-problema="Describe faltas, tardanzas, horas extra, cambios — quién, qué, por qué" placeholder="Faltas, tardanzas, horas extra — quién, qué, por qué"></textarea>
           </div>
           <div class="field"><label>Servicio</label>
             <div class="radio-group">
@@ -787,7 +787,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.80";
+  const APP_VERSION = "v0.81";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
