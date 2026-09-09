@@ -784,7 +784,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.74";
+  const APP_VERSION = "v0.75";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1628,7 +1628,10 @@
           ${r.detail ? `<div style="font-size:0.9rem;color:var(--muted);margin:4px 0;">${esc(r.detail)}</div>` : ''}
           ${linkHtml}
           ${photosHtml}
-          <div style="font-size:0.8rem;color:var(--accent);margin-top:6px;">Ver detalles ›</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:8px;flex-wrap:wrap;">
+            <div style="font-size:0.8rem;color:var(--accent);">Ver detalles ›</div>
+            ${(isAdmin && statusMeta(r)[r.status] && statusMeta(r)[r.status].next) ? `<button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;" data-advance="${r.table}|${r.id}|${statusMeta(r)[r.status].next}">Marcar ${statusMeta(r)[r.status].next}</button>` : ''}
+          </div>
         </div>`;
       });
     });
@@ -1687,12 +1690,25 @@
   let estatusAdminFlag = false;
   // (assigned inside loadEstatus below)
 
-  // Tap a request card -> open its detail modal
+  // Tap a request card -> open its detail modal (but not when tapping the
+  // inline advance button, which has its own handler below).
   document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-advance]')) return;
     const card = e.target.closest('[data-open-detail]');
     if (!card) return;
     const [table, id] = card.getAttribute('data-open-detail').split('|');
     openEstatusDetail(table, id);
+  });
+
+  // Inline advance button on each card (admins)
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-advance]');
+    if (!btn) return;
+    const [table, id, newStatus] = btn.getAttribute('data-advance').split('|');
+    btn.disabled = true;
+    const { error } = await supabase.from(table).update({ status: newStatus }).eq('id', id);
+    if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); btn.disabled = false; return; }
+    loadEstatus();
   });
 
   // Admin PDF download from the detail modal (reuses the existing print view)
