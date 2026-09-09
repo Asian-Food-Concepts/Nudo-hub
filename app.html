@@ -561,7 +561,7 @@
               <label><input type="radio" name="t-servicio" value="ok_nota"><span>✅ + comentario</span></label>
               <label><input type="radio" name="t-servicio" value="problema"><span>⚠️ + comentario</span></label>
             </div>
-            <textarea class="t-detail hidden" data-for="t-servicio" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de servicio" placeholder="Describe el problema de servicio"></textarea>
+            <textarea class="t-detail hidden" data-for="t-servicio" data-ph-ok="Servicio, atención, tiempos de mesa — nota (opcional)" data-ph-problema="Problema de servicio — qué pasó, quién, cómo se resolvió" placeholder="Servicio, atención, tiempos de mesa"></textarea>
           </div>
           <div class="field"><label>Comida</label>
             <div class="radio-group">
@@ -569,7 +569,7 @@
               <label><input type="radio" name="t-comida" value="ok_nota"><span>✅ + comentario</span></label>
               <label><input type="radio" name="t-comida" value="problema"><span>⚠️ + comentario</span></label>
             </div>
-            <textarea class="t-detail hidden" data-for="t-comida" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de comida" placeholder="Describe el problema de comida"></textarea>
+            <textarea class="t-detail hidden" data-for="t-comida" data-ph-ok="Calidad, presentación, tiempos de cocina — nota (opcional)" data-ph-problema="Problema de comida — qué platillo, qué pasó, cómo se resolvió" placeholder="Calidad, presentación, tiempos de cocina"></textarea>
           </div>
           <div class="field"><label>Bebidas</label>
             <div class="radio-group">
@@ -577,7 +577,7 @@
               <label><input type="radio" name="t-bebidas" value="ok_nota"><span>✅ + comentario</span></label>
               <label><input type="radio" name="t-bebidas" value="problema"><span>⚠️ + comentario</span></label>
             </div>
-            <textarea class="t-detail hidden" data-for="t-bebidas" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de bebidas" placeholder="Describe el problema de bebidas"></textarea>
+            <textarea class="t-detail hidden" data-for="t-bebidas" data-ph-ok="Tiempos de barra, disponibilidad, calidad — nota (opcional)" data-ph-problema="Problema de bebidas — qué bebida, qué pasó, cómo se resolvió" placeholder="Tiempos de barra, disponibilidad, calidad"></textarea>
           </div>
           <div class="field"><label>Mantenimiento</label>
             <div class="radio-group">
@@ -585,7 +585,7 @@
               <label><input type="radio" name="t-instalacion" value="ok_nota"><span>✅ + comentario</span></label>
               <label><input type="radio" name="t-instalacion" value="problema"><span>⚠️ + comentario</span></label>
             </div>
-            <textarea class="t-detail hidden" data-for="t-instalacion" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema / mantenimiento necesario" placeholder="Describe el problema / mantenimiento necesario"></textarea>
+            <textarea class="t-detail hidden" data-for="t-instalacion" data-ph-ok="Ajuste menor o revisión — nota (opcional)" data-ph-problema="Problema / mantenimiento necesario — qué, dónde, desde cuándo" placeholder="Problema / mantenimiento necesario — qué, dónde, desde cuándo"></textarea>
           </div>
           <div class="field"><label>Limpieza</label>
             <div class="radio-group">
@@ -593,7 +593,7 @@
               <label><input type="radio" name="t-limpieza" value="ok_nota"><span>✅ + comentario</span></label>
               <label><input type="radio" name="t-limpieza" value="problema"><span>⚠️ + comentario</span></label>
             </div>
-            <textarea class="t-detail hidden" data-for="t-limpieza" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de limpieza" placeholder="Describe el problema de limpieza"></textarea>
+            <textarea class="t-detail hidden" data-for="t-limpieza" data-ph-ok="Zona puntual a repasar — nota (opcional)" data-ph-problema="Problema de limpieza — qué zona, qué pasó, cómo se resolvió" placeholder="Problema de limpieza — qué zona, qué pasó"></textarea>
           </div>
           <div class="field"><label>Seguridad</label>
             <div class="radio-group">
@@ -601,7 +601,7 @@
               <label><input type="radio" name="t-seguridad" value="ok_nota"><span>✅ + comentario</span></label>
               <label><input type="radio" name="t-seguridad" value="problema"><span>⚠️ + comentario</span></label>
             </div>
-            <textarea class="t-detail hidden" data-for="t-seguridad" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de seguridad" placeholder="Describe el problema de seguridad"></textarea>
+            <textarea class="t-detail hidden" data-for="t-seguridad" data-ph-ok="Riesgo menor o pendiente — nota (opcional)" data-ph-problema="Problema / incidente de seguridad — qué, quién, cómo se manejó" placeholder="Problema / incidente de seguridad — qué, quién"></textarea>
           </div>
           <div class="field"><label>Descuentos y Cortesías</label>
             <div class="radio-group">
@@ -617,7 +617,6 @@
             </div>
             <textarea class="t-detail hidden" data-for="b-propinas" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)" placeholder="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)"></textarea>
           </div>
-          <div class="field"><label>Personal (faltas, tardanzas, horas extra, cambios de horario)</label><textarea id="b-personal" placeholder="Faltas, tardanzas, horas extra, cambios de horario — quién, qué, por qué (opcional)"></textarea></div>
           <div class="field"><label>Notas / incidentes <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label><textarea id="b-notas"></textarea></div>
           <div class="field"><label>📷 Foto <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label>
             <input type="file" id="b-photo" accept="image/*" style="width:100%">
@@ -787,7 +786,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.81";
+  const APP_VERSION = "v0.82";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1849,7 +1848,6 @@
     });
     const propinas = propinasSel.value;
     const propinasDetalle = (document.querySelector('textarea[data-for="b-propinas"]') || {}).value || '';
-    const personal = $('b-personal').value;
     const notas = $('b-notas').value;
     const bPhoto = $('b-photo').files[0];
 
@@ -1867,7 +1865,6 @@
       ['Cómo fue el día', corte.value],
       ...themeRows,
       ['Propinas', propinas === 'normal' ? '✅ Normales' : (propinasDetalle ? `⚠️ Irregulares — ${propinasDetalle}` : '⚠️ Irregulares')],
-      ['Personal (faltas/tardanzas/horas)', personal || '—'],
       ['Notas', notas || '—'],
       ['Foto', bPhoto ? bPhoto.name : '—'],
       ['Confirmación', '✅ Sí']
@@ -1899,7 +1896,6 @@
         branch: sucursal.value,
         corte: corte.value,
         afluencia: afluencia.value,
-        personal: personal,
         notas: notas,
         temas: temas,
         propinas: propinas,
