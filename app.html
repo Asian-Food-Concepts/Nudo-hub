@@ -554,6 +554,14 @@
             </div>
             <textarea class="t-detail hidden" data-for="t-personal" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="Describe el problema de personal" placeholder="Describe el problema de personal"></textarea>
           </div>
+          <div class="field"><label>Faltas y tardanzas</label>
+            <div class="radio-group">
+              <label><input type="radio" name="t-faltas" value="ok"><span>✅ Ninguna</span></label>
+              <label><input type="radio" name="t-faltas" value="ok_nota"><span>✅ + comentario</span></label>
+              <label><input type="radio" name="t-faltas" value="problema"><span>⚠️ + comentario</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="t-faltas" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Quién faltó o llegó tarde, y qué horario?" placeholder="¿Quién faltó o llegó tarde, y qué horario?"></textarea>
+          </div>
           <div class="field"><label>Servicio</label>
             <div class="radio-group">
               <label><input type="radio" name="t-servicio" value="ok"><span>✅</span></label>
@@ -786,7 +794,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.77";
+  const APP_VERSION = "v0.78";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1830,10 +1838,10 @@
     const sucursal = document.querySelector('input[name="b-sucursal"]:checked');
     if (!sucursal || !corte || !afluencia) { showMsg($('b-msg'), 'Selecciona sucursal, corte y afluencia', 'err'); return; }
     // All theme toggles + propinas are mandatory (Ben 2026-09-08)
-    const requiredThemes = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','promos'];
+    const requiredThemes = ['personal','faltas','servicio','comida','bebidas','instalacion','limpieza','seguridad','promos'];
     const missingTheme = requiredThemes.find(t => !document.querySelector(`input[name="t-${t}"]:checked`));
     if (missingTheme) {
-      const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', promos:'Descuentos y cortesías' };
+      const themeLabels = { personal:'Personal', faltas:'Faltas y tardanzas', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', promos:'Descuentos y cortesías' };
       showMsg($('b-msg'), `Falta calificar: ${themeLabels[missingTheme]}`, 'err'); return;
     }
     const propinasSel = document.querySelector('input[name="b-propinas"]:checked');
@@ -1853,7 +1861,7 @@
     const bPhoto = $('b-photo').files[0];
 
     // Build a read-only summary for the review modal
-    const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', promos:'Descuentos y cortesías' };
+    const themeLabels = { personal:'Personal', faltas:'Faltas y tardanzas', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', promos:'Descuentos y cortesías' };
     const themeRows = Object.keys(themeLabels).map(t => {
       const v = temas[t];
       if (!v || v.ok === null) return null;
