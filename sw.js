@@ -1,13 +1,13 @@
 const CACHE = 'nudo-hub-v1';
 const ASSETS = [
-  '/nudo-hub/',
-  '/nudo-hub/index.html',
-  '/nudo-hub/app.html',
-  '/nudo-hub/live.html',
-  '/nudo-hub/manifest.json',
-  '/nudo-hub/reglas.html',
-  '/nudo-hub/guia.html',
-  '/nudo-hub/contactos.html'
+  '/Nudo-hub/',
+  '/Nudo-hub/index.html',
+  '/Nudo-hub/app.html',
+  '/Nudo-hub/live.html',
+  '/Nudo-hub/manifest.json',
+  '/Nudo-hub/reglas.html',
+  '/Nudo-hub/guia.html',
+  '/Nudo-hub/contactos.html'
 ];
 
 self.addEventListener('install', e => {
@@ -21,7 +21,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   // Network-first for navigation, cache-first for assets
   if (e.request.mode === 'navigate') {
-    e.respondWith(fetch(e.request).catch(() => caches.match('/nudo-hub/app.html')));
+    e.respondWith(fetch(e.request).catch(() => caches.match('/Nudo-hub/app.html')));
     return;
   }
   e.respondWith(
@@ -40,9 +40,9 @@ self.addEventListener('push', e => {
   const title = data.title || 'Nudo Hub';
   const options = {
     body: data.body || '',
-    icon: '/nudo-hub/icon-192.png',
-    badge: '/nudo-hub/icon-192.png',
-    data: { url: data.url || '/nudo-hub/app.html' },
+    icon: '/Nudo-hub/icon-192.png',
+    badge: '/Nudo-hub/icon-192.png',
+    data: { url: data.url || '/Nudo-hub/app.html' },
     vibrate: [100, 50, 100]
   };
   e.waitUntil(self.registration.showNotification(title, options));
@@ -50,7 +50,7 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const url = (e.notification.data && e.notification.data.url) || '/nudo-hub/app.html';
+  const url = (e.notification.data && e.notification.data.url) || '/Nudo-hub/app.html';
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
       for (const client of clientList) {

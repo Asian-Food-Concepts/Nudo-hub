@@ -200,8 +200,9 @@
     border-radius: 20px; padding: 4px 10px; cursor: pointer;
     user-select: none; -webkit-user-select: none;
   }
+  .notif-toggle .notif-bell { font-size: 0.9rem; line-height: 1; }
   .notif-toggle .notif-label { font-size: 0.8rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
-  /* On very narrow screens, drop the "Notificaciones" word and keep just the bell+switch */
+  /* On very narrow screens, drop the "Notificaciones" word but keep the bell+switch */
   @media (max-width: 420px) {
     .notif-toggle .notif-label { display: none; }
     .userbar { flex-wrap: wrap; gap: 6px; }
@@ -401,7 +402,8 @@
         <span class="who" id="user-name">Equipo</span>
         <div class="userbar-right">
           <div class="notif-toggle" id="notif-toggle" role="switch" aria-checked="false" aria-label="Notificaciones" title="Recibe avisos en tu teléfono">
-            <span class="notif-label">🔔 Notificaciones</span>
+            <span class="notif-bell">🔔</span>
+            <span class="notif-label">Notificaciones</span>
             <span class="switch"></span>
           </div>
           <div class="theme-switch" id="theme-switch" role="group" aria-label="Tema">
@@ -784,7 +786,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.76";
+  const APP_VERSION = "v0.77";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 

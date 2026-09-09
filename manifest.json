@@ -2,20 +2,20 @@
   "name": "Nudo Hub",
   "short_name": "Nudo",
   "description": "Acceso del equipo Nudo — formularios, horarios y herramientas",
-  "start_url": "/nudo-hub/app.html",
+  "start_url": "/Nudo-hub/app.html",
   "display": "standalone",
   "background_color": "#f7f5f0",
   "theme_color": "#2f3a2f",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/nudo-hub/icon-192.png",
+      "src": "/Nudo-hub/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/nudo-hub/icon-512.png",
+      "src": "/Nudo-hub/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
