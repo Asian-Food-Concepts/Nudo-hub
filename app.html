@@ -104,8 +104,7 @@
     border-radius: var(--radius);
     padding: 14px 18px;
     text-align: center;
-    margin: 0 auto;
-    max-width: 640px;
+    margin: 0 0 4px;
     box-shadow: 0 1px 3px var(--shadow);
   }
   header h1 { font-size: 1.15rem; font-weight: 700; }
@@ -348,12 +347,12 @@
 </style>
 </head>
 <body>
+  <div class="wrap">
   <header>
     <h1><a href="/Nudo-hub/">Nudo Hub</a></h1>
     <p id="header-sub">Acceso del equipo</p>
   </header>
 
-  <div class="wrap">
     <!-- LOGIN VIEW -->
     <div id="login-view">
       <div class="login-box">
@@ -756,7 +755,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.66";
+  const APP_VERSION = "v0.67";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
