@@ -430,7 +430,7 @@
         <div class="card-list">
           <a class="card" href="#" data-form="bitacora">
             <div class="icon icon-form">📓</div>
-            <div class="text"><div class="title">Bitácora de Cierre</div><div class="sub">Registro del cierre de unidad</div></div>
+            <div class="text"><div class="title">Bitácora de Cierre</div><div class="sub">Capitán · cierre de turno</div></div>
             <div class="arrow">›</div>
           </a>
           <a class="card" href="#" data-form="mantenimiento">
@@ -526,6 +526,7 @@
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card" id="card-bitacora">
           <h2>📓 Bitácora de Cierre</h2>
+          <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">La registra el capitán de turno al cierre.</p>
           <div class="field"><label>Sucursal</label>
             <div class="radio-group">
               <label><input type="radio" name="b-sucursal" value="Roma Norte"><span>Roma Norte</span></label>
@@ -786,7 +787,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.79";
+  const APP_VERSION = "v0.80";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1874,6 +1875,18 @@
 
     openReview('📓 Revisa tu bitácora', rows, async () => {
       let user; try { user = await requireUser(); } catch(e) { return; }
+      // Enforce captain/leader role at submit (defense in depth even if a
+      // non-captain reaches the form) — Bitácora is captain-led at end of turn.
+      const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      const role = (prof && prof.role) || '';
+      const roleGroup = planRoleGroup(role);
+      const allowed = ['Dueño', 'Capitán', 'Gerente'];
+      const isLeader = allowed.includes(role) || roleGroup === 'Capitán';
+      if (!isLeader) {
+        showMsg($('b-msg'), 'Solo el capitán de turno puede registrar la bitácora.', 'err');
+        goHome();
+        return;
+      }
       $('b-submit').disabled = true;
       // Upload optional photo first
       let photoUrl = '';
