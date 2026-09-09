@@ -130,8 +130,8 @@
   }
   a.card:active { transform: scale(0.98); }
   /* Disabled/coming-soon cards: no arrow, no press effect */
-  .card[style*="cursor:not-allowed"] .arrow { display: none; }
-  .card[style*="cursor:not-allowed"] { transform: none !important; }
+  .card[style*="not-allowed"] .arrow { display: none; }
+  .card[style*="not-allowed"] { transform: none !important; }
   .icon {
     width: 52px; height: 52px; border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
@@ -765,7 +765,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.69";
+  const APP_VERSION = "v0.70";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
