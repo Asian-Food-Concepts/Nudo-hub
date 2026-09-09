@@ -244,6 +244,16 @@
   .checkbox-row input { width: 22px; height: 22px; }
   .link-btn { background: none; border: none; color: var(--accent); font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 6px 0; }
   .link-btn:active { opacity: 0.7; }
+  /* TEST quick-login panel (Ben only — remove before going live) */
+  .test-login { margin-top: 18px; text-align: center; }
+  .test-login-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 8px; }
+  .test-login-row { display: flex; gap: 8px; justify-content: center; }
+  .test-login-btn {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 14px; font-size: 0.85rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .test-login-btn:active { background: var(--accent); color: #fff; transform: scale(0.97); }
   .field-hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
   input[type="file"] { padding: 10px; font-size: 0.9rem; }
   .photo-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -359,6 +369,15 @@
           <button class="link-btn" id="change-email">Cambiar correo</button>
         </div>
         <div class="msg hidden" id="login-msg"></div>
+      </div>
+      <!-- TEST quick-login (Ben only — remove before going live) -->
+      <div class="test-login">
+        <div class="test-login-title">🧪 Cuentas de prueba</div>
+        <div class="test-login-row">
+          <button class="test-login-btn" data-test="gerente">Gerente</button>
+          <button class="test-login-btn" data-test="capitan">Capitán</button>
+          <button class="test-login-btn" data-test="mesero">Mesero</button>
+        </div>
       </div>
     </div>
 
@@ -732,7 +751,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.64";
+  const APP_VERSION = "v0.65";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -804,6 +823,21 @@
     'mesero':    { email: 'mesero.test@nudo.hub',    password: 'NudoTest#Mes2026' },
     'gerente':   { email: 'gerente.test@nudo.hub',   password: 'NudoTest#Ger2026' },
   };
+  // TEST quick-login buttons (Ben only — remove before going live)
+  document.querySelectorAll('.test-login-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const key = btn.dataset.test;
+      const acct = TEST_ACCOUNTS[key];
+      if (!acct) return;
+      btn.disabled = true;
+      showMsg($('login-msg'), `Entrando como ${key}...`, 'info');
+      const { error } = await supabase.auth.signInWithPassword({ email: acct.email, password: acct.password });
+      btn.disabled = false;
+      if (error) { showMsg($('login-msg'), 'Error: ' + error.message, 'err'); return; }
+      showApp();
+      loadUser();
+    });
+  });
   $('send-code').addEventListener('click', async () => {
     const raw = $('email').value.trim();
     if (!raw) { showMsg($('login-msg'), 'Escribe tu correo', 'err'); return; }
