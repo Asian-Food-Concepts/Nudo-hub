@@ -214,14 +214,20 @@
     position: sticky; top: 0; z-index: 20;
     display: flex; align-items: center; gap: 8px;
     width: 100%; box-sizing: border-box;
-    padding: 14px 16px; margin: 0 0 12px 0;
+    padding: 14px 16px; margin: 0 0 20px 0;
     background: var(--card); color: var(--accent);
     border: 1px solid var(--border); border-radius: 12px;
     box-shadow: 0 1px 3px var(--shadow);
     font-size: 0.95rem; font-weight: 600; cursor: pointer;
     text-align: left;
   }
-  .back .chev { font-size: 1.1rem; line-height: 1; }
+  .back .chev {
+    font-size: 1.1rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--accent); flex-shrink: 0;
+  }
   .back:active { opacity: 0.7; }
   .form-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
   .form-card h2 { font-size: 1.2rem; margin-bottom: 16px; }
@@ -426,8 +432,8 @@
             <div style="display:flex;align-items:center;gap:8px;width:100%;">
               <span style="font-size:1.2rem;">🔎</span>
               <input id="guide-search-input" type="search" placeholder="Buscar en la Guía (reglas, guía, contactos)…"
-                style="flex:1;border:none;outline:none;background:transparent;font-size:0.95rem;color:var(--text);" />
-              <button id="guide-search-btn" class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;">Buscar</button>
+                style="flex:1;border:none;outline:none;background:transparent;font-size:0.95rem;color:var(--text);height:34px;padding:0 4px;" />
+              <button id="guide-search-btn" class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;height:34px;display:flex;align-items:center;justify-content:center;">Buscar</button>
             </div>
             <div id="guide-search-results"></div>
           </div>
@@ -717,7 +723,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.57";
+  const APP_VERSION = "v0.58";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
