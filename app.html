@@ -116,7 +116,7 @@
   .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 40px; }
   .section-title {
     font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.6px; color: var(--muted); margin: 24px 0 10px;
+    letter-spacing: 0.6px; color: var(--muted); margin: 20px 0 8px;
   }
   .card-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
   a.card, .card {
@@ -129,6 +129,9 @@
     position: relative;
   }
   a.card:active { transform: scale(0.98); }
+  /* Disabled/coming-soon cards: no arrow, no press effect */
+  .card[style*="cursor:not-allowed"] .arrow { display: none; }
+  .card[style*="cursor:not-allowed"] { transform: none !important; }
   .icon {
     width: 52px; height: 52px; border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
@@ -198,6 +201,11 @@
     user-select: none; -webkit-user-select: none;
   }
   .notif-toggle .notif-label { font-size: 0.8rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
+  /* On very narrow screens, drop the "Notificaciones" word and keep just the bell+switch */
+  @media (max-width: 420px) {
+    .notif-toggle .notif-label { display: none; }
+    .userbar { flex-wrap: wrap; gap: 6px; }
+  }
   .notif-toggle .switch {
     position: relative; width: 40px; height: 24px; flex-shrink: 0;
     background: var(--dot); border-radius: 12px; transition: background 0.2s ease;
@@ -268,7 +276,7 @@
   .photo-preview .ph-x { position: absolute; top: -6px; right: -6px; background: var(--red); color: #fff; width: 20px; height: 20px; border-radius: 50%; border: none; font-size: 0.75rem; line-height: 20px; text-align: center; cursor: pointer; }
 
   /* In-app guide view */
-  .guide-frame { width: 100%; border: 1px solid var(--border); border-radius: 12px; min-height: 70vh; background: var(--frame-bg); }
+  .guide-frame { width: 100%; border: 1px solid var(--border); border-radius: 12px; min-height: 60vh; background: var(--frame-bg); }
 
   /* Schedule */
   .sched-frame { width: 100%; border: 1px solid var(--border); border-radius: 12px; min-height: 400px; background: var(--frame-bg); }
@@ -757,7 +765,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.68";
+  const APP_VERSION = "v0.69";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1071,6 +1079,17 @@
       $('guide-frame').src = url;
       $('form-guide').classList.add('active');
     });
+  });
+  // Auto-resize the guide iframe to its content so short pages don't leave a
+  // big 70vh dead band (the old min-height reserved space even for short docs).
+  $('guide-frame').addEventListener('load', () => {
+    try {
+      const doc = $('guide-frame').contentDocument;
+      if (doc && doc.body) {
+        const h = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight);
+        $('guide-frame').style.height = (h + 8) + 'px';
+      }
+    } catch (_) { /* cross-origin — leave min-height fallback */ }
   });
   document.querySelectorAll('[data-guide-back]').forEach(b => {
     b.addEventListener('click', () => { goHome(); });
