@@ -98,15 +98,20 @@
     min-height: 100vh;
   }
   header {
-    background: var(--accent);
-    color: #fff;
-    padding: 20px 20px 16px;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
     text-align: center;
+    margin: 0 auto;
+    max-width: 640px;
+    box-shadow: 0 1px 3px var(--shadow);
   }
-  header h1 { font-size: 1.4rem; font-weight: 700; }
-  header h1 a { color: #fff; text-decoration: none; }
+  header h1 { font-size: 1.15rem; font-weight: 700; }
+  header h1 a { color: var(--accent); text-decoration: none; }
   header h1 a:active { opacity: 0.85; }
-  header p { font-size: 0.85rem; opacity: 0.9; margin-top: 2px; }
+  header p { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
   .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 40px; }
   .section-title {
     font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
@@ -751,7 +756,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.65";
+  const APP_VERSION = "v0.66";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
