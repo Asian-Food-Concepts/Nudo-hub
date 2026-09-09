@@ -732,7 +732,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.63";
+  const APP_VERSION = "v0.64";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -799,6 +799,7 @@
   // account (no email OTP needed). Ben's test shortcut — do not expose to staff.
   const TEST_ACCOUNTS = {
     '123456':    { email: 'test-pin@nudo.hub', password: 'NudoPin#123456' },
+    'capitan':   { email: 'capitan.test@nudo.hub',  password: 'NudoTest#Cap2026' },
     'encargado': { email: 'encargado.test@nudo.hub', password: 'NudoTest#Enc2026' },
     'mesero':    { email: 'mesero.test@nudo.hub',    password: 'NudoTest#Mes2026' },
     'gerente':   { email: 'gerente.test@nudo.hub',   password: 'NudoTest#Ger2026' },
