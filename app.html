@@ -186,7 +186,9 @@
 
   /* Form page */
   .form-page { display: none; }
-  .form-page.active { display: block; }
+  .form-page.active { display: block; animation: pageIn 0.22s ease; }
+  @keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  #home-view { animation: pageIn 0.22s ease; }
   .back {
     position: sticky; top: 0; z-index: 20;
     display: flex; align-items: center; gap: 8px;
@@ -268,6 +270,18 @@
   .plan-modal input[type="time"] { flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg, transparent); color: var(--ink); }
   .plan-modal .actions { display: flex; gap: 8px; margin-top: 14px; }
   .plan-modal .actions button { flex: 1; }
+
+  /* Review-before-submit modal */
+  .review-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
+  .review-box { background: var(--card); border-radius: 16px; padding: 20px; width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+  .review-box h3 { margin: 0 0 14px; font-size: 1.1rem; }
+  .review-body { font-size: 0.95rem; }
+  .review-body .rv-row { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .review-body .rv-row:last-child { border-bottom: none; }
+  .review-body .rv-label { flex: 0 0 110px; font-weight: 600; color: var(--muted); font-size: 0.85rem; }
+  .review-body .rv-value { flex: 1; word-break: break-word; }
+  .review-actions { display: flex; gap: 10px; margin-top: 18px; }
+  .review-actions .btn { flex: 1; margin: 0; }
   .plan-add { border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 12px; background: var(--frame-bg); }
   .plan-add-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
   .plan-add-row:last-child { margin-bottom: 0; }
@@ -326,6 +340,7 @@
       <div class="userbar">
         <span class="who" id="user-name">Equipo</span>
         <div class="userbar-right">
+          <button class="notif-btn" id="notif-btn" title="Activar notificaciones" style="background:none;border:none;font-size:1.2rem;cursor:pointer;padding:4px;">🔔</button>
           <div class="theme-switch" id="theme-switch" role="group" aria-label="Tema">
             <button type="button" data-theme-opt="light" title="Claro">☀️</button>
             <button type="button" data-theme-opt="dark" title="Oscuro">🌙</button>
@@ -654,6 +669,18 @@
           <div id="estatus-list"></div>
         </div>
       </div>
+
+      <!-- REVIEW-BEFORE-SUBMIT MODAL -->
+      <div class="review-modal hidden" id="review-modal">
+        <div class="review-box">
+          <h3 id="review-title">Revisa tu solicitud</h3>
+          <div id="review-body" class="review-body"></div>
+          <div class="review-actions">
+            <button class="btn btn-outline" id="review-edit">✏️ Editar</button>
+            <button class="btn" id="review-submit">✅ Enviar</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -666,7 +693,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.55";
+  const APP_VERSION = "v0.56";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1578,6 +1605,28 @@
     w.document.close();
   }
 
+  // ---- REVIEW-BEFORE-SUBMIT ----
+  // Holds the real submit function until the user confirms in the review modal.
+  let pendingSubmit = null;
+  const reviewModal = $('review-modal');
+
+  function openReview(title, rows, submitFn) {
+    $('review-title').textContent = title;
+    $('review-body').innerHTML = rows.map(r =>
+      `<div class="rv-row"><div class="rv-label">${esc(r[0])}</div><div class="rv-value">${r[1] || '—'}</div></div>`
+    ).join('');
+    pendingSubmit = submitFn;
+    reviewModal.classList.remove('hidden');
+  }
+  function closeReview() { reviewModal.classList.add('hidden'); pendingSubmit = null; }
+  $('review-edit').addEventListener('click', closeReview);
+  $('review-submit').addEventListener('click', async () => {
+    if (!pendingSubmit) return;
+    const fn = pendingSubmit;
+    closeReview();
+    try { await fn(); } catch (e) { /* handled inside fn */ }
+  });
+
   // ---- BITACORA ----
   $('b-submit').addEventListener('click', async () => {
     const corte = document.querySelector('input[name="b-corte"]:checked');
@@ -1593,41 +1642,63 @@
       const detailEl = document.querySelector(`textarea[data-for="t-${t}"]`);
       temas[t] = { ok: (sel.value === 'ok' || sel.value === 'ok_nota'), detalle: (detailEl && detailEl.value.trim()) || '' };
     });
-    let user; try { user = await requireUser(); } catch(e) { return; }
-    $('b-submit').disabled = true;
-    // Upload optional photo first (uploadPhoto is hoisted from the Maintenance section)
-    let photoUrl = '';
+    const propinas = (document.querySelector('input[name="b-propinas"]:checked') || {}).value || 'normal';
+    const propinasDetalle = (document.querySelector('textarea[data-for="b-propinas"]') || {}).value || '';
+    const personal = $('b-personal').value;
+    const notas = $('b-notas').value;
     const bPhoto = $('b-photo').files[0];
-    if (bPhoto) {
-      try {
-        photoUrl = await uploadPhoto(bPhoto, 'bitacora');
-      } catch(e) {
-        showMsg($('b-msg'), 'Error al subir la foto: ' + e.message, 'err');
-        $('b-submit').disabled = false;
-        return;
+
+    // Build a read-only summary for the review modal
+    const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', promos:'Descuentos y cortesías' };
+    const themeRows = Object.keys(themeLabels).map(t => {
+      const v = temas[t];
+      if (!v || v.ok === null) return null;
+      const state = v.ok ? '✅ Bien' : '⚠️ Problema';
+      return [themeLabels[t], v.detalle ? `${state} — ${v.detalle}` : state];
+    }).filter(Boolean);
+    const rows = [
+      ['Sucursal', sucursal.value],
+      ['Afluencia', afluencia.value],
+      ['Cómo fue el día', corte.value],
+      ...themeRows,
+      ['Propinas', propinas === 'normal' ? '✅ Normales' : (propinasDetalle ? `⚠️ Irregulares — ${propinasDetalle}` : '⚠️ Irregulares')],
+      ['Personal / horas', personal || '—'],
+      ['Notas', notas || '—'],
+      ['Foto', bPhoto ? bPhoto.name : '—'],
+      ['Confirmación', '✅ Sí']
+    ];
+
+    openReview('📓 Revisa tu bitácora', rows, async () => {
+      let user; try { user = await requireUser(); } catch(e) { return; }
+      $('b-submit').disabled = true;
+      // Upload optional photo first
+      let photoUrl = '';
+      if (bPhoto) {
+        try { photoUrl = await uploadPhoto(bPhoto, 'bitacora'); }
+        catch(e) { showMsg($('b-msg'), 'Error al subir la foto: ' + e.message, 'err'); $('b-submit').disabled = false; return; }
       }
-    }
-    const { error } = await supabase.from('bitacora').insert({
-      submitted_by: user.id,
-      branch: sucursal.value,
-      corte: corte.value,
-      afluencia: afluencia.value,
-      personal: $('b-personal').value,
-      notas: $('b-notas').value,
-      temas: temas,
-      propinas: (document.querySelector('input[name="b-propinas"]:checked') || {}).value || 'normal',
-      propinas_detalle: (document.querySelector('textarea[data-for="b-propinas"]') || {}).value || '',
-      photo: photoUrl,
-      confirmacion: true
+      const { error } = await supabase.from('bitacora').insert({
+        submitted_by: user.id,
+        branch: sucursal.value,
+        corte: corte.value,
+        afluencia: afluencia.value,
+        personal: personal,
+        notas: notas,
+        temas: temas,
+        propinas: propinas,
+        propinas_detalle: propinasDetalle,
+        photo: photoUrl,
+        confirmacion: true
+      });
+      if (error) { showMsg($('b-msg'), 'Error: ' + error.message, 'err'); $('b-submit').disabled = false; return; }
+      // Reset form, re-enable, and return home so a captain can log another branch
+      $('b-msg').textContent = '✅ Bitácora enviada. ¡Gracias!'; $('b-msg').className = 'msg ok'; $('b-msg').classList.remove('hidden');
+      setTimeout(() => {
+        resetForm('bitacora');
+        clearMsg($('b-msg'));
+        goHome();
+      }, 1200);
     });
-    if (error) { showMsg($('b-msg'), 'Error: ' + error.message, 'err'); $('b-submit').disabled = false; return; }
-    // Reset form, re-enable, and return home so a captain can log another branch
-    $('b-msg').textContent = '✅ Bitácora enviada. ¡Gracias!'; $('b-msg').className = 'msg ok'; $('b-msg').classList.remove('hidden');
-    setTimeout(() => {
-      resetForm('bitacora');
-      clearMsg($('b-msg'));
-      goHome();
-    }, 1200);
   });
 
   // ---- MAINTENANCE ----
@@ -1647,29 +1718,39 @@
     const desc = $('m-desc').value.trim();
     const prioridad = document.querySelector('input[name="m-prioridad"]:checked');
     if (!sucursal || !area || !desc) { showMsg($('m-msg'), 'Completa sucursal, área y descripción', 'err'); return; }
-    let user; try { user = await requireUser(); } catch(e) { return; }
-    $('m-submit').disabled = true;
-    let photoUrls = [];
-    try {
-      const f = $('m-photo').files[0];
-      if (f) { const url = await uploadPhoto(f, 'mant'); photoUrls = [url]; }
-    } catch(e) { showMsg($('m-msg'), 'Error al subir la foto: ' + e.message, 'err'); $('m-submit').disabled = false; return; }
-    const { error } = await supabase.from('maintenance_requests').insert({
-      submitted_by: user.id,
-      branch: sucursal.value,
-      area,
-      description: desc,
-      priority: prioridad ? prioridad.value : 'Normal',
-      photo_url: photoUrls[0] || '',
-      photo_urls: photoUrls,
-      status: 'Solicitado'
+    const mPhoto = $('m-photo').files[0];
+    const rows = [
+      ['Sucursal', sucursal.value],
+      ['Área / equipo', area],
+      ['Descripción', desc],
+      ['Prioridad', prioridad ? prioridad.value : 'Normal'],
+      ['Foto', mPhoto ? mPhoto.name : '—']
+    ];
+    openReview('🔧 Revisa tu solicitud', rows, async () => {
+      let user; try { user = await requireUser(); } catch(e) { return; }
+      $('m-submit').disabled = true;
+      let photoUrls = [];
+      try {
+        const f = $('m-photo').files[0];
+        if (f) { const url = await uploadPhoto(f, 'mant'); photoUrls = [url]; }
+      } catch(e) { showMsg($('m-msg'), 'Error al subir la foto: ' + e.message, 'err'); $('m-submit').disabled = false; return; }
+      const { error } = await supabase.from('maintenance_requests').insert({
+        submitted_by: user.id,
+        branch: sucursal.value,
+        area,
+        description: desc,
+        priority: prioridad ? prioridad.value : 'Normal',
+        photo_url: photoUrls[0] || '',
+        photo_urls: photoUrls,
+        status: 'Solicitado'
+      });
+      if (error) { showMsg($('m-msg'), 'Error: ' + error.message, 'err'); $('m-submit').disabled = false; return; }
+      $('m-msg').textContent = '✅ Solicitud de mantenimiento enviada'; $('m-msg').className = 'msg ok'; $('m-msg').classList.remove('hidden');
+      setTimeout(() => {
+        resetForm('mantenimiento'); $('m-photo').value = '';
+        clearMsg($('m-msg')); goHome();
+      }, 1200);
     });
-    if (error) { showMsg($('m-msg'), 'Error: ' + error.message, 'err'); $('m-submit').disabled = false; return; }
-    $('m-msg').textContent = '✅ Solicitud de mantenimiento enviada'; $('m-msg').className = 'msg ok'; $('m-msg').classList.remove('hidden');
-    setTimeout(() => {
-      resetForm('mantenimiento'); $('m-photo').value = '';
-      clearMsg($('m-msg')); goHome();
-    }, 1200);
   });
 
   // ---- COMPRAS ----
@@ -1677,36 +1758,194 @@
     const sucursal = document.querySelector('input[name="c-sucursal"]:checked');
     const item = $('c-item').value.trim();
     if (!sucursal || !item) { showMsg($('c-msg'), 'Completa sucursal y artículo', 'err'); return; }
-    let user; try { user = await requireUser(); } catch(e) { return; }
-    $('c-submit').disabled = true;
-    let photoUrls = [];
-    try {
-      const f = $('c-photo').files[0];
-      if (f) { const url = await uploadPhoto(f, 'compra'); photoUrls = [url]; }
-    } catch(e) { showMsg($('c-msg'), 'Error al subir la foto: ' + e.message, 'err'); $('c-submit').disabled = false; return; }
     const amountVal = $('c-amount').value.trim();
-    const { error } = await supabase.from('purchases').insert({
-      submitted_by: user.id,
-      branch: sucursal.value,
-      item,
-      vendor: $('c-vendor').value.trim(),
-      amount: amountVal ? Number(amountVal) : null,
-      link: $('c-link').value.trim(),
-      notes: $('c-notes').value.trim(),
-      photo_urls: photoUrls,
-      status: 'Solicitado'
+    const cPhoto = $('c-photo').files[0];
+    const rows = [
+      ['Sucursal', sucursal.value],
+      ['Artículo', item],
+      ['Proveedor / tienda', $('c-vendor').value.trim() || '—'],
+      ['Monto aprox.', amountVal ? '$' + Number(amountVal).toLocaleString('es-MX') + ' MXN' : '—'],
+      ['Link', $('c-link').value.trim() || '—'],
+      ['Notas', $('c-notes').value.trim() || '—'],
+      ['Foto', cPhoto ? cPhoto.name : '—']
+    ];
+    openReview('🛒 Revisa tu solicitud', rows, async () => {
+      let user; try { user = await requireUser(); } catch(e) { return; }
+      $('c-submit').disabled = true;
+      let photoUrls = [];
+      try {
+        const f = $('c-photo').files[0];
+        if (f) { const url = await uploadPhoto(f, 'compra'); photoUrls = [url]; }
+      } catch(e) { showMsg($('c-msg'), 'Error al subir la foto: ' + e.message, 'err'); $('c-submit').disabled = false; return; }
+      const { error } = await supabase.from('purchases').insert({
+        submitted_by: user.id,
+        branch: sucursal.value,
+        item,
+        vendor: $('c-vendor').value.trim(),
+        amount: amountVal ? Number(amountVal) : null,
+        link: $('c-link').value.trim(),
+        notes: $('c-notes').value.trim(),
+        photo_urls: photoUrls,
+        status: 'Solicitado'
+      });
+      if (error) { showMsg($('c-msg'), 'Error: ' + error.message, 'err'); $('c-submit').disabled = false; return; }
+      $('c-msg').textContent = '✅ Solicitud de compra enviada'; $('c-msg').className = 'msg ok'; $('c-msg').classList.remove('hidden');
+      setTimeout(() => {
+        resetForm('compras'); $('c-photo').value = '';
+        clearMsg($('c-msg')); goHome();
+      }, 1200);
     });
-    if (error) { showMsg($('c-msg'), 'Error: ' + error.message, 'err'); $('c-submit').disabled = false; return; }
-    $('c-msg').textContent = '✅ Solicitud de compra enviada'; $('c-msg').className = 'msg ok'; $('c-msg').classList.remove('hidden');
-    setTimeout(() => {
-      resetForm('compras'); $('c-photo').value = '';
-      clearMsg($('c-msg')); goHome();
-    }, 1200);
   });
 
   // ---- BUZON ----
   // The buzón now opens the Google Form in a new tab (no in-app submit).
   // (Removed the old z-submit handler — the form fields no longer exist.)
+
+  // ---- NATIVE INTERACTIONS ----
+  // Haptic feedback on taps (Android Chrome / iOS Safari where supported)
+  function haptic(pattern) {
+    try {
+      if (navigator.vibrate) navigator.vibrate(pattern || 8);
+    } catch (e) {}
+  }
+  // Light haptic on card taps
+  document.querySelectorAll('.card, .btn, .back').forEach(el => {
+    el.addEventListener('click', () => haptic(6));
+  });
+
+  // Pull-to-refresh on the home view (reloads live sections + estatus badge)
+  (function setupPullToRefresh() {
+    const home = $('home-view');
+    if (!home) return;
+    let startY = 0, pulling = false;
+    const threshold = 70;
+    home.addEventListener('touchstart', e => {
+      if (window.scrollY <= 0) { startY = e.touches[0].clientY; pulling = true; }
+    }, { passive: true });
+    home.addEventListener('touchmove', e => {
+      if (!pulling) return;
+      const dy = e.touches[0].clientY - startY;
+      if (dy > 0 && window.scrollY <= 0) {
+        e.preventDefault();
+        const pct = Math.min(dy / threshold, 1);
+        home.style.transform = `translateY(${dy * 0.4}px)`;
+        home.style.transition = 'none';
+        if (dy > threshold) haptic(10);
+      }
+    }, { passive: false });
+    home.addEventListener('touchend', () => {
+      if (!pulling) return;
+      pulling = false;
+      home.style.transition = 'transform 0.25s ease';
+      home.style.transform = '';
+      // Refresh live sections + badge
+      if (typeof loadHubLiveSections === 'function') loadHubLiveSections();
+      if (currentProfile && currentProfile.role === 'Dueño') updateEstatusBadge();
+    });
+  })();
+
+  // Live presence: show who's online right now (Supabase Realtime presence)
+  (function setupPresence() {
+    try {
+      const presenceEl = document.createElement('div');
+      presenceEl.id = 'presence-bar';
+      presenceEl.style.cssText = 'display:none;align-items:center;gap:6px;padding:8px 16px;font-size:0.8rem;color:var(--muted);background:var(--card);border-bottom:1px solid var(--border);';
+      const userbar = document.querySelector('.userbar');
+      if (userbar) userbar.after(presenceEl);
+      const channel = supabase.channel('presence-' + (Math.random().toString(36).slice(2)));
+      channel.on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const names = Object.values(state).map(p => (p[0] && p[0].name) || 'Alguien');
+        if (names.length > 1) {
+          presenceEl.style.display = 'flex';
+          presenceEl.textContent = '🟢 En línea: ' + names.join(', ');
+        } else {
+          presenceEl.style.display = 'none';
+        }
+      });
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          const { data: { user } } = await supabase.auth.getUser();
+          const name = (currentProfile && currentProfile.name) || (user && user.email) || 'Equipo';
+          await channel.track({ name });
+        }
+      });
+    } catch (e) { /* presence unavailable — non-fatal */ }
+  })();
+
+  // ---- PUSH NOTIFICATIONS ----
+  const VAPID_PUBLIC = 'BDoOetZXhZRlNEPW10oucp4Y_vgCZaafyb2SDlxz_aJymKD9bGnZvgclTPiHHj11FjluYYVjhlgjum5wq0yqqOQ';
+  const notifBtn = $('notif-btn');
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
+  }
+
+  async function getPushSubscription() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+    const reg = await navigator.serviceWorker.ready;
+    return reg.pushManager.getSubscription();
+  }
+
+  async function subscribeToPush() {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC)
+        });
+      }
+      // Save the subscription to Supabase (linked to the current user)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { error } = await supabase.from('push_subscriptions').upsert({
+        user_id: user.id,
+        endpoint: sub.endpoint,
+        p256dh: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')))),
+        auth: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth'))))
+      }, { onConflict: 'endpoint' });
+      if (error) throw error;
+      notifBtn.textContent = '🔔';
+      notifBtn.title = 'Notificaciones activadas';
+      haptic(8);
+    } catch (e) {
+      showMsg($('login-msg'), 'No se pudieron activar las notificaciones: ' + e.message, 'err');
+    }
+  }
+
+  async function unsubscribeFromPush() {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) await sub.unsubscribe();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('push_subscriptions').delete().eq('user_id', user.id);
+      }
+      notifBtn.textContent = '🔕';
+      notifBtn.title = 'Activar notificaciones';
+    } catch (e) { /* non-fatal */ }
+  }
+
+  notifBtn.addEventListener('click', async () => {
+    const sub = await getPushSubscription();
+    if (sub) await unsubscribeFromPush();
+    else await subscribeToPush();
+  });
+
+  // On load, reflect the current subscription state
+  (async function initNotifState() {
+    const sub = await getPushSubscription();
+    if (sub) { notifBtn.textContent = '🔔'; notifBtn.title = 'Notificaciones activadas'; }
+    else { notifBtn.textContent = '🔕'; notifBtn.title = 'Activar notificaciones'; }
+  })();
 
   // ---- INIT ----
   (async () => {
@@ -1744,12 +1983,12 @@
   })();
 
   // Pull the hub's live sections (Desempeño + Opiniones) so the app's bottom
-  // matches the public hub automatically. Fetches index.html and extracts the
-  // blocks between the NUDO_PERF and NUDO_REVIEWS markers.
+  // matches the public hub automatically. Fetches live.html (the extracted
+  // marker blocks) and extracts the NUDO_PERF and NUDO_REVIEWS blocks.
   (function loadHubLiveSections() {
     const target = $('hub-live-sections');
     if (!target) return;
-    fetch('/Nudo-hub/index.html')
+    fetch('/Nudo-hub/live.html')
       .then(r => r.text())
       .then(html => {
         const perf = (html.match(/<!-- NUDO_PERF_START -->([\s\S]*?)<!-- NUDO_PERF_END -->/) || [])[1] || '';

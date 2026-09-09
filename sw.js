@@ -3,6 +3,7 @@ const ASSETS = [
   '/nudo-hub/',
   '/nudo-hub/index.html',
   '/nudo-hub/app.html',
+  '/nudo-hub/live.html',
   '/nudo-hub/manifest.json',
   '/nudo-hub/reglas.html',
   '/nudo-hub/guia.html',
@@ -29,5 +30,36 @@ self.addEventListener('fetch', e => {
       caches.open(CACHE).then(c => c.put(e.request, copy));
       return resp;
     }).catch(() => cached))
+  );
+});
+
+// ---- PUSH NOTIFICATIONS ----
+self.addEventListener('push', e => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; } catch (_) {}
+  const title = data.title || 'Nudo Hub';
+  const options = {
+    body: data.body || '',
+    icon: '/nudo-hub/icon-192.png',
+    badge: '/nudo-hub/icon-192.png',
+    data: { url: data.url || '/nudo-hub/app.html' },
+    vibrate: [100, 50, 100]
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/nudo-hub/app.html';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if (client.url.includes('/Nudo-hub/') && 'focus' in client) {
+          client.navigate(url);
+          return client.focus();
+        }
+      }
+      return clients.openWindow(url);
+    })
   );
 });
