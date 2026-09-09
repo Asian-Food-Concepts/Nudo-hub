@@ -316,7 +316,7 @@
   .plan-add label { font-size: 0.8rem; color: var(--muted); }
   .plan-add input[type="time"] { padding: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg, transparent); color: var(--ink); }
 
-  footer { text-align: center; padding: 20px; color: var(--muted); font-size: 0.8rem; }
+  footer { text-align: center; padding: 8px 20px 20px; color: var(--muted); font-size: 0.8rem; }
   /* Reviews slider (pulled from the hub) */
   .rv-card { padding: 0; overflow: hidden; }
   .rv-viewport { overflow: hidden; }
@@ -723,7 +723,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.61";
+  const APP_VERSION = "v0.62";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
