@@ -784,7 +784,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.72";
+  const APP_VERSION = "v0.73";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1611,6 +1611,10 @@
         const linkHtml = r.link ? `<div style="margin:6px 0 4px;"><a href="${escAttr(r.link)}" target="_blank" rel="noopener" style="color:var(--accent);font-size:0.9rem;font-weight:600;">🔗 Abrir enlace</a></div>` : '';
         const photosHtml = (r.photo_urls && r.photo_urls.length) ? `<div style="display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;">${r.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" />`).join('')}</div>` : '';
         const statusLabel = statusMeta(r)[r.status] ? statusMeta(r)[r.status].label : esc(r.status);
+        // Strip the leading colored-dot emoji from the status label on the card —
+        // the priority badge already carries the color, so a second colored dot
+        // reads as duplicate status info (Ben 2026-09-09).
+        const statusPlain = statusLabel.replace(/^[^\s]+\s/, '');
         // Whole card is tappable -> opens the detail modal
         html += `<div class="estatus-card" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card);cursor:pointer;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
@@ -1619,7 +1623,7 @@
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px;flex-wrap:wrap;">
             ${prioBadge(r.priority)}
-            <span style="font-size:0.8rem;color:var(--muted);">${statusLabel}</span>
+            <span style="font-size:0.8rem;color:var(--muted);">${statusPlain}</span>
           </div>
           ${r.detail ? `<div style="font-size:0.9rem;color:var(--muted);margin:4px 0;">${esc(r.detail)}</div>` : ''}
           ${linkHtml}
