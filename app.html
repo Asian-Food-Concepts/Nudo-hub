@@ -219,6 +219,15 @@
   .notif-toggle.on .switch { background: var(--green); }
   .notif-toggle.on .switch::after { transform: translateX(16px); }
   .notif-toggle:active { opacity: 0.85; }
+  /* Push toggle status toast (v0.90) — visible under the userbar when logged in */
+  .push-toast {
+    position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+    z-index: 70; max-width: calc(100% - 40px); width: auto;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: 0 8px 30px var(--shadow);
+    padding: 10px 16px; font-size: 0.85rem; font-weight: 500;
+    color: var(--ink); text-align: center;
+  }
 
   /* Form page */
   .form-page { display: none; padding: 16px; }
@@ -447,6 +456,9 @@
           <button class="logout" id="logout">Salir</button>
         </div>
       </div>
+
+      <!-- Visible push-status toast (live in app view, unlike login-msg) -->
+      <div id="push-toast" class="push-toast hidden"></div>
 
       <!-- HOME -->
       <div id="home-view">
@@ -827,7 +839,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.89";
+  const APP_VERSION = "v0.90";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -2185,6 +2197,17 @@
   const VAPID_PUBLIC = 'BDoOetZXhZRlNEPW10oucp4Y_vgCZaafyb2SDlxz_aJymKD9bGnZvgclTPiHHj11FjluYYVjhlgjum5wq0yqqOQ';
   const notifToggle = $('notif-toggle');
 
+  // Visible toast for push feedback (login-msg is hidden when logged in).
+  function pushToast(msg, isErr) {
+    const t = $('push-toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.style.color = isErr ? 'var(--red)' : 'var(--ink)';
+    t.classList.remove('hidden');
+    clearTimeout(pushToast._timer);
+    pushToast._timer = setTimeout(() => t.classList.add('hidden'), 4000);
+  }
+
   function setNotifState(on) {
     notifToggle.classList.toggle('on', on);
     notifToggle.setAttribute('aria-checked', on ? 'true' : 'false');
@@ -2208,20 +2231,24 @@
   async function subscribeToPush() {
     try {
       // Push requires the Notification permission to be granted first.
-      // Without this, pushManager.subscribe() throws NotAllowedError on
-      // mobile browsers and the toggle silently flips back off.
-      if (!('Notification' in window)) {
-        showMsg($('login-msg'), 'Tu navegador no soporta notificaciones.', 'err');
-        return;
-      }
-      let perm = Notification.permission;
-      if (perm === 'default') {
-        perm = await Notification.requestPermission();
-      }
-      if (perm !== 'granted') {
+      // On iOS, requestPermission() MUST run synchronously inside the tap
+      // handler — any await before it drops the user-gesture context and iOS
+      // silently never prompts. So the permission check is moved to the top of
+      // the toggle handler (see tapToggle below) and here we just verify.
+      let perm = ('Notification' in window) ? Notification.permission : 'denied';
+      if (perm === 'denied') {
         setNotifState(false);
-        showMsg($('login-msg'), 'Bloqueaste las notificaciones. Actívalas en los ajustes del navegador.', 'err');
+        pushToast('Las notificaciones están bloqueadas. Actívalas en los ajustes del navegador.', true);
         return;
+      }
+      if (perm === 'default') {
+        // Shouldn't reach here if the toggle handler requested first, but if the
+        // gesture was lost, request now as a last resort.
+        perm = await Notification.requestPermission();
+        if (perm !== 'granted') { setNotifState(false); pushToast('Permiso de notificaciones requerido.', true); return; }
+        // Re-check after the call.
+        perm = ('Notification' in window) ? Notification.permission : 'denied';
+        if (perm !== 'granted') { setNotifState(false); pushToast('Permiso de notificaciones requerido.', true); return; }
       }
       const reg = await navigator.serviceWorker.ready;
       let sub = await reg.pushManager.getSubscription();
@@ -2231,9 +2258,8 @@
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC)
         });
       }
-      // Save the subscription to Supabase (linked to the current user)
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { pushToast('No estás conectado.', true); return; }
       const { error } = await supabase.from('push_subscriptions').upsert({
         user_id: user.id,
         endpoint: sub.endpoint,
@@ -2243,9 +2269,10 @@
       if (error) throw error;
       setNotifState(true);
       haptic(8);
+      pushToast('🔔 Notificaciones activadas. Recibirás avisos aquí.');
     } catch (e) {
       setNotifState(false);
-      showMsg($('login-msg'), 'No se pudieron activar las notificaciones: ' + e.message, 'err');
+      pushToast('No se pudieron activar: ' + e.message, true);
     }
   }
 
@@ -2259,10 +2286,31 @@
         await supabase.from('push_subscriptions').delete().eq('user_id', user.id);
       }
       setNotifState(false);
+      pushToast('🔕 Notificaciones desactivadas.');
     } catch (e) { /* non-fatal */ }
   }
 
   notifToggle.addEventListener('click', async () => {
+    // IMPORTANT (iOS): requestPermission() MUST run synchronously as the very
+    // first statement, before ANY await, or iOS drops the tap gesture and
+    // silently never shows the prompt. So grant the permission FIRST, then do
+    // the subscribe/unsubscribe decision.
+    if (!('Notification' in window)) {
+      setNotifState(false);
+      pushToast('Tu navegador no soporta notificaciones.', true);
+      return;
+    }
+    let perm = Notification.permission;
+    if (perm === 'default') {
+      try { perm = await Notification.requestPermission(); }
+      catch (_) { setNotifState(false); pushToast('Tu navegador bloqueó el permiso de notificaciones.', true); return; }
+    }
+    if (perm === 'denied') {
+      setNotifState(false);
+      pushToast('Las notificaciones están bloqueadas. Actívalas en los ajustes del navegador.', true);
+      return;
+    }
+    // Permission is granted (or was already). Now decide subscribe/unsubscribe.
     const sub = await getPushSubscription();
     if (sub) await unsubscribeFromPush();
     else await subscribeToPush();
