@@ -342,6 +342,25 @@
   .plan-add input[type="time"] { padding: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg, transparent); color: var(--ink); }
 
   footer { text-align: center; padding: 8px 20px 20px; color: var(--muted); font-size: 0.8rem; }
+
+  /* ---- Bottom tab bar (v0.85) ---- */
+  body { padding-bottom: calc(72px + env(safe-area-inset-bottom)); } /* reserved for the fixed bottom bar */
+  .bottom-tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    display: flex; justify-content: space-around; align-items: stretch;
+    background: var(--card); border-top: 1px solid var(--border);
+    box-shadow: 0 -1px 4px var(--shadow);
+    padding-bottom: env(safe-area-inset-bottom); /* iPhone home bar */
+  }
+  .tab-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; padding: 8px 4px; border: none; background: transparent;
+    color: var(--muted); font-size: 0.62rem; font-weight: 600; cursor: pointer;
+    min-height: 52px;
+  }
+  .tab-btn .tab-ico { font-size: 1.25rem; line-height: 1; }
+  .tab-btn.active { color: var(--accent); }
+  .tab-btn:active { opacity: 0.7; }
   /* Reviews slider (pulled from the hub) */
   .rv-card { padding: 0; overflow: hidden; }
   .rv-viewport { overflow: hidden; }
@@ -751,6 +770,14 @@
         </div>
       </div>
 
+      <!-- BOTTOM TAB BAR (v0.85) — always-on quick nav -->
+      <nav class="bottom-tabs" id="bottom-tabs" aria-label="Navegación principal">
+        <button class="tab-btn active" data-tab="home"><span class="tab-ico">🏠</span>Inicio</button>
+        <button class="tab-btn" data-tab="estatus"><span class="tab-ico">📋</span>Solicitudes</button>
+        <button class="tab-btn" data-tab="guia"><span class="tab-ico">📘</span>Guía</button>
+        <button class="tab-btn" data-tab="buzon"><span class="tab-ico">💬</span>Buzón</button>
+      </nav>
+
       <!-- ESTATUS DETAIL MODAL -->
       <div class="review-modal hidden" id="estatus-detail">
         <div class="review-box">
@@ -786,7 +813,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.84";
+  const APP_VERSION = "v0.85";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -817,8 +844,12 @@
   }
   initTheme();
 
-  function showLogin() { views.login.classList.remove('hidden'); views.app.classList.add('hidden'); }
-  function showApp() { views.login.classList.add('hidden'); views.app.classList.remove('hidden'); }
+  function showLogin() { views.login.classList.remove('hidden'); views.app.classList.add('hidden'); showBottomTabs(false); }
+  function showApp() { views.login.classList.add('hidden'); views.app.classList.remove('hidden'); showBottomTabs(true); }
+  function showBottomTabs(show) {
+    const tabs = $('bottom-tabs');
+    if (tabs) tabs.style.display = show ? 'flex' : 'none';
+  }
 
   function showMsg(el, text, type) {
     el.textContent = text;
@@ -1038,6 +1069,7 @@
   function goHome() {
     document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
     $('home-view').style.display = 'block';
+    setActiveTab && setActiveTab('home');
   }
   // Reset a form card (div) to its initial state
   function resetForm(cardId) {
@@ -1078,6 +1110,19 @@
     });
   });
 
+  // ---- BITÁCORA "Todo bien" default (v0.85, Ben 2026-09-11) ----
+  // Pre-select every theme + propinas to the positive state on page load so a
+  // normal, problem-free day needs only Sucursal / Afluencia / Cómo fue el día
+  // (3 taps instead of 15). Captains can still override any single theme to
+  // "problema"/"ok_nota" — those remain fully interactive.
+  (function preselectBitacoraDefaults() {
+    document.querySelectorAll('#form-bitacora input[name^="t-"]').forEach(r => {
+      if (r.value === 'ok') r.checked = true;
+    });
+    const propinasNormal = document.querySelector('#form-bitacora input[name="b-propinas"][value="normal"]');
+    if (propinasNormal) propinasNormal.checked = true;
+  })();
+
   document.querySelectorAll('[data-form]').forEach(a => {
     a.addEventListener('click', e => {
       e.preventDefault();
@@ -1088,6 +1133,35 @@
       if (f === 'horario') loadSchedule();
       if (f === 'estatus') loadEstatus();
       if (f === 'plan') loadPlanner();
+      setActiveTab(null);
+    });
+  });
+
+  // ---- BOTTOM TAB BAR (v0.85) ----
+  function setActiveTab(tabName) {
+    document.querySelectorAll('#bottom-tabs .tab-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === tabName);
+    });
+  }
+  document.querySelectorAll('#bottom-tabs .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
+      if (tab === 'home') {
+        goHome();
+      } else if (tab === 'estatus') {
+        $('home-view').style.display = 'none';
+        $('form-estatus').classList.add('active');
+        loadEstatus();
+      } else if (tab === 'guia') {
+        $('home-view').style.display = 'none';
+        $('guide-frame').src = '/Nudo-hub/guia.html';
+        $('form-guide').classList.add('active');
+      } else if (tab === 'buzon') {
+        $('home-view').style.display = 'none';
+        $('form-buzon').classList.add('active');
+      }
+      setActiveTab(tab);
     });
   });
   // Guide cards open an in-app iframe (back stays inside the app)
