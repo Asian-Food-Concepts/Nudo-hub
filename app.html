@@ -343,23 +343,26 @@
 
   footer { text-align: center; padding: 8px 20px 20px; color: var(--muted); font-size: 0.8rem; }
 
-  /* ---- Bottom tab bar (v0.85) ---- */
-  body { padding-bottom: calc(72px + env(safe-area-inset-bottom)); } /* reserved for the fixed bottom bar */
+  /* ---- Bottom tab bar (v0.88) — floating centered dock ---- */
+  body { padding-bottom: calc(90px + env(safe-area-inset-bottom)); } /* reserved for the dock */
   .bottom-tabs {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
-    display: flex; justify-content: space-around; align-items: stretch;
-    background: var(--card); border-top: 1px solid var(--border);
-    box-shadow: 0 -1px 4px var(--shadow);
-    padding-bottom: env(safe-area-inset-bottom); /* iPhone home bar */
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: 16px; z-index: 50;
+    display: flex; justify-content: space-around; align-items: center;
+    width: min(calc(100% - 28px), 380px);
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 999px; box-shadow: 0 8px 30px var(--shadow);
+    padding: 6px; gap: 2px;
+    box-sizing: border-box;
   }
   .tab-btn {
-    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 2px; padding: 8px 4px; border: none; background: transparent;
-    color: var(--muted); font-size: 0.62rem; font-weight: 600; cursor: pointer;
-    min-height: 52px;
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 9px 10px; border: none; background: transparent;
+    color: var(--muted); font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    border-radius: 999px; transition: background 0.15s, color 0.15s;
   }
-  .tab-btn .tab-ico { font-size: 1.25rem; line-height: 1; }
-  .tab-btn.active { color: var(--accent); }
+  .tab-btn .tab-ico { font-size: 1.05rem; line-height: 1; }
+  .tab-btn.active { color: var(--accent); background: var(--checked-bg); }
   .tab-btn:active { opacity: 0.7; }
 
   /* Códigos flip card (v0.86) — hidden by default, tap to reveal */
@@ -479,6 +482,11 @@
             <div class="text"><div class="title">Solicitud de Compras y Reposición</div><div class="sub">Solicita compras o reposición de insumos</div></div>
             <div class="arrow">›</div>
           </a>
+          <a class="card" href="#" data-form="buzon">
+            <div class="icon icon-form">💬</div>
+            <div class="text"><div class="title">Buzón de Sugerencias</div><div class="sub">Anónimo y opcional</div></div>
+            <div class="arrow">›</div>
+          </a>
         </div>
 
         <div class="section-title">Seguimiento</div>
@@ -537,16 +545,6 @@
         <!-- Live sections pulled from the hub (Desempeño + Opiniones) so the
              app's bottom matches the public hub automatically. -->
         <div id="hub-live-sections"></div>
-
-        <!-- Buzón sits at the very bottom, after everything else. -->
-        <div class="section-title" style="margin-top:24px;">Sugerencias</div>
-        <div class="card-list">
-          <a class="card" href="#" data-form="buzon">
-            <div class="icon icon-form">💬</div>
-            <div class="text"><div class="title">Buzón de Sugerencias</div><div class="sub">Anónimo y opcional</div></div>
-            <div class="arrow">›</div>
-          </a>
-        </div>
       </div>
 
       <!-- GUIDE VIEW (in-app, so back stays inside the app) -->
@@ -787,12 +785,11 @@
         </div>
       </div>
 
-      <!-- BOTTOM TAB BAR (v0.85) — always-on quick nav -->
+      <!-- BOTTOM TAB BAR (v0.88) — floating dock, 3 tabs -->
       <nav class="bottom-tabs" id="bottom-tabs" aria-label="Navegación principal">
         <button class="tab-btn active" data-tab="home"><span class="tab-ico">🏠</span>Inicio</button>
         <button class="tab-btn" data-tab="estatus"><span class="tab-ico">📋</span>Solicitudes</button>
         <button class="tab-btn" data-tab="guia"><span class="tab-ico">📘</span>Guía</button>
-        <button class="tab-btn" data-tab="buzon"><span class="tab-ico">💬</span>Buzón</button>
       </nav>
 
       <!-- ESTATUS DETAIL MODAL -->
@@ -830,7 +827,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.87";
+  const APP_VERSION = "v0.89";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1174,9 +1171,6 @@
         $('home-view').style.display = 'none';
         $('guide-frame').src = '/Nudo-hub/guia.html';
         $('form-guide').classList.add('active');
-      } else if (tab === 'buzon') {
-        $('home-view').style.display = 'none';
-        $('form-buzon').classList.add('active');
       }
       setActiveTab(tab);
     });
