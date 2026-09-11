@@ -361,6 +361,17 @@
   .tab-btn .tab-ico { font-size: 1.25rem; line-height: 1; }
   .tab-btn.active { color: var(--accent); }
   .tab-btn:active { opacity: 0.7; }
+
+  /* Códigos flip card (v0.86) — hidden by default, tap to reveal */
+  .flip-card { cursor: pointer; -webkit-user-select: none; user-select: none; }
+  .flip-card .flip-hint { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+  .flip-card .flip-code { display: none; }
+  .flip-card.revealed .flip-hint { display: none; }
+  .flip-card.revealed .flip-code { display: block; }
+  .flip-code .code-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px dashed var(--border); font-size: 0.9rem; }
+  .flip-code .code-row:last-child { border-bottom: none; }
+  .flip-code .code-lbl { color: var(--muted); font-weight: 600; }
+  .flip-code .code-val { font-weight: 700; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
   /* Reviews slider (pulled from the hub) */
   .rv-card { padding: 0; overflow: hidden; }
   .rv-viewport { overflow: hidden; }
@@ -437,11 +448,17 @@
       <!-- HOME -->
       <div id="home-view">
         <div class="card-list" style="margin-bottom:4px;">
-          <div class="card" style="cursor:default;">
+          <div class="card flip-card" id="codes-flip" style="cursor:pointer;">
             <div class="icon icon-form">🔑</div>
             <div class="text">
-              <div class="title">Códigos de sucursal</div>
-              <div class="sub">Roma Norte: <b>0000</b> · Del Valle: <b>0000</b></div>
+              <div class="title">Códigos de acceso</div>
+              <!-- Hidden by default: tap reveals the actual codes -->
+              <div class="flip-hint">👆 Toca para mostrar los códigos</div>
+              <div class="flip-code">
+                <div class="code-row"><span class="code-lbl">Roma Norte</span><span class="code-val">5626</span></div>
+                <div class="code-row"><span class="code-lbl">Del Valle</span><span class="code-val">139678</span></div>
+                <div class="code-row"><span class="code-lbl">Alarma (ADT)</span><span class="code-val">0000</span></div>
+              </div>
             </div>
           </div>
         </div>
@@ -813,7 +830,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.85";
+  const APP_VERSION = "v0.86";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1164,6 +1181,13 @@
       setActiveTab(tab);
     });
   });
+
+  // ---- CÓDIGOS FLIP CARD (v0.86) ----
+  // Codes are hidden by default; tap the card to reveal them (and tap again to hide).
+  const codesFlip = $('codes-flip');
+  if (codesFlip) {
+    codesFlip.addEventListener('click', () => codesFlip.classList.toggle('revealed'));
+  }
   // Guide cards open an in-app iframe (back stays inside the app)
   document.querySelectorAll('[data-guide]').forEach(a => {
     a.addEventListener('click', e => {
