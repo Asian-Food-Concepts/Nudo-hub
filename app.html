@@ -352,11 +352,11 @@
 
   footer { text-align: center; padding: 8px 20px 20px; color: var(--muted); font-size: 0.8rem; }
 
-  /* ---- Bottom tab bar (v0.88) — floating centered dock ---- */
-  body { padding-bottom: calc(90px + env(safe-area-inset-bottom)); } /* reserved for the dock */
+  /* ---- Bottom tab bar (v0.91) — floating centered dock, sits low ---- */
+  body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); } /* reserved for the dock */
   .bottom-tabs {
     position: fixed; left: 50%; transform: translateX(-50%);
-    bottom: 16px; z-index: 50;
+    bottom: max(8px, env(safe-area-inset-bottom)); z-index: 50;
     display: flex; justify-content: space-around; align-items: center;
     width: min(calc(100% - 28px), 380px);
     background: var(--card); border: 1px solid var(--border);
@@ -839,7 +839,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.90";
+  const APP_VERSION = "v0.91";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
