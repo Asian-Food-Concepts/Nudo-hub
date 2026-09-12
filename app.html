@@ -837,25 +837,13 @@
         <div class="form-card" id="card-entrevistas">
           <h2>🎯 Entrevistas</h2>
           <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">Registra a un candidato entrevistado (Dueño, Capitán o Gerente).</p>
-          <div class="field"><label>Sucursal</label>
-            <div class="radio-group">
-              <label><input type="radio" name="i-branch" value="Roma Norte"><span>Roma Norte</span></label>
-              <label><input type="radio" name="i-branch" value="Del Valle"><span>Del Valle</span></label>
-            </div>
-          </div>
           <div class="field"><label>Nombre *</label><input type="text" id="i-first" placeholder="Nombre"></div>
           <div class="field"><label>Apellido paterno *</label><input type="text" id="i-paterno" placeholder="Apellido paterno"></div>
           <div class="field"><label>Apellido materno</label><input type="text" id="i-materno" placeholder="Apellido materno"></div>
           <div class="field"><label>Email</label><input type="email" id="i-email" placeholder="correo@ejemplo.com"></div>
           <div class="field"><label>Teléfono / WhatsApp</label><input type="tel" id="i-phone" placeholder="55 1234 5678"></div>
           <div class="field"><label>Puesto aplicado *</label>
-            <div class="radio-group">
-              <label><input type="radio" name="i-puesto" value="Capitán"><span>Capitán</span></label>
-              <label><input type="radio" name="i-puesto" value="Cocinero"><span>Cocinero</span></label>
-              <label><input type="radio" name="i-puesto" value="Barista de Boba"><span>Barista de Boba</span></label>
-              <label><input type="radio" name="i-puesto" value="Mesero"><span>Mesero</span></label>
-              <label><input type="radio" name="i-puesto" value="Otro"><span>Otro</span></label>
-            </div>
+            <select id="i-puesto" style="width:100%;"><option value="">Selecciona un puesto…</option><option>Capitán</option><option>Cocinero</option><option>Barista de Boba</option><option>Mesero</option><option>Otro</option></select>
             <input type="text" id="i-puesto-otro" class="hidden" placeholder="Especifica el puesto" style="margin-top:8px;width:100%;">
           </div>
           <div class="field"><label>Sueldo bruto por semana (MXN)</label><input type="number" id="i-salario" min="0" step="0.01" placeholder="Ej. 2500"></div>
@@ -868,23 +856,14 @@
               <label><input type="radio" name="i-status" value="Rechazado"><span>🔴 Rechazado</span></label>
             </div>
           </div>
-          <div class="field"><label>Calificación (1-5)</label>
-            <div class="radio-group" id="i-rating-group">
-              <label><input type="radio" name="i-rating" value="1"><span>⭐</span></label>
-              <label><input type="radio" name="i-rating" value="2"><span>⭐⭐</span></label>
-              <label><input type="radio" name="i-rating" value="3"><span>⭐⭐⭐</span></label>
-              <label><input type="radio" name="i-rating" value="4"><span>⭐⭐⭐⭐</span></label>
-              <label><input type="radio" name="i-rating" value="5"><span>⭐⭐⭐⭐⭐</span></label>
-            </div>
+          <div class="field"><label>Calificación: <span id="i-rating-val">—</span></label>
+            <input type="range" id="i-rating" min="1" max="5" step="1" value="3" style="width:100%;height:44px;">
           </div>
-          <div class="field"><label>¿Quién estuvo en la entrevista?</label>
-            <div id="i-panelists"><select id="i-panel-0" class="panelist-select" style="width:100%;margin-bottom:6px;"></select></div>
+          <div class="field"><label>Entrevistadores</label>
+            <div id="i-panelists"><select id="i-panel-0" class="panelist-select" style="width:100%;font-size:1rem;min-height:48px;margin-bottom:6px;"></select></div>
             <button type="button" class="btn btn-outline" id="i-panelist-add" style="font-size:0.95rem;padding:14px;min-height:48px;">+ Agregar entrevistador</button>
-            <div style="color:var(--muted);font-size:0.8rem;margin-top:4px;">Hasta 3 personas del equipo.</div>
           </div>
-          <div class="field"><label>Fecha de entrevista</label><input type="date" id="i-date"></div>
           <div class="field"><label>Disponibilidad / inicio</label><input type="text" id="i-availability" placeholder="Cuándo puede empezar, horario"></div>
-          <div class="field"><label>Referencia (quién lo refirió)</label><input type="text" id="i-reference" placeholder="Nombre, si alguien lo refirió"></div>
           <div class="field"><label>Notas / comentarios</label><textarea id="i-notas" placeholder="Impresiones, seguimiento, red flags…"></textarea></div>
           <div id="i-msg" class="msg hidden"></div>
           <button class="btn" id="i-submit" style="width:100%;">Registrar entrevista</button>
@@ -938,7 +917,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.98";
+  const APP_VERSION = "v0.99";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1254,15 +1233,31 @@
     if (propinasNormal) propinasNormal.checked = true;
   })();
 
-  // Entrevistas: show the "Otro" puesto text box when Otro is selected
-  document.querySelectorAll('#form-entrevistas input[name="i-puesto"]').forEach(r => {
-    r.addEventListener('change', () => {
+  // Entrevistas: show the "Otro" puesto text box when Otro is selected (dropdown v0.99)
+  (function(){
+    const sel = $('i-puesto');
+    if (!sel) return;
+    const toggle = () => {
       const box = $('i-puesto-otro');
       if (!box) return;
-      box.classList.toggle('hidden', r.value !== 'Otro');
-      if (r.value === 'Otro') box.focus();
-    });
-  });
+      const show = sel.value === 'Otro';
+      box.classList.toggle('hidden', !show);
+      if (show) box.focus();
+    };
+    sel.addEventListener('change', toggle);
+    toggle();
+  })();
+
+  // Entrevistas: live Calificación slider label (v0.99)
+  (function(){
+    const r = $('i-rating');
+    const out = $('i-rating-val');
+    if (!r || !out) return;
+    const stars = ['★','★★','★★★','★★★★','★★★★★'];
+    const update = () => { out.textContent = stars[(parseInt(r.value,10)||1)-1] || '—'; };
+    r.addEventListener('input', update);
+    update();
+  })();
 
   // Entrevistas panelists: dynamic roster dropdowns (up to 3 interviewers),
   // populated from the `profiles` roster. "+ Agregar" adds another select.
@@ -2193,19 +2188,17 @@
   $('i-submit').addEventListener('click', async () => {
     const first = $('i-first').value.trim();
     const paterno = $('i-paterno').value.trim();
-    const branch = document.querySelector('input[name="i-branch"]:checked');
-    const puesto = document.querySelector('input[name="i-puesto"]:checked');
+    const puestoEl = $('i-puesto');
     const status = document.querySelector('input[name="i-status"]:checked');
-    const rating = document.querySelector('input[name="i-rating"]:checked');
     if (!first || !paterno) { showMsg($('i-msg'), 'Captura al menos nombre y apellido paterno', 'err'); return; }
-    if (!puesto) { showMsg($('i-msg'), 'Selecciona el puesto aplicado', 'err'); return; }
+    if (!puestoEl.value) { showMsg($('i-msg'), 'Selecciona el puesto aplicado', 'err'); return; }
     if (!status) { showMsg($('i-msg'), 'Selecciona el estado (oferta / pendiente / rechazado)', 'err'); return; }
-    const puestoVal = puesto.value;
+    const puestoVal = puestoEl.value;
     const puestoOtro = (puestoVal === 'Otro' ? $('i-puesto-otro').value.trim() : '');
     if (puestoVal === 'Otro' && !puestoOtro) { showMsg($('i-msg'), 'Especifica el puesto en "Otro"', 'err'); return; }
     const salario = $('i-salario').value;
-    const fecha = $('i-date').value || null;
-    const ratingVal = rating ? parseInt(rating.value, 10) : null;
+    const fecha = new Date().toISOString().slice(0, 10); // auto-captured today (interview date)
+    const ratingVal = parseInt($('i-rating').value, 10);
     // Panelists: all non-empty selected names (up to 3)
     const panelists = Array.from(document.querySelectorAll('#form-entrevistas .panelist-select'))
       .map(s => s.value).filter(v => v && v !== '');
@@ -2223,7 +2216,6 @@
     const puestoLabel = puestoVal === 'Otro' ? (puestoOtro || 'Otro') : puestoVal;
     const rows = [
       ['Nombre', fullName],
-      ['Sucursal', (branch && branch.value) || '—'],
       ['Puesto', puestoLabel],
       ['Estado', status.value === 'Oferta' ? '🟢 Oferta' : status.value === 'Pendiente' ? '🟡 Pendiente' : '🔴 Rechazado'],
       ['Calificación', ratingVal ? '⭐'.repeat(ratingVal) : '—'],
@@ -2234,7 +2226,6 @@
       ['Bono', bonoStr()],
       ['Fecha', fecha || '—'],
       ['Disponibilidad', $('i-availability').value.trim() || '—'],
-      ['Referencia', $('i-reference').value.trim() || '—'],
       ['Notas', $('i-notas').value.trim() || '—']
     ];
 
@@ -2254,7 +2245,6 @@
       $('i-submit').disabled = true;
       const { error } = await supabase.from('interviews').insert({
         submitted_by: user.id,
-        branch: (branch && branch.value) || null,
         first_name: first,
         paterno: paterno,
         materno: $('i-materno').value.trim() || '',
@@ -2268,7 +2258,6 @@
         rating: ratingVal,
         panelists: panelists,
         availability: $('i-availability').value.trim() || '',
-        reference: $('i-reference').value.trim() || '',
         notas: $('i-notas').value.trim() || '',
         interview_date: fecha
       });
