@@ -849,10 +849,24 @@
               <label><input type="radio" name="i-status" value="Rechazado"><span>🔴 Rechazado</span></label>
             </div>
           </div>
+          <div class="field"><label>Calificación (1-5)</label>
+            <div class="radio-group" id="i-rating-group">
+              <label><input type="radio" name="i-rating" value="1"><span>⭐</span></label>
+              <label><input type="radio" name="i-rating" value="2"><span>⭐⭐</span></label>
+              <label><input type="radio" name="i-rating" value="3"><span>⭐⭐⭐</span></label>
+              <label><input type="radio" name="i-rating" value="4"><span>⭐⭐⭐⭐</span></label>
+              <label><input type="radio" name="i-rating" value="5"><span>⭐⭐⭐⭐⭐</span></label>
+            </div>
+          </div>
+          <div class="field"><label>¿Quién estuvo en la entrevista?</label>
+            <div id="i-panelists"><select id="i-panel-0" class="panelist-select" style="width:100%;margin-bottom:6px;"></select></div>
+            <button type="button" class="btn btn-outline" id="i-panelist-add" style="font-size:0.85rem;padding:6px 12px;">+ Agregar entrevistador</button>
+            <div style="color:var(--muted);font-size:0.8rem;margin-top:4px;">Hasta 3 personas del equipo.</div>
+          </div>
           <div class="field"><label>Fecha de entrevista</label><input type="date" id="i-date"></div>
           <div class="field"><label>Disponibilidad / inicio</label><input type="text" id="i-availability" placeholder="Cuándo puede empezar, horario"></div>
           <div class="field"><label>Referencia (quién lo refirió)</label><input type="text" id="i-reference" placeholder="Nombre, si alguien lo refirió"></div>
-          <div class="field"><label>Notas</label><textarea id="i-notas" placeholder="Impresiones, seguimiento, red flags…"></textarea></div>
+          <div class="field"><label>Notas / comentarios</label><textarea id="i-notas" placeholder="Impresiones, seguimiento, red flags…"></textarea></div>
           <div id="i-msg" class="msg hidden"></div>
           <button class="btn" id="i-submit" style="width:100%;">Registrar entrevista</button>
         </div>
@@ -905,7 +919,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.94";
+  const APP_VERSION = "v0.95";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1231,6 +1245,61 @@
     });
   });
 
+  // Entrevistas panelists: dynamic roster dropdowns (up to 3 interviewers),
+  // populated from the `profiles` roster. "+ Agregar" adds another select.
+  let panelistCount = 1;
+  const MAX_PANELISTS = 3;
+  let panelRoster = [];
+  async function loadPanelistRoster() {
+    const { data } = await supabase.from('profiles').select('name, role, branch').eq('active', true).order('name');
+    panelRoster = (data || []).filter(p => p.name).map(p => ({
+      label: [p.name, p.role, p.branch].filter(Boolean).join(' · '),
+      value: p.name
+    }));
+    refreshPanelistSelects();
+  }
+  function panelistOptions(selected) {
+    let opts = '<option value="">— Selecciona —</option>';
+    panelRoster.forEach(p => {
+      opts += `<option value="${escAttr(p.value)}" ${p.value === selected ? 'selected' : ''}>${esc(p.label)}</option>`;
+    });
+    return opts;
+  }
+  function refreshPanelistSelects() {
+    document.querySelectorAll('#form-entrevistas .panelist-select').forEach(sel => {
+      const cur = sel.value;
+      sel.innerHTML = panelistOptions(cur);
+    });
+  }
+  function addPanelistSelect() {
+    if (panelistCount >= MAX_PANELISTS) { showMsg($('i-msg'), 'Máximo ' + MAX_PANELISTS + ' entrevistadores.', 'err'); return; }
+    if (!panelRoster.length) { showMsg($('i-msg'), 'Carga la lista del equipo primero.', 'err'); return; }
+    panelistCount++;
+    const sel = document.createElement('select');
+    sel.className = 'panelist-select';
+    sel.id = 'i-panel-' + (panelistCount - 1);
+    sel.style.cssText = 'width:100%;margin-bottom:6px;';
+    sel.innerHTML = panelistOptions('');
+    $('i-panelists').appendChild(sel);
+    if (panelistCount >= MAX_PANELISTS) { $('i-panelist-add').style.display = 'none'; }
+  }
+  function resetPanelists() {
+    const wrap = $('i-panelists');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    const sel = document.createElement('select');
+    sel.className = 'panelist-select';
+    sel.id = 'i-panel-0';
+    sel.style.cssText = 'width:100%;margin-bottom:6px;';
+    sel.innerHTML = panelistOptions('');
+    wrap.appendChild(sel);
+    panelistCount = 1;
+    if ($('i-panelist-add')) $('i-panelist-add').style.display = '';
+  }
+  if ($('i-panelist-add')) {
+    $('i-panelist-add').addEventListener('click', addPanelistSelect);
+  }
+
   document.querySelectorAll('[data-form]').forEach(a => {
     a.addEventListener('click', e => {
       e.preventDefault();
@@ -1240,7 +1309,7 @@
       $('form-' + f).classList.add('active');
       if (f === 'horario') loadSchedule();
       if (f === 'estatus') loadEstatus();
-      if (f === 'entrevistas') loadEntrevistas();
+      if (f === 'entrevistas') { loadEntrevistas(); loadPanelistRoster(); }
       if (f === 'plan') loadPlanner();
       setActiveTab(null);
     });
@@ -2108,6 +2177,7 @@
     const branch = document.querySelector('input[name="i-branch"]:checked');
     const puesto = document.querySelector('input[name="i-puesto"]:checked');
     const status = document.querySelector('input[name="i-status"]:checked');
+    const rating = document.querySelector('input[name="i-rating"]:checked');
     if (!first || !paterno) { showMsg($('i-msg'), 'Captura al menos nombre y apellido paterno', 'err'); return; }
     if (!puesto) { showMsg($('i-msg'), 'Selecciona el puesto aplicado', 'err'); return; }
     if (!status) { showMsg($('i-msg'), 'Selecciona el estado (oferta / pendiente / rechazado)', 'err'); return; }
@@ -2116,6 +2186,10 @@
     if (puestoVal === 'Otro' && !puestoOtro) { showMsg($('i-msg'), 'Especifica el puesto en "Otro"', 'err'); return; }
     const salario = $('i-salario').value;
     const fecha = $('i-date').value || null;
+    const ratingVal = rating ? parseInt(rating.value, 10) : null;
+    // Panelists: all non-empty selected names (up to 3)
+    const panelists = Array.from(document.querySelectorAll('#form-entrevistas .panelist-select'))
+      .map(s => s.value).filter(v => v && v !== '');
 
     const fullName = [first, paterno, ($('i-materno').value.trim() || '')].filter(Boolean).join(' ');
     const puestoLabel = puestoVal === 'Otro' ? (puestoOtro || 'Otro') : puestoVal;
@@ -2124,6 +2198,8 @@
       ['Sucursal', (branch && branch.value) || '—'],
       ['Puesto', puestoLabel],
       ['Estado', status.value === 'Oferta' ? '🟢 Oferta' : status.value === 'Pendiente' ? '🟡 Pendiente' : '🔴 Rechazado'],
+      ['Calificación', ratingVal ? '⭐'.repeat(ratingVal) : '—'],
+      ['Entrevistadores', panelists.length ? panelists.join(', ') : '—'],
       ['Email', $('i-email').value.trim() || '—'],
       ['Teléfono', $('i-phone').value.trim() || '—'],
       ['Sueldo bruto/sem', salario ? '$' + Number(salario).toLocaleString('es-MX') + ' MXN' : '—'],
@@ -2161,6 +2237,8 @@
         salario_bruto_semanal: salario ? parseFloat(salario) : null,
         bono: $('i-bono').value.trim() || '',
         status: status.value,
+        rating: ratingVal,
+        panelists: panelists,
         availability: $('i-availability').value.trim() || '',
         reference: $('i-reference').value.trim() || '',
         notas: $('i-notas').value.trim() || '',
@@ -2170,6 +2248,7 @@
       $('i-msg').textContent = '✅ Entrevista registrada.'; $('i-msg').className = 'msg ok'; $('i-msg').classList.remove('hidden');
       setTimeout(() => {
         resetForm('entrevistas');
+        resetPanelists();
         clearMsg($('i-msg'));
         loadEntrevistas();
       }, 1000);
@@ -2186,7 +2265,7 @@
     let user; try { user = await requireUser(); } catch(e) { return; }
     const { data: rows, error } = await supabase
       .from('interviews')
-      .select('id, first_name, paterno, materno, branch, puesto, puesto_otro, salario_bruto_semanal, bono, status, email, phone, availability, reference, notas, interview_date, created_at')
+      .select('id, first_name, paterno, materno, branch, puesto, puesto_otro, salario_bruto_semanal, bono, status, email, phone, availability, reference, notas, rating, panelists, interview_date, created_at')
       .order('created_at', { ascending: false });
     if (error) {
       showMsg(msgEl, 'Error al cargar entrevistas: ' + error.message, 'err');
@@ -2213,10 +2292,13 @@
         const branch = r.branch ? ' · ' + esc(r.branch) : '';
         const mail = r.email ? esc(r.email) : '';
         const phone = r.phone ? esc(r.phone) : '';
+        const stars = r.rating ? '⭐'.repeat(r.rating) : '';
+        const panelists = (r.panelists && r.panelists.length) ? ' · Entrevistaron: ' + esc(r.panelists.join(', ')) : '';
         html += `<div style="padding:10px 12px;border-bottom:1px solid #ededed;">
-          <div style="font-weight:600;">${esc(name)}${branch}</div>
+          <div style="font-weight:600;">${esc(name)}${branch}${stars ? ' ' + stars : ''}</div>
           <div style="color:var(--muted);font-size:0.85rem;">${esc(puesto)}${sal ? ' · ' + esc(sal) : ''}</div>
           <div style="color:var(--muted);font-size:0.8rem;margin-top:2px;">${mail}${phone ? (mail ? ' · ' : '') + phone : ''}</div>
+          ${panelists ? '<div style="color:var(--muted);font-size:0.8rem;">' + panelists + '</div>' : ''}
           ${r.bono ? '<div style="color:var(--muted);font-size:0.8rem;">Bono: ' + esc(r.bono) + '</div>' : ''}
           ${r.notas ? '<div style="color:var(--muted);font-size:0.8rem;">' + esc(r.notas) + '</div>' : ''}
         </div>`;
