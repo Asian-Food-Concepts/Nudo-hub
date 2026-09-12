@@ -649,6 +649,14 @@
             </div>
             <textarea class="t-detail hidden" data-for="t-seguridad" data-ph-ok="Riesgo menor o pendiente — nota (opcional)" data-ph-problema="Problema / incidente de seguridad — qué, quién, cómo se manejó" placeholder="Problema / incidente de seguridad — qué, quién"></textarea>
           </div>
+          <div class="field"><label>Reservaciones <span style="color:var(--muted);font-size:0.8rem;">(mesas, esperas, cancelaciones)</span></label>
+            <div class="radio-group">
+              <label><input type="radio" name="t-reservaciones" value="ok"><span>✅</span></label>
+              <label><input type="radio" name="t-reservaciones" value="ok_nota"><span>✅ + nota</span></label>
+              <label><input type="radio" name="t-reservaciones" value="problema"><span>⚠️ + nota</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="t-reservaciones" data-ph-ok="Reservaciones, mesas, esperas — nota (opcional)" data-ph-problema="Problema con reservaciones — qué pasó, quién, cómo se resolvió" placeholder="Reservaciones, mesas, esperas, cancelaciones"></textarea>
+          </div>
           <div class="field"><label>Descuentos y Cortesías <span style="color:var(--muted);font-size:0.8rem;">(qué, a quién, por qué)</span></label>
             <div class="radio-group">
               <label><input type="radio" name="t-promos" value="ok"><span>✅ Ninguno</span></label>
@@ -839,7 +847,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.91";
+  const APP_VERSION = "v0.92";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1934,16 +1942,16 @@
     const sucursal = document.querySelector('input[name="b-sucursal"]:checked');
     if (!sucursal || !corte || !afluencia) { showMsg($('b-msg'), 'Selecciona sucursal, corte y afluencia', 'err'); return; }
     // All theme toggles + propinas are mandatory (Ben 2026-09-08)
-    const requiredThemes = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','promos'];
+    const requiredThemes = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','promos'];
     const missingTheme = requiredThemes.find(t => !document.querySelector(`input[name="t-${t}"]:checked`));
     if (missingTheme) {
-      const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', promos:'Descuentos y cortesías' };
+      const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', reservaciones:'Reservaciones', promos:'Descuentos y cortesías' };
       showMsg($('b-msg'), `Falta calificar: ${themeLabels[missingTheme]}`, 'err'); return;
     }
     const propinasSel = document.querySelector('input[name="b-propinas"]:checked');
     if (!propinasSel) { showMsg($('b-msg'), 'Selecciona el estado de las propinas', 'err'); return; }
     if (!$('b-confirm').checked) { showMsg($('b-msg'), 'Confirma el cierre', 'err'); return; }
-    // Build the temas object from all 8 theme toggles + their detail texts
+    // Build the temas object from all theme toggles + their detail texts
     const temas = {};
     requiredThemes.forEach(t => {
       const sel = document.querySelector(`input[name="t-${t}"]:checked`);
@@ -1956,7 +1964,7 @@
     const bPhoto = $('b-photo').files[0];
 
     // Build a read-only summary for the review modal
-    const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', promos:'Descuentos y cortesías' };
+    const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', reservaciones:'Reservaciones', promos:'Descuentos y cortesías' };
     const themeRows = Object.keys(themeLabels).map(t => {
       const v = temas[t];
       if (!v || v.ok === null) return null;
