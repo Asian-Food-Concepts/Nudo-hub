@@ -633,7 +633,7 @@
             </div>
             <textarea class="t-detail hidden" data-for="t-instalacion" data-ph-ok="Ajuste menor o revisión — nota (opcional)" data-ph-problema="Problema / mantenimiento necesario — qué, dónde, desde cuándo" placeholder="Problema / mantenimiento necesario — qué, dónde, desde cuándo"></textarea>
           </div>
-          <div class="field"><label>Limpieza <span style="color:var(--muted);font-size:0.8rem;">(zona, estándar, pendiente)</span></label>
+          <div class="field"><label>Limpieza <span style="color:var(--muted);font-size:0.8rem;">(zona, estándar, pendiente, fauna)</span></label>
             <div class="radio-group">
               <label><input type="radio" name="t-limpieza" value="ok"><span>✅</span></label>
               <label><input type="radio" name="t-limpieza" value="ok_nota"><span>✅ + nota</span></label>
@@ -847,7 +847,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.92";
+  const APP_VERSION = "v0.93";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
