@@ -511,6 +511,15 @@
           </a>
         </div>
 
+        <div class="section-title">Reclutamiento</div>
+        <div class="card-list">
+          <a class="card" href="#" id="entrevistas-card" data-form="entrevistas" style="display:none;">
+            <div class="icon icon-form">🎯</div>
+            <div class="text"><div class="title">Entrevistas</div><div class="sub">Registra candidatos y ofertas</div></div>
+            <div class="arrow">›</div>
+          </a>
+        </div>
+
         <div class="section-title">Horario</div>
         <div class="card-list">
           <div class="card" style="opacity:0.5;cursor:not-allowed;filter:grayscale(0.6);">
@@ -805,6 +814,55 @@
         </div>
       </div>
 
+      <div id="form-entrevistas" class="form-page">
+        <button class="back" data-back><span class="chev">‹</span> Volver</button>
+        <div class="form-card" id="card-entrevistas">
+          <h2>🎯 Entrevistas</h2>
+          <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">Registra a un candidato entrevistado (Dueño, Capitán o Gerente).</p>
+          <div class="field"><label>Sucursal</label>
+            <div class="radio-group">
+              <label><input type="radio" name="i-branch" value="Roma Norte"><span>Roma Norte</span></label>
+              <label><input type="radio" name="i-branch" value="Del Valle"><span>Del Valle</span></label>
+            </div>
+          </div>
+          <div class="field"><label>Nombre *</label><input type="text" id="i-first" placeholder="Nombre"></div>
+          <div class="field"><label>Apellido paterno *</label><input type="text" id="i-paterno" placeholder="Apellido paterno"></div>
+          <div class="field"><label>Apellido materno</label><input type="text" id="i-materno" placeholder="Apellido materno"></div>
+          <div class="field"><label>Email</label><input type="email" id="i-email" placeholder="correo@ejemplo.com"></div>
+          <div class="field"><label>Teléfono / WhatsApp</label><input type="tel" id="i-phone" placeholder="55 1234 5678"></div>
+          <div class="field"><label>Puesto aplicado *</label>
+            <div class="radio-group">
+              <label><input type="radio" name="i-puesto" value="Capitán"><span>Capitán</span></label>
+              <label><input type="radio" name="i-puesto" value="Cocinero"><span>Cocinero</span></label>
+              <label><input type="radio" name="i-puesto" value="Barista de Boba"><span>Barista de Boba</span></label>
+              <label><input type="radio" name="i-puesto" value="Mesero"><span>Mesero</span></label>
+              <label><input type="radio" name="i-puesto" value="Otro"><span>Otro</span></label>
+            </div>
+            <input type="text" id="i-puesto-otro" class="hidden" placeholder="Especifica el puesto" style="margin-top:8px;width:100%;">
+          </div>
+          <div class="field"><label>Sueldo bruto por semana (MXN)</label><input type="number" id="i-salario" min="0" step="0.01" placeholder="Ej. 2500"></div>
+          <div class="field"><label>Bono (si aplica)</label><input type="text" id="i-bono" placeholder="Monto o descripción"></div>
+          <div class="field"><label>Estado *</label>
+            <div class="radio-group">
+              <label><input type="radio" name="i-status" value="Oferta"><span>🟢 Oferta</span></label>
+              <label><input type="radio" name="i-status" value="Pendiente"><span>🟡 Pendiente</span></label>
+              <label><input type="radio" name="i-status" value="Rechazado"><span>🔴 Rechazado</span></label>
+            </div>
+          </div>
+          <div class="field"><label>Fecha de entrevista</label><input type="date" id="i-date"></div>
+          <div class="field"><label>Disponibilidad / inicio</label><input type="text" id="i-availability" placeholder="Cuándo puede empezar, horario"></div>
+          <div class="field"><label>Referencia (quién lo refirió)</label><input type="text" id="i-reference" placeholder="Nombre, si alguien lo refirió"></div>
+          <div class="field"><label>Notas</label><textarea id="i-notas" placeholder="Impresiones, seguimiento, red flags…"></textarea></div>
+          <div id="i-msg" class="msg hidden"></div>
+          <button class="btn" id="i-submit" style="width:100%;">Registrar entrevista</button>
+        </div>
+        <div class="form-card" style="margin-top:16px;">
+          <h2>📋 Candidatos registrados</h2>
+          <div id="entrevistas-msg" class="msg hidden"></div>
+          <div id="entrevistas-list"><p style="color:var(--muted);">Cargando…</p></div>
+        </div>
+      </div>
+
       <!-- BOTTOM TAB BAR (v0.88) — floating dock, 3 tabs -->
       <nav class="bottom-tabs" id="bottom-tabs" aria-label="Navegación principal">
         <button class="tab-btn active" data-tab="home"><span class="tab-ico">🏠</span>Inicio</button>
@@ -847,7 +905,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.93";
+  const APP_VERSION = "v0.94";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1039,6 +1097,12 @@
       if (isLeader) { planCard.style.display = ''; }
       else { planCard.style.display = 'none'; }
     }
+    // Role-gate Entrevistas: Dueño, Capitán, Gerente
+    const entrevistasCard = document.getElementById('entrevistas-card');
+    if (entrevistasCard) {
+      if (isLeader) { entrevistasCard.style.display = ''; }
+      else { entrevistasCard.style.display = 'none'; }
+    }
     // Owner follow-up badge on Estatus de solicitudes (Dueño only)
     if (role === 'Dueño') updateEstatusBadge();
   }
@@ -1157,6 +1221,16 @@
     if (propinasNormal) propinasNormal.checked = true;
   })();
 
+  // Entrevistas: show the "Otro" puesto text box when Otro is selected
+  document.querySelectorAll('#form-entrevistas input[name="i-puesto"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const box = $('i-puesto-otro');
+      if (!box) return;
+      box.classList.toggle('hidden', r.value !== 'Otro');
+      if (r.value === 'Otro') box.focus();
+    });
+  });
+
   document.querySelectorAll('[data-form]').forEach(a => {
     a.addEventListener('click', e => {
       e.preventDefault();
@@ -1166,6 +1240,7 @@
       $('form-' + f).classList.add('active');
       if (f === 'horario') loadSchedule();
       if (f === 'estatus') loadEstatus();
+      if (f === 'entrevistas') loadEntrevistas();
       if (f === 'plan') loadPlanner();
       setActiveTab(null);
     });
@@ -2025,6 +2100,131 @@
       }, 1200);
     });
   });
+
+  // ---- ENTREVISTAS ----
+  $('i-submit').addEventListener('click', async () => {
+    const first = $('i-first').value.trim();
+    const paterno = $('i-paterno').value.trim();
+    const branch = document.querySelector('input[name="i-branch"]:checked');
+    const puesto = document.querySelector('input[name="i-puesto"]:checked');
+    const status = document.querySelector('input[name="i-status"]:checked');
+    if (!first || !paterno) { showMsg($('i-msg'), 'Captura al menos nombre y apellido paterno', 'err'); return; }
+    if (!puesto) { showMsg($('i-msg'), 'Selecciona el puesto aplicado', 'err'); return; }
+    if (!status) { showMsg($('i-msg'), 'Selecciona el estado (oferta / pendiente / rechazado)', 'err'); return; }
+    const puestoVal = puesto.value;
+    const puestoOtro = (puestoVal === 'Otro' ? $('i-puesto-otro').value.trim() : '');
+    if (puestoVal === 'Otro' && !puestoOtro) { showMsg($('i-msg'), 'Especifica el puesto en "Otro"', 'err'); return; }
+    const salario = $('i-salario').value;
+    const fecha = $('i-date').value || null;
+
+    const fullName = [first, paterno, ($('i-materno').value.trim() || '')].filter(Boolean).join(' ');
+    const puestoLabel = puestoVal === 'Otro' ? (puestoOtro || 'Otro') : puestoVal;
+    const rows = [
+      ['Nombre', fullName],
+      ['Sucursal', (branch && branch.value) || '—'],
+      ['Puesto', puestoLabel],
+      ['Estado', status.value === 'Oferta' ? '🟢 Oferta' : status.value === 'Pendiente' ? '🟡 Pendiente' : '🔴 Rechazado'],
+      ['Email', $('i-email').value.trim() || '—'],
+      ['Teléfono', $('i-phone').value.trim() || '—'],
+      ['Sueldo bruto/sem', salario ? '$' + Number(salario).toLocaleString('es-MX') + ' MXN' : '—'],
+      ['Bono', $('i-bono').value.trim() || '—'],
+      ['Fecha', fecha || '—'],
+      ['Disponibilidad', $('i-availability').value.trim() || '—'],
+      ['Referencia', $('i-reference').value.trim() || '—'],
+      ['Notas', $('i-notas').value.trim() || '—']
+    ];
+
+    openReview('🎯 Revisa la entrevista', rows, async () => {
+      let user; try { user = await requireUser(); } catch(e) { return; }
+      // Enforce leader role at submit (defense in depth)
+      const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      const role = (prof && prof.role) || '';
+      const roleGroup = planRoleGroup(role);
+      const allowed = ['Dueño', 'Capitán', 'Gerente'];
+      const isLeader = allowed.includes(role) || roleGroup === 'Capitán';
+      if (!isLeader) {
+        showMsg($('i-msg'), 'Solo Dueño, Capitán o Gerente pueden registrar entrevistas.', 'err');
+        goHome();
+        return;
+      }
+      $('i-submit').disabled = true;
+      const { error } = await supabase.from('interviews').insert({
+        submitted_by: user.id,
+        branch: (branch && branch.value) || null,
+        first_name: first,
+        paterno: paterno,
+        materno: $('i-materno').value.trim() || '',
+        email: $('i-email').value.trim() || '',
+        phone: $('i-phone').value.trim() || '',
+        puesto: puestoVal,
+        puesto_otro: puestoOtro || '',
+        salario_bruto_semanal: salario ? parseFloat(salario) : null,
+        bono: $('i-bono').value.trim() || '',
+        status: status.value,
+        availability: $('i-availability').value.trim() || '',
+        reference: $('i-reference').value.trim() || '',
+        notas: $('i-notas').value.trim() || '',
+        interview_date: fecha
+      });
+      if (error) { showMsg($('i-msg'), 'Error: ' + error.message, 'err'); $('i-submit').disabled = false; return; }
+      $('i-msg').textContent = '✅ Entrevista registrada.'; $('i-msg').className = 'msg ok'; $('i-msg').classList.remove('hidden');
+      setTimeout(() => {
+        resetForm('entrevistas');
+        clearMsg($('i-msg'));
+        loadEntrevistas();
+      }, 1000);
+    });
+  });
+
+  // Load + render the candidate list grouped by status (Oferta / Pendiente / Rechazado)
+  async function loadEntrevistas() {
+    const listEl = $('entrevistas-list');
+    const msgEl = $('entrevistas-msg');
+    if (!listEl) return;
+    listEl.innerHTML = '<p style="color:var(--muted);">Cargando…</p>';
+    msgEl.classList.add('hidden');
+    let user; try { user = await requireUser(); } catch(e) { return; }
+    const { data: rows, error } = await supabase
+      .from('interviews')
+      .select('id, first_name, paterno, materno, branch, puesto, puesto_otro, salario_bruto_semanal, bono, status, email, phone, availability, reference, notas, interview_date, created_at')
+      .order('created_at', { ascending: false });
+    if (error) {
+      showMsg(msgEl, 'Error al cargar entrevistas: ' + error.message, 'err');
+      listEl.innerHTML = '';
+      return;
+    }
+    if (!rows || !rows.length) {
+      listEl.innerHTML = '<p style="color:var(--muted);">Aún no hay entrevistas registradas.</p>';
+      return;
+    }
+    const statusOrder = ['Oferta', 'Pendiente', 'Rechazado'];
+    const statusLabels = { 'Oferta': '🟢 Oferta', 'Pendiente': '🟡 Pendiente', 'Rechazado': '🔴 Rechazado' };
+    const groups = {};
+    rows.forEach(r => { const k = r.status || 'Pendiente'; (groups[k] = groups[k] || []).push(r); });
+    let html = '';
+    statusOrder.forEach(st => {
+      const lst = groups[st] || [];
+      if (!lst.length) return;
+      html += `<div style="margin-top:14px;"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:6px;">${statusLabels[st]} (${lst.length})</div><div style="border:1px solid var(--border, #e3e0d8);border-radius:10px;overflow:hidden;">`;
+      lst.forEach(r => {
+        const name = [r.first_name, r.paterno, (r.materno || '')].filter(Boolean).join(' ');
+        const puesto = r.puesto === 'Otro' && r.puesto_otro ? r.puesto_otro : r.puesto;
+        const sal = r.salario_bruto_semanal ? '$' + Number(r.salario_bruto_semanal).toLocaleString('es-MX') + '/sem' : (r.bono ? '' : '—');
+        const branch = r.branch ? ' · ' + esc(r.branch) : '';
+        const mail = r.email ? esc(r.email) : '';
+        const phone = r.phone ? esc(r.phone) : '';
+        html += `<div style="padding:10px 12px;border-bottom:1px solid #ededed;">
+          <div style="font-weight:600;">${esc(name)}${branch}</div>
+          <div style="color:var(--muted);font-size:0.85rem;">${esc(puesto)}${sal ? ' · ' + esc(sal) : ''}</div>
+          <div style="color:var(--muted);font-size:0.8rem;margin-top:2px;">${mail}${phone ? (mail ? ' · ' : '') + phone : ''}</div>
+          ${r.bono ? '<div style="color:var(--muted);font-size:0.8rem;">Bono: ' + esc(r.bono) + '</div>' : ''}
+          ${r.notas ? '<div style="color:var(--muted);font-size:0.8rem;">' + esc(r.notas) + '</div>' : ''}
+        </div>`;
+      });
+      html += `</div></div>`;
+    });
+    listEl.innerHTML = html;
+  }
 
   // ---- MAINTENANCE ----
   // Upload a photo to Supabase Storage; returns public URL or '' if none.
