@@ -919,7 +919,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.95";
+  const APP_VERSION = "v0.96";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -2276,15 +2276,24 @@
       listEl.innerHTML = '<p style="color:var(--muted);">Aún no hay entrevistas registradas.</p>';
       return;
     }
-    const statusOrder = ['Oferta', 'Pendiente', 'Rechazado'];
-    const statusLabels = { 'Oferta': '🟢 Oferta', 'Pendiente': '🟡 Pendiente', 'Rechazado': '🔴 Rechazado' };
+    const statusOrder = ['Contratado', 'Oferta', 'Pendiente', 'Rechazado', 'Cerrado'];
+    const statusMeta = {
+      'Contratado': { label: '✅ Contratado', color: '#1f7a4d' },
+      'Oferta': { label: '🟢 Oferta', color: '#1565c0' },
+      'Pendiente': { label: '🟡 Pendiente', color: '#c9a227' },
+      'Rechazado': { label: '🔴 Rechazado', color: '#c0392b' },
+      'Cerrado': { label: '⚪ Cerrado', color: '#6b6b6b' }
+    };
+    // All available statuses for the inline quick-set buttons
+    const allStatuses = ['Pendiente', 'Oferta', 'Rechazado', 'Contratado', 'Cerrado'];
     const groups = {};
-    rows.forEach(r => { const k = r.status || 'Pendiente'; (groups[k] = groups[k] || []).push(r); });
+    // Cascade keeping newest-first but terminal (Contratado/Cerrado) can collapse later — here we keep all
+    rows.forEach(r => { const k = statusMeta[r.status] ? r.status : 'Pendiente'; (groups[k] = groups[k] || []).push(r); });
     let html = '';
     statusOrder.forEach(st => {
       const lst = groups[st] || [];
       if (!lst.length) return;
-      html += `<div style="margin-top:14px;"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:6px;">${statusLabels[st]} (${lst.length})</div><div style="border:1px solid var(--border, #e3e0d8);border-radius:10px;overflow:hidden;">`;
+      html += `<div style="margin-top:14px;"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:${statusMeta[st].color};margin-bottom:6px;">${statusMeta[st].label} (${lst.length})</div><div style="border:1px solid var(--border, #e3e0d8);border-radius:10px;overflow:hidden;">`;
       lst.forEach(r => {
         const name = [r.first_name, r.paterno, (r.materno || '')].filter(Boolean).join(' ');
         const puesto = r.puesto === 'Otro' && r.puesto_otro ? r.puesto_otro : r.puesto;
@@ -2294,6 +2303,15 @@
         const phone = r.phone ? esc(r.phone) : '';
         const stars = r.rating ? '⭐'.repeat(r.rating) : '';
         const panelists = (r.panelists && r.panelists.length) ? ' · Entrevistaron: ' + esc(r.panelists.join(', ')) : '';
+        // Inline status quick-set buttons (one tap changes the state live)
+        const btns = allStatuses.map(s => {
+          const m = statusMeta[s];
+          const active = r.status === s;
+          const bg = active ? m.color : 'transparent';
+          const fg = active ? '#fff' : 'var(--muted)';
+          const bd = active ? m.color : 'var(--border, #e3e0d8)';
+          return `<button type="button" data-set-status="${r.id}|${s}" style="border:1px solid ${bd};background:${bg};color:${fg};font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:999px;margin:2px 2px 0 0;cursor:pointer;">${s}</button>`;
+        }).join('');
         html += `<div style="padding:10px 12px;border-bottom:1px solid #ededed;">
           <div style="font-weight:600;">${esc(name)}${branch}${stars ? ' ' + stars : ''}</div>
           <div style="color:var(--muted);font-size:0.85rem;">${esc(puesto)}${sal ? ' · ' + esc(sal) : ''}</div>
@@ -2301,12 +2319,32 @@
           ${panelists ? '<div style="color:var(--muted);font-size:0.8rem;">' + panelists + '</div>' : ''}
           ${r.bono ? '<div style="color:var(--muted);font-size:0.8rem;">Bono: ' + esc(r.bono) + '</div>' : ''}
           ${r.notas ? '<div style="color:var(--muted);font-size:0.8rem;">' + esc(r.notas) + '</div>' : ''}
+          <div style="margin-top:6px;">${btns}</div>
         </div>`;
       });
       html += `</div></div>`;
     });
     listEl.innerHTML = html;
   }
+
+  // Inline status change from the candidate list (live toggle). Delegated so
+  // buttons added after each load work without re-binding.
+  document.addEventListener('click', async (e) => {
+    const el = e.target.closest('[data-set-status]');
+    if (!el) return;
+    e.preventDefault();
+    const [id, status] = el.getAttribute('data-set-status').split('|');
+    let user; try { user = await requireUser(); } catch(err) { return; }
+    let isLeader = false;
+    const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    const role = (prof && prof.role) || '';
+    const roleGroup = planRoleGroup(role);
+    isLeader = ['Dueño', 'Capitán', 'Gerente'].includes(role) || roleGroup === 'Capitán';
+    if (!isLeader) { return; }
+    const { error } = await supabase.from('interviews').update({ status }).eq('id', id);
+    if (error) { showMsg($('entrevistas-msg'), 'Error al cambiar estado: ' + error.message, 'err'); return; }
+    loadEntrevistas();
+  });
 
   // ---- MAINTENANCE ----
   // Upload a photo to Supabase Storage; returns public URL or '' if none.
