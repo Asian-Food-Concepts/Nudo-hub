@@ -859,7 +859,8 @@
             <input type="text" id="i-puesto-otro" class="hidden" placeholder="Especifica el puesto" style="margin-top:8px;width:100%;">
           </div>
           <div class="field"><label>Sueldo bruto por semana (MXN)</label><input type="number" id="i-salario" min="0" step="0.01" placeholder="Ej. 2500"></div>
-          <div class="field"><label>Bono (si aplica)</label><input type="text" id="i-bono" placeholder="Monto o descripción"></div>
+          <div class="field"><label>Bono — monto (si aplica) (MXN)</label><input type="number" id="i-bono-monto" min="0" step="0.01" placeholder="Ej. 1000"></div>
+          <div class="field"><label>Bono — tipo</label><input type="text" id="i-bono-tipo" list="bono-tipos" placeholder="Desempeño, ventas…"><datalist id="bono-tipos"><option value="Desempeño"><option value="Ventas"><option value="Asistencia"><option value="Referido"><option value="Otro"></datalist></div>
           <div class="field"><label>Estado *</label>
             <div class="radio-group">
               <label><input type="radio" name="i-status" value="Oferta"><span>🟢 Oferta</span></label>
@@ -937,7 +938,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.97";
+  const APP_VERSION = "v0.98";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -2209,6 +2210,15 @@
     const panelists = Array.from(document.querySelectorAll('#form-entrevistas .panelist-select'))
       .map(s => s.value).filter(v => v && v !== '');
 
+    // Bono: amount + type combined into a display string
+    const bonoMonto = $('i-bono-monto').value.trim();
+    const bonoTipo = $('i-bono-tipo').value.trim();
+    function bonoStr() {
+      if (!bonoMonto && !bonoTipo) return '—';
+      const m = bonoMonto ? '$' + Number(bonoMonto).toLocaleString('es-MX') : '';
+      return [m, bonoTipo || 'Sin tipo'].filter(Boolean).join(' · ');
+    }
+
     const fullName = [first, paterno, ($('i-materno').value.trim() || '')].filter(Boolean).join(' ');
     const puestoLabel = puestoVal === 'Otro' ? (puestoOtro || 'Otro') : puestoVal;
     const rows = [
@@ -2221,7 +2231,7 @@
       ['Email', $('i-email').value.trim() || '—'],
       ['Teléfono', $('i-phone').value.trim() || '—'],
       ['Sueldo bruto/sem', salario ? '$' + Number(salario).toLocaleString('es-MX') + ' MXN' : '—'],
-      ['Bono', $('i-bono').value.trim() || '—'],
+      ['Bono', bonoStr()],
       ['Fecha', fecha || '—'],
       ['Disponibilidad', $('i-availability').value.trim() || '—'],
       ['Referencia', $('i-reference').value.trim() || '—'],
@@ -2253,7 +2263,7 @@
         puesto: puestoVal,
         puesto_otro: puestoOtro || '',
         salario_bruto_semanal: salario ? parseFloat(salario) : null,
-        bono: $('i-bono').value.trim() || '',
+        bono: bonoStr() === '—' ? '' : bonoStr(),
         status: status.value,
         rating: ratingVal,
         panelists: panelists,
