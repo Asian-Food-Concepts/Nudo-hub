@@ -552,7 +552,7 @@
         <div class="card-list">
           <a class="card" href="#" data-form="estatus">
             <div class="icon icon-form">📋</div>
-            <div class="text"><div class="title">Estatus de solicitudes</div><div class="sub">Da seguimiento a tus solicitudes</div></div>
+            <div class="text"><div class="title">Seguimiento de solicitudes</div><div class="sub">Da seguimiento a tus solicitudes</div></div>
             <div class="arrow">›</div>
             <span id="estatus-badge" class="hidden" style="position:absolute;top:8px;right:34px;display:flex;gap:4px;align-items:center;"></span>
           </a>
@@ -859,7 +859,7 @@
       <div id="form-estatus" class="form-page">
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card">
-          <h2>📋 Estatus de solicitudes</h2>
+          <h2>📋 Seguimiento de solicitudes</h2>
           <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">Mantenimiento y compras enviadas desde la app.</p>
           <div id="estatus-msg" class="msg hidden"></div>
           <div id="estatus-list"></div>
@@ -940,7 +940,7 @@
       <!-- BOTTOM TAB BAR (v0.88) — floating dock, 3 tabs -->
       <nav class="bottom-tabs" id="bottom-tabs" aria-label="Navegación principal">
         <button class="tab-btn active" data-tab="home"><span class="tab-ico">🏠</span>Inicio</button>
-        <button class="tab-btn" data-tab="estatus"><span class="tab-ico">📋</span>Solicitudes</button>
+        <button class="tab-btn" data-tab="estatus"><span class="tab-ico">📋</span>Seguimiento</button>
         <button class="tab-btn" data-tab="guia"><span class="tab-ico">📘</span>Guía</button>
       </nav>
 
@@ -979,7 +979,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.100";
+  const APP_VERSION = "v0.101";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
