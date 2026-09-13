@@ -282,34 +282,33 @@
     background: var(--input-bg); color: var(--ink);
     min-height: 48px;
   }
-  /* Entrevistas touch-and-slide picker (v1.00) — mobile-first discrete selector */
-  .slide-picker { user-select: none; -webkit-user-select: none; touch-action: none; }
-  .slide-picker-label {
-    text-align: center; font-size: 1.25rem; font-weight: 700;
-    padding: 12px 8px; border-radius: 12px;
-    background: var(--input-bg); color: var(--accent);
-    border: 1px solid var(--border); min-height: 52px;
-    display: flex; align-items: center; justify-content: center;
+  /* Entrevistas Puesto — Apple-style vertical wheel picker (v0.102, Ben 2026-09-12) */
+  .wheel-picker { user-select: none; -webkit-user-select: none; position: relative; touch-action: pan-y; }
+  .wheel-mask { height: 178px; overflow: hidden; position: relative; border-radius: 14px;
+    background: linear-gradient(var(--input-bg), var(--input-bg)); border: 1px solid var(--border); }
+  /* top + bottom fade to give the wheel a 3D-ish highlight window */
+  .wheel-mask::before, .wheel-mask::after {
+    content: ''; position: absolute; left: 0; right: 0; height: 28%; pointer-events: none; z-index: 2;
   }
-  .slide-picker-track {
-    position: relative; height: 48px; margin-top: 12px;
-    background: var(--input-bg); border: 1px solid var(--border); border-radius: 999px;
+  .wheel-mask::before { top: 0; background: linear-gradient(var(--bg, #f8f7f2), transparent); }
+  .wheel-mask::after  { bottom: 0; background: linear-gradient(transparent, var(--bg, #f8f7f2)); }
+  .wheel-picker::before {
+    content: ''; position: absolute; left: 8px; right: 8px; top: 50%; height: 34px;
+    transform: translateY(-50%); border-radius: 10px; background: var(--accent);
+    opacity: 0.12; z-index: 1; pointer-events: none;
   }
-  .slide-picker-thumb {
-    position: absolute; top: 4px; left: 6px; width: 44px; height: 38px;
-    border-radius: 999px; background: var(--accent);
-    box-shadow: 0 2px 6px rgba(0,0,0,.25); cursor: pointer;
-    transition: left .08s ease; will-change: left;
+  .wheel-rows { will-change: transform; }
+  .wheel-row {
+    height: 34px; line-height: 34px; text-align: center; font-size: 1rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 12px;
+    color: var(--muted); transition: color .12s, font-weight .12s, transform .12s;
   }
-  .slide-picker-thumb::after {
-    content: ''; position: absolute; left: 50%; top: 50%;
-    width: 22px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.85);
-    transform: translate(-50%,-50%);
+  .wheel-row.sel {
+    color: var(--ink); font-weight: 700; font-size: 1.06rem; background: transparent;
   }
-  .slide-picker-thumb.left  { border-radius: 999px 6px 6px 999px; }
-  .slide-picker-thumb.right { border-radius: 6px 999px 999px 6px; }
-  .slide-picker-hint { text-align: center; font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
-  .slide-picker-track:active .slide-picker-thumb { transform: scale(1.04); }
+  .wheel-hint { text-align: center; font-size: 0.78rem; color: var(--muted); margin-top: 8px; }
+  .wheel-picker:focus { outline: none; }
+  .wheel-picker:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
   .checkbox-row input { width: 22px; height: 22px; }
@@ -878,12 +877,17 @@
           <div class="field"><label>Teléfono / WhatsApp</label><input type="tel" id="i-phone" placeholder="55 1234 5678"></div>
           <div class="field"><label>Puesto aplicado *</label>
             <input type="hidden" id="i-puesto" value="">
-            <div class="slide-picker" id="slide-puesto">
-              <div class="slide-picker-label" id="slide-puesto-val">← desliza →</div>
-              <div class="slide-picker-track">
-                <div class="slide-picker-thumb" id="slide-puesto-thumb"></div>
+            <div class="wheel-picker" id="wheel-puesto" tabindex="0" role="listbox" aria-label="Puesto aplicado">
+              <div class="wheel-mask">
+                <div class="wheel-rows" id="wheel-puesto-rows">
+                  <div class="wheel-row" data-puesto="Capitán">Capitán</div>
+                  <div class="wheel-row" data-puesto="Cocinero">Cocinero</div>
+                  <div class="wheel-row" data-puesto="Barista de Boba">Barista de Boba</div>
+                  <div class="wheel-row" data-puesto="Mesero">Mesero</div>
+                  <div class="wheel-row" data-puesto="Otro">Otro</div>
+                </div>
               </div>
-              <div class="slide-picker-hint">Desliza para elegir, toca los lados para ajustar</div>
+              <div class="wheel-hint">Desliza hacia arriba/abajo para elegir</div>
             </div>
             <input type="text" id="i-puesto-otro" class="hidden" placeholder="Especifica el puesto" style="margin-top:8px;width:100%;">
           </div>
@@ -979,7 +983,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.101";
+  const APP_VERSION = "v0.102";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1301,94 +1305,129 @@
     if (propinasNormal) propinasNormal.checked = true;
   })();
 
-  // Entrevistas: Puesto touch-and-slide picker (v1.00) + Otro toggle
+  // Entrevistas: Puesto — Apple-style vertical wheel picker (v0.102, Ben 2026-09-12)
   (function(){
-    const OPTIONS = ['Capitán', 'Cocinero', 'Barista de Boba', 'Mesero', 'Otro'];
-    const input = $('i-puesto');
-    const label = $('slide-puesto-val');
-    const track = $('slide-puesto');
-    const thumb = $('slide-puesto-thumb');
-    if (!input || !label || !track || !thumb) return;
-    let idx = -1; // none selected
+    var OPTIONS = ['Capitán', 'Cocinero', 'Barista de Boba', 'Mesero', 'Otro'];
+    var input = document.getElementById('i-puesto');
+    var wheel = document.getElementById('wheel-puesto');
+    var rowsEl = document.getElementById('wheel-puesto-rows');
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#wheel-puesto-rows .wheel-row'));
+    if (!input || !wheel || !rowsEl || !rows.length) return;
 
-    const toggleOtro = () => {
-      const box = $('i-puesto-otro');
+    var H = 34, CENTER = 72; // wheel-mask 178px: centerline at 178/2 - 17 = 72
+    var idx = 0; // selected index (0 = Capitán)
+    var fIndex = idx; // float index during drag/momentum
+
+    function toggleOtro() {
+      var box = document.getElementById('i-puesto-otro');
       if (!box) return;
-      const show = input.value === 'Otro';
+      var show = input.value === 'Otro';
       box.classList.toggle('hidden', !show);
       if (show) box.focus();
-    };
-
-    function positionThumb() {
-      // thumb spans ~44px of the track; track = track.clientWidth
-      const w = track.clientWidth;
-      if (!w || idx < 0) return;
-      const span = w - 52; // thumb width + paddings
-      const pct = OPTIONS.length <= 1 ? 0 : idx / (OPTIONS.length - 1);
-      thumb.style.left = (6 + pct * span) + 'px';
     }
 
-    function setIndex(i, fire) {
-      idx = Math.max(0, Math.min(OPTIONS.length - 1, i));
-      const v = OPTIONS[idx];
-      input.value = v;
-      label.textContent = v;
-      thumb.classList.toggle('left', idx === 0);
-      thumb.classList.toggle('right', idx === OPTIONS.length - 1);
-      label.style.color = v === 'Otro' ? 'var(--err,#c0392b)' : 'var(--accent)';
-      positionThumb();
-      if (fire) { input.dispatchEvent(new Event('change')); }
+    function render() {
+      var px = CENTER - fIndex * H;
+      rowsEl.style.transform = 'translateY(' + px + 'px)';
+      var sel = Math.round(fIndex);
+      sel = Math.max(0, Math.min(OPTIONS.length - 1, sel));
+      rows.forEach(function(r, i) {
+        r.classList.toggle('sel', i === sel);
+      });
     }
 
-    // Drag to slide — map pointer position to option index
-    let dragging = false;
-    const startDrag = (e) => {
+    function setValue(i, fire) {
+      i = Math.max(0, Math.min(OPTIONS.length - 1, Math.round(i)));
+      idx = i; fIndex = i;
+      input.value = OPTIONS[i];
+      render();
+      if (fire) input.dispatchEvent(new Event('change'));
+    }
+
+    // ---- Drag + momentum ----
+    var dragging = false;
+    var startY = 0, startF = 0;
+    var vel = 0, lastY = 0, lastT = 0;
+    var animId = null;
+
+    function begin(e) {
+      if (dragging) return;
       dragging = true;
-      track.classList.add('dragging');
-      const move = (ev) => {
-        if (!dragging) return;
-        const r = track.getBoundingClientRect();
-        const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
-        const pct = Math.max(0, Math.min(1, (x - r.left) / r.width));
-        setIndex(Math.round(pct * (OPTIONS.length - 1)));
-        // live preview label but don't toggle box while dragging
-        const v = OPTIONS[idx];
-        input.value = v;
-        label.textContent = v;
-      };
-      const end = () => {
-        dragging = false;
-        track.classList.remove('dragging');
-        window.removeEventListener('mousemove', move);
-        window.removeEventListener('mouseup', end);
-        window.removeEventListener('touchmove', move);
-        window.removeEventListener('touchend', end);
-        setIndex(idx, true); // snap + fire change (Otro toggle)
-      };
-      window.addEventListener('mousemove', move);
-      window.addEventListener('mouseup', end);
-      window.addEventListener('touchmove', move, { passive: false });
-      window.addEventListener('touchend', end);
-      move(e);
-    };
-    thumb.addEventListener('mousedown', startDrag);
-    thumb.addEventListener('touchstart', startDrag, { passive: false });
+      stopMomentum();
+      var y = e.touches ? e.touches[0].clientY : e.clientY;
+      startY = y; lastY = y; lastT = Date.now(); vel = 0; startF = fIndex;
+      wheel.classList.add('dragging');
+      document.body.style.overflow = 'hidden';
+    }
+    function move(e) {
+      if (!dragging) return;
+      e.preventDefault();
+      var y = e.touches ? e.touches[0].clientY : e.clientY;
+      var now = Date.now();
+      var dt = now - lastT;
+      if (dt > 0) {
+        vel = (y - lastY) / dt; // px per ms
+        lastY = y; lastT = now;
+      }
+      var dy = y - startY;
+      fIndex = startF - dy / H;
+      // clamp with rubber-band-ish soft clamp
+      if (fIndex < 0) fIndex = fIndex * 0.35;
+      if (fIndex > OPTIONS.length - 1) fIndex = (OPTIONS.length - 1) + (fIndex - (OPTIONS.length - 1)) * 0.35;
+      render();
+    }
+    function end() {
+      if (!dragging) return;
+      dragging = false;
+      wheel.classList.remove('dragging');
+      document.body.style.overflow = '';
+      // momentum
+      vel = Math.max(-5, Math.min(5, vel * (130))); // scale to ~px/s
+      if (Math.abs(vel) > 30) {
+        startMomentum(vel);
+      } else {
+        setValue(fIndex, true);
+        toggleOtro();
+      }
+    }
+    function startMomentum(v) {
+      stopMomentum();
+      var step = 0, delta = 0;
+      (function tick() {
+        delta = delta * 0.92 + v * 16;
+        v = v * 0.92;
+        step++;
+        fIndex = fIndex - (delta / H);
+        if (Math.abs(v) < 0.01 || step > 40) {
+          setValue(fIndex, true);
+          toggleOtro();
+          return;
+        }
+        render();
+        animId = requestAnimationFrame(tick);
+      })();
+    }
+    function stopMomentum() {
+      if (animId) { cancelAnimationFrame(animId); animId = null; }
+    }
 
-    // Tap the label's left/right halves to nudge
-    label.addEventListener('click', (e) => {
-      const r = label.getBoundingClientRect();
-      const x = e.clientX;
-      const leftHalf = (x - r.left) < r.width / 2;
-      const base = idx < 0 ? 0 : idx;
-      setIndex(leftHalf ? base - 1 : base + 1, true);
+    wheel.addEventListener('mousedown', begin);
+    wheel.addEventListener('touchstart', begin, { passive: false });
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+    window.addEventListener('touchmove', move, { passive: false });
+    window.addEventListener('touchend', end);
+    window.addEventListener('touchcancel', end);
+
+    // Keyboard accessibility (up/down)
+    wheel.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowUp') { e.preventDefault(); setValue(idx - 1, true); toggleOtro(); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); setValue(idx + 1, true); toggleOtro(); }
     });
 
-    // Re-position on resize
-    window.addEventListener('resize', positionThumb);
-
     input.addEventListener('change', toggleOtro);
-    setIndex(0, false); // start on Capitán (no toggle fire)
-    window.__slidePuestoReposition = () => positionThumb();
+    setValue(0, true); // force Otro toggle state for initial (Capitán → box hidden)
+    window.__slidePuestoReposition = function(){ render(); };
   })();
 
   // Entrevistas: live Calificación slider label (v0.99)
