@@ -282,6 +282,35 @@
     background: var(--input-bg); color: var(--ink);
     min-height: 48px;
   }
+  /* Entrevistas touch-and-slide picker (v1.00) — mobile-first discrete selector */
+  .slide-picker { user-select: none; -webkit-user-select: none; touch-action: none; }
+  .slide-picker-label {
+    text-align: center; font-size: 1.25rem; font-weight: 700;
+    padding: 12px 8px; border-radius: 12px;
+    background: var(--input-bg); color: var(--accent);
+    border: 1px solid var(--border); min-height: 52px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .slide-picker-track {
+    position: relative; height: 48px; margin-top: 12px;
+    background: var(--input-bg); border: 1px solid var(--border); border-radius: 999px;
+  }
+  .slide-picker-thumb {
+    position: absolute; top: 4px; left: 6px; width: 44px; height: 38px;
+    border-radius: 999px; background: var(--accent);
+    box-shadow: 0 2px 6px rgba(0,0,0,.25); cursor: pointer;
+    transition: left .08s ease; will-change: left;
+  }
+  .slide-picker-thumb::after {
+    content: ''; position: absolute; left: 50%; top: 50%;
+    width: 22px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.85);
+    transform: translate(-50%,-50%);
+  }
+  .slide-picker-thumb.left  { border-radius: 999px 6px 6px 999px; }
+  .slide-picker-thumb.right { border-radius: 6px 999px 999px 6px; }
+  .slide-picker-hint { text-align: center; font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+  .slide-picker-track:active .slide-picker-thumb { transform: scale(1.04); }
+
   .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
   .checkbox-row input { width: 22px; height: 22px; }
   .link-btn { background: none; border: none; color: var(--accent); font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 6px 0; }
@@ -534,6 +563,11 @@
           <a class="card" href="#" id="entrevistas-card" data-form="entrevistas" style="display:none;">
             <div class="icon icon-form">🎯</div>
             <div class="text"><div class="title">Entrevistas</div><div class="sub">Registra candidatos y ofertas</div></div>
+            <div class="arrow">›</div>
+          </a>
+          <a class="card" href="#" id="entrevistados-card" data-form="entrevistados" style="display:none;">
+            <div class="icon icon-form">👥</div>
+            <div class="text"><div class="title">Entrevistados</div><div class="sub">Ver y editar todos los candidatos</div></div>
             <div class="arrow">›</div>
           </a>
         </div>
@@ -843,7 +877,14 @@
           <div class="field"><label>Email</label><input type="email" id="i-email" placeholder="correo@ejemplo.com"></div>
           <div class="field"><label>Teléfono / WhatsApp</label><input type="tel" id="i-phone" placeholder="55 1234 5678"></div>
           <div class="field"><label>Puesto aplicado *</label>
-            <select id="i-puesto" style="width:100%;"><option value="">Selecciona un puesto…</option><option>Capitán</option><option>Cocinero</option><option>Barista de Boba</option><option>Mesero</option><option>Otro</option></select>
+            <input type="hidden" id="i-puesto" value="">
+            <div class="slide-picker" id="slide-puesto">
+              <div class="slide-picker-label" id="slide-puesto-val">← desliza →</div>
+              <div class="slide-picker-track">
+                <div class="slide-picker-thumb" id="slide-puesto-thumb"></div>
+              </div>
+              <div class="slide-picker-hint">Desliza para elegir, toca los lados para ajustar</div>
+            </div>
             <input type="text" id="i-puesto-otro" class="hidden" placeholder="Especifica el puesto" style="margin-top:8px;width:100%;">
           </div>
           <div class="field"><label>Sueldo bruto por semana (MXN)</label><input type="number" id="i-salario" min="0" step="0.01" placeholder="Ej. 2500"></div>
@@ -872,6 +913,27 @@
           <h2>📋 Candidatos registrados</h2>
           <div id="entrevistas-msg" class="msg hidden"></div>
           <div id="entrevistas-list"><p style="color:var(--muted);">Cargando…</p></div>
+        </div>
+      </div>
+
+      <!-- ENTREVISTADOS — full candidate list + edit (v1.00) -->
+      <div id="form-entrevistados" class="form-page">
+        <button class="back" data-back><span class="chev">‹</span> Volver</button>
+        <div class="form-card">
+          <h2>👥 Entrevistados</h2>
+          <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">Todos los candidatos. Toca uno para verlo y editarlo.</p>
+          <input type="search" id="ev-search" placeholder="🔎 Buscar candidato…" style="width:100%;margin-bottom:12px;">
+          <div id="ev-list"><p style="color:var(--muted);">Cargando…</p></div>
+        </div>
+      </div>
+
+      <!-- EDIT CANDIDATE (v1.00) -->
+      <div id="form-editar-entrevista" class="form-page">
+        <button class="back" data-back><span class="chev">‹</span> Volver</button>
+        <div class="form-card" id="card-editar-entrevista">
+          <h2>✏️ Editar entrevista</h2>
+          <div id="ee-msg" class="msg hidden"></div>
+          <div id="ee-body"><p style="color:var(--muted);">Cargando…</p></div>
         </div>
       </div>
 
@@ -917,7 +979,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.99";
+  const APP_VERSION = "v0.100";
   document.getElementById('ver').textContent = APP_VERSION;
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1115,6 +1177,12 @@
       if (isLeader) { entrevistasCard.style.display = ''; }
       else { entrevistasCard.style.display = 'none'; }
     }
+    // Role-gate Entrevistados (edit all): same leader gate
+    const entrevistadosCard = document.getElementById('entrevistados-card');
+    if (entrevistadosCard) {
+      if (isLeader) { entrevistadosCard.style.display = ''; }
+      else { entrevistadosCard.style.display = 'none'; }
+    }
     // Owner follow-up badge on Estatus de solicitudes (Dueño only)
     if (role === 'Dueño') updateEstatusBadge();
   }
@@ -1233,19 +1301,94 @@
     if (propinasNormal) propinasNormal.checked = true;
   })();
 
-  // Entrevistas: show the "Otro" puesto text box when Otro is selected (dropdown v0.99)
+  // Entrevistas: Puesto touch-and-slide picker (v1.00) + Otro toggle
   (function(){
-    const sel = $('i-puesto');
-    if (!sel) return;
-    const toggle = () => {
+    const OPTIONS = ['Capitán', 'Cocinero', 'Barista de Boba', 'Mesero', 'Otro'];
+    const input = $('i-puesto');
+    const label = $('slide-puesto-val');
+    const track = $('slide-puesto');
+    const thumb = $('slide-puesto-thumb');
+    if (!input || !label || !track || !thumb) return;
+    let idx = -1; // none selected
+
+    const toggleOtro = () => {
       const box = $('i-puesto-otro');
       if (!box) return;
-      const show = sel.value === 'Otro';
+      const show = input.value === 'Otro';
       box.classList.toggle('hidden', !show);
       if (show) box.focus();
     };
-    sel.addEventListener('change', toggle);
-    toggle();
+
+    function positionThumb() {
+      // thumb spans ~44px of the track; track = track.clientWidth
+      const w = track.clientWidth;
+      if (!w || idx < 0) return;
+      const span = w - 52; // thumb width + paddings
+      const pct = OPTIONS.length <= 1 ? 0 : idx / (OPTIONS.length - 1);
+      thumb.style.left = (6 + pct * span) + 'px';
+    }
+
+    function setIndex(i, fire) {
+      idx = Math.max(0, Math.min(OPTIONS.length - 1, i));
+      const v = OPTIONS[idx];
+      input.value = v;
+      label.textContent = v;
+      thumb.classList.toggle('left', idx === 0);
+      thumb.classList.toggle('right', idx === OPTIONS.length - 1);
+      label.style.color = v === 'Otro' ? 'var(--err,#c0392b)' : 'var(--accent)';
+      positionThumb();
+      if (fire) { input.dispatchEvent(new Event('change')); }
+    }
+
+    // Drag to slide — map pointer position to option index
+    let dragging = false;
+    const startDrag = (e) => {
+      dragging = true;
+      track.classList.add('dragging');
+      const move = (ev) => {
+        if (!dragging) return;
+        const r = track.getBoundingClientRect();
+        const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        const pct = Math.max(0, Math.min(1, (x - r.left) / r.width));
+        setIndex(Math.round(pct * (OPTIONS.length - 1)));
+        // live preview label but don't toggle box while dragging
+        const v = OPTIONS[idx];
+        input.value = v;
+        label.textContent = v;
+      };
+      const end = () => {
+        dragging = false;
+        track.classList.remove('dragging');
+        window.removeEventListener('mousemove', move);
+        window.removeEventListener('mouseup', end);
+        window.removeEventListener('touchmove', move);
+        window.removeEventListener('touchend', end);
+        setIndex(idx, true); // snap + fire change (Otro toggle)
+      };
+      window.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', end);
+      window.addEventListener('touchmove', move, { passive: false });
+      window.addEventListener('touchend', end);
+      move(e);
+    };
+    thumb.addEventListener('mousedown', startDrag);
+    thumb.addEventListener('touchstart', startDrag, { passive: false });
+
+    // Tap the label's left/right halves to nudge
+    label.addEventListener('click', (e) => {
+      const r = label.getBoundingClientRect();
+      const x = e.clientX;
+      const leftHalf = (x - r.left) < r.width / 2;
+      const base = idx < 0 ? 0 : idx;
+      setIndex(leftHalf ? base - 1 : base + 1, true);
+    });
+
+    // Re-position on resize
+    window.addEventListener('resize', positionThumb);
+
+    input.addEventListener('change', toggleOtro);
+    setIndex(0, false); // start on Capitán (no toggle fire)
+    window.__slidePuestoReposition = () => positionThumb();
   })();
 
   // Entrevistas: live Calificación slider label (v0.99)
@@ -1323,7 +1466,8 @@
       $('form-' + f).classList.add('active');
       if (f === 'horario') loadSchedule();
       if (f === 'estatus') loadEstatus();
-      if (f === 'entrevistas') { loadEntrevistas(); loadPanelistRoster(); }
+      if (f === 'entrevistas') { loadEntrevistas(); loadPanelistRoster(); if (window.__slidePuestoReposition) window.__slidePuestoReposition(); }
+      if (f === 'entrevistados') { loadEntrevistados(); }
       if (f === 'plan') loadPlanner();
       setActiveTab(null);
     });
@@ -1478,7 +1622,16 @@
   });
 
   document.querySelectorAll('[data-back]').forEach(b => {
-    b.addEventListener('click', () => { goHome(); });
+    b.addEventListener('click', () => {
+      // Edit page returns to the Entrevistados list (v1.00); all others go home
+      if (b.closest('#form-editar-entrevista')) {
+        document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
+        $('form-entrevistados').classList.add('active');
+        loadEntrevistados();
+        return;
+      }
+      goHome();
+    });
   });
 
   // ---- SCHEDULE ----
@@ -2362,6 +2515,185 @@
     const { error } = await supabase.from('interviews').update({ status }).eq('id', id);
     if (error) { showMsg($('entrevistas-msg'), 'Error al cambiar estado: ' + error.message, 'err'); return; }
     loadEntrevistas();
+  });
+
+  // ---- ENTREVISTADOS: full candidate list + edit (v1.00) ----
+  let _evAll = [];
+  async function loadEntrevistados() {
+    const listEl = $('ev-list');
+    const msgEl = $('ev-msg');
+    if (!listEl) return;
+    listEl.innerHTML = '<p style="color:var(--muted);">Cargando…</p>';
+    let user; try { user = await requireUser(); } catch(e) { return; }
+    const { data: rows, error } = await supabase
+      .from('interviews')
+      .select('id, first_name, paterno, materno, puesto, puesto_otro, salario_bruto_semanal, bono, status, email, phone, availability, notas, rating, panelists, interview_date, created_at')
+      .order('created_at', { ascending: false });
+    if (error) { listEl.innerHTML = '<p style="color:var(--muted);">Error: ' + esc(error.message) + '</p>'; return; }
+    _evAll = rows || [];
+    const q = ($('ev-search') ? $('ev-search').value.trim() : '').toLowerCase();
+    const filtered = _evAll.filter(r => {
+      if (!q) return true;
+      const name = [r.first_name, r.paterno, (r.materno||'')].join(' ').toLowerCase();
+      const puesto = (r.puesto + ' ' + (r.puesto_otro||'')).toLowerCase();
+      const mail = (r.email||'').toLowerCase();
+      return name.includes(q) || puesto.includes(q) || mail.includes(q);
+    });
+    if (!filtered.length) { listEl.innerHTML = '<p style="color:var(--muted);">No hay candidatos' + (q ? ' que coincidan' : '') + '.</p>'; return; }
+    listEl.innerHTML = filtered.map(r => {
+      const name = [r.first_name, r.paterno, (r.materno||'')].filter(Boolean).join(' ');
+      const puesto = r.puesto === 'Otro' && r.puesto_otro ? r.puesto_otro : r.puesto;
+      const stars = r.rating ? '⭐'.repeat(r.rating) : '';
+      return `<a class="card" href="#" data-ev-open="${escAttr(r.id)}">
+        <div class="icon icon-form">👤</div>
+        <div class="text"><div class="title">${esc(name)} <span style="color:var(--muted);font-weight:400;">· ${esc(puesto||'')}</span></div>
+        <div class="sub">${stars ? stars + ' ' : ''}${esc(r.email||'')}${r.availability ? ' · ' + esc(r.availability) : ''}</div></div>
+        <div class="arrow">›</div>
+      </a>`;
+    }).join('');
+  }
+
+  // Delegated: tap a candidate row → open edit form
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-ev-open]');
+    if (!el) return;
+    e.preventDefault();
+    openEditarEntrevista(el.getAttribute('data-ev-open'));
+  });
+
+  // Search filter re-renders
+  const _evSearch = document.getElementById('ev-search');
+  if (_evSearch) {
+    _evSearch.addEventListener('input', () => loadEntrevistados());
+  }
+
+  // Render the edit form for one candidate into #ee-body
+  function renderEditForm(r) {
+    const puestoOpts = ['Capitán', 'Cocinero', 'Barista de Boba', 'Mesero', 'Otro'].map(p =>
+      `<option value="${p}" ${r.puesto === p ? 'selected' : ''}>${p}</option>`).join('');
+    const statusOpts = ['Pendiente', 'Oferta', 'Rechazado', 'Contratado', 'Cerrado'];
+    const sal = r.salario_bruto_semanal != null ? r.salario_bruto_semanal : '';
+    // Bono stored as combined string — leave editable as free text
+    const panelistsHtml = (r.panelists && r.panelists.length ? r.panelists : ['']).map((p, i) =>
+      `<input type="text" class="ee-panelist" value="${escAttr(p||'')}" placeholder="Entrevistador ${i+1}" style="width:100%;margin-bottom:6px;">`).join('');
+    return `
+      <div class="field"><label>Nombre *</label><input type="text" id="ee-first" value="${escAttr(r.first_name)}"></div>
+      <div class="field"><label>Apellido paterno *</label><input type="text" id="ee-paterno" value="${escAttr(r.paterno)}"></div>
+      <div class="field"><label>Apellido materno</label><input type="text" id="ee-materno" value="${escAttr(r.materno||'')}"></div>
+      <div class="field"><label>Email</label><input type="email" id="ee-email" value="${escAttr(r.email||'')}"></div>
+      <div class="field"><label>Teléfono / WhatsApp</label><input type="tel" id="ee-phone" value="${escAttr(r.phone||'')}"></div>
+      <div class="field"><label>Puesto</label><select id="ee-puesto" style="width:100%;">${puestoOpts}</select>${
+        r.puesto === 'Otro' ? `<input type="text" id="ee-puesto-otro" value="${escAttr(r.puesto_otro||'')}" placeholder="Especifica el puesto" style="width:100%;margin-top:8px;">` : ''}
+      </div>
+      <div class="field"><label>Sueldo bruto/sem (MXN)</label><input type="number" id="ee-salario" min="0" step="0.01" value="${escAttr(sal)}"></div>
+      <div class="field"><label>Bono (monto · tipo)</label><input type="text" id="ee-bono" value="${escAttr(r.bono||'')}" placeholder="Ej. 1000 · Desempeño"></div>
+      <div class="field"><label>Estado</label><select id="ee-status" style="width:100%;">${statusOpts.map(s => `<option value="${s}" ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="field"><label>Calificación: <span id="ee-rating-val">${r.rating ? '⭐'.repeat(r.rating) : '—'}</span></label>
+        <input type="range" id="ee-rating" min="1" max="5" step="1" value="${r.rating||3}" style="width:100%;height:44px;">
+      </div>
+      <div class="field"><label>Entrevistadores</label><div id="ee-panelists">${panelistsHtml}</div><button type="button" class="btn btn-outline" id="ee-panelist-add" style="font-size:0.95rem;padding:14px;min-height:48px;width:100%;">+ Agregar entrevistador</button></div>
+      <div class="field"><label>Disponibilidad / inicio</label><input type="text" id="ee-availability" value="${escAttr(r.availability||'')}"></div>
+      <div class="field"><label>Notas / comentarios</label><textarea id="ee-notas" style="width:100%;">${esc(r.notas||'')}</textarea></div>
+      <button class="btn" id="ee-save" style="width:100%;margin-top:6px;">💾 Guardar cambios</button>
+      <button class="btn" id="ee-delete" style="width:100%;margin-top:10px;background:#c0392b;border-color:#c0392b;color:#fff;">🗑️ Eliminar candidato</button>
+    `;
+  }
+
+  let _editingId = null;
+  async function openEditarEntrevista(id) {
+    _editingId = id;
+    const body = $('ee-body');
+    body.innerHTML = '<p style="color:var(--muted);">Cargando…</p>';
+    const { data, error } = await supabase.from('interviews').select('*').eq('id', id).maybeSingle();
+    if (error || !data) { body.innerHTML = '<p style="color:var(--muted);">No se pudo cargar la entrevista.</p>'; return; }
+    body.innerHTML = renderEditForm(data);
+    const rating = $('ee-rating'), rval = $('ee-rating-val');
+    rating.addEventListener('input', () => {
+      const v = parseInt(rating.value,10)||1;
+      rval.textContent = '⭐'.repeat(v);
+    });
+    const addBtn = $('ee-panelist-add');
+    if (addBtn) addBtn.addEventListener('click', () => {
+      const wrap = $('ee-panelists');
+      const i = wrap.querySelectorAll('.ee-panelist').length + 1;
+      if (i > 3) return;
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.className = 'ee-panelist';
+      inp.placeholder = 'Entrevistador ' + i;
+      inp.style.cssText = 'width:100%;margin-bottom:6px;';
+      wrap.appendChild(inp);
+    });
+    // Light out the message + switch page
+    clearMsg($('ee-msg'));
+    document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
+    $('form-editar-entrevista').classList.add('active');
+  }
+
+  // Save edits
+  document.addEventListener('click', async (e) => {
+    if (e.target.closest('#ee-save')) {
+      e.preventDefault();
+      const msg = $('ee-msg');
+      const first = $('ee-first').value.trim();
+      const paterno = $('ee-paterno').value.trim();
+      if (!first || !paterno) { showMsg(msg, 'Nombre y apellido paterno son obligatorios', 'err'); return; }
+      let user; try { user = await requireUser(); } catch(err) { return; }
+      // leader gate
+      const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      const role = (prof && prof.role) || '';
+      const isLeader = ['Dueño','Capitán','Gerente'].includes(role) || planRoleGroup(role) === 'Capitán';
+      if (!isLeader) { showMsg(msg, 'Solo líderes pueden editar entrevistas.', 'err'); return; }
+      const panelists = Array.from(document.querySelectorAll('.ee-panelist')).map(v => v.value.trim()).filter(Boolean);
+      const sal = $('ee-salario').value;
+      const { error } = await supabase.from('interviews').update({
+        first_name: first,
+        paterno: paterno,
+        materno: $('ee-materno').value.trim() || '',
+        email: $('ee-email').value.trim() || '',
+        phone: $('ee-phone').value.trim() || '',
+        puesto: $('ee-puesto').value,
+        puesto_otro: ($('ee-puesto').value === 'Otro' ? ($('ee-puesto-otro') ? $('ee-puesto-otro').value.trim() : '') : ''),
+        salario_bruto_semanal: sal ? parseFloat(sal) : null,
+        bono: $('ee-bono').value.trim() || '',
+        status: $('ee-status').value,
+        rating: parseInt($('ee-rating').value, 10),
+        panelists: panelists,
+        availability: $('ee-availability').value.trim() || '',
+        notas: $('ee-notas').value.trim() || ''
+      }).eq('id', _editingId);
+      if (error) { showMsg(msg, 'Error: ' + error.message, 'err'); return; }
+      showMsg(msg, '✅ Cambios guardados.', 'ok');
+      setTimeout(() => {
+        document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
+        $('form-entrevistados').classList.add('active');
+        loadEntrevistados();
+        loadEntrevistas();
+      }, 900);
+    }
+  });
+
+  // Delete candidate
+  document.addEventListener('click', async (e) => {
+    if (e.target.closest('#ee-delete')) {
+      e.preventDefault();
+      const msg = $('ee-msg');
+      const name = ($('ee-first').value.trim() + ' ' + $('ee-paterno').value.trim()).trim();
+      if (!confirm('¿Eliminar definitivamente a "' + name + '"? Esta acción no se puede deshacer.')) return;
+      let user; try { user = await requireUser(); } catch(err) { return; }
+      const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      const role = (prof && prof.role) || '';
+      const isLeader = ['Dueño','Capitán','Gerente'].includes(role) || planRoleGroup(role) === 'Capitán';
+      if (!isLeader) { showMsg(msg, 'Solo líderes pueden eliminar.', 'err'); return; }
+      const { error } = await supabase.from('interviews').delete().eq('id', _editingId);
+      if (error) { showMsg(msg, 'Error: ' + error.message, 'err'); return; }
+      showMsg(msg, '🗑️ Candidato eliminado.', 'ok');
+      setTimeout(() => {
+        document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
+        $('form-entrevistados').classList.add('active');
+        loadEntrevistados();
+        loadEntrevistas();
+      }, 900);
+    }
   });
 
   // ---- MAINTENANCE ----
