@@ -739,6 +739,10 @@
               <label><input type="radio" name="t-promos" value="problema"><span>⚠️ Sí hubo</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="t-promos" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué descuentos y cortesías, y por qué?" placeholder="¿Qué descuentos y cortesías, y por qué?"></textarea>
+            <div id="b-empleados-comida" class="field hidden" style="margin-top:8px;">
+              <label>🍽️ Comida de empleados <span style="color:var(--muted);font-size:0.8rem;">(domingo — monto aproximado $)</span></label>
+              <input type="number" id="b-empleados-monto" inputmode="decimal" min="0" step="0.01" placeholder="Monto $ (requerido domingo)">
+            </div>
           </div>
           <div class="field"><label>Propinas <span style="color:var(--muted);font-size:0.8rem;">(total, reparto, faltantes)</span></label>
             <div class="radio-group">
@@ -1059,7 +1063,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.109";
+  const APP_VERSION = "v0.110";
   document.getElementById('ver').textContent = APP_VERSION;
   // SERVER-SIDE CACHE OVERRIDE (v0.108): on load AND every return-to-foreground,
   // compare running version to version.json; if server differs and we haven't
@@ -1613,6 +1617,11 @@
     a.addEventListener('click', e => {
       e.preventDefault();
       const f = a.getAttribute('data-form');
+      if (f === 'bitacora') {
+        const isSun = new Date().getDay() === 0;
+        $('b-empleados-comida').classList.toggle('hidden', !isSun);
+        $('b-empleados-monto').required = isSun;
+      }
       document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
       $('home-view').style.display = 'none';
       $('form-' + f).classList.add('active');
@@ -2665,8 +2674,19 @@
       const detailEl = document.querySelector(`textarea[data-for="t-${t}"]`);
       temas[t] = { ok: (sel.value === 'ok' || sel.value === 'ok_nota'), detalle: (detailEl && detailEl.value.trim()) || '' };
     });
+    const isSunday = new Date().getDay() === 0;
+    const montoEl = $('b-empleados-monto');
+    const montoVal = montoEl && montoEl.value !== '' ? parseFloat(montoEl.value) : null;
+    if (isSunday && (montoVal === null || isNaN(montoVal) || montoVal < 0)) {
+      showMsg($('b-msg'), 'Es domingo: captura el monto de comida de empleados', 'err'); return;
+    }
+    if (montoVal !== null && !isNaN(montoVal)) {
+      temas.promos.comida_empleados = montoVal;
+    }
     const propinas = propinasSel.value;
     const propinasDetalle = (document.querySelector('textarea[data-for="b-propinas"]') || {}).value || '';
+    const reviewRowsExtra = (temas.promos && typeof temas.promos.comida_empleados === 'number')
+      ? [['🍽️ Comida de empleados', '$' + temas.promos.comida_empleados.toFixed(2)]] : [];
     const notas = $('b-notas').value;
     const bPhoto = $('b-photo').files[0];
 
@@ -2683,6 +2703,7 @@
       ['Afluencia', afluencia.value],
       ['Cómo fue el día', corte.value],
       ...themeRows,
+      ...reviewRowsExtra,
       ['Propinas', propinas === 'normal' ? '✅ Normales' : (propinasDetalle ? `⚠️ Irregulares — ${propinasDetalle}` : '⚠️ Irregulares')],
       ['Notas', notas || '—'],
       ['Foto', bPhoto ? bPhoto.name : '—'],
