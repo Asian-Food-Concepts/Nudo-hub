@@ -1024,9 +1024,19 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.103";
+  const APP_VERSION = "v0.104";
   document.getElementById('ver').textContent = APP_VERSION;
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  // PKCE flow (flowType:'pkce') is the permanent fix for the recurring
+  // "magic link lands on the bare org root" error. Implicit flow made
+  // supabase-js navigate to window.location.origin to strip the #access_token
+  // hash — on this GitHub Pages project site the origin (asian-food-concepts.
+  // github.io/) is a 404 with no hosting. PKCE uses a short-lived 'code' and
+  // cleans up the URL with history.replaceState, KEEPING the app path, so the
+  // auth never sends the user to the dead root. (The 6-digit code in the email
+  // remains a fully independent fallback that always works.)
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
+  });
 
   const $ = id => document.getElementById(id);
   const views = { login: $('login-view'), app: $('app-view') };
