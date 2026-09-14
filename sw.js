@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v5'; // bumped v0.107: push scheduler redesign (day view + audit) to all devices
+const CACHE = 'nudo-hub-v6'; // v0.109: planner fixes (Producción group, branch gating, mobile day-default, 16px/44px selects)
 const ASSETS = [
   '/Nudo-hub/',
   '/Nudo-hub/index.html',
