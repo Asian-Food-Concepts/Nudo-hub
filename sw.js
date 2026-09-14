@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v3'; // bumped v0.106: push scheduler redesign (day view + audit) to all devices
+const CACHE = 'nudo-hub-v4'; // bumped v0.107: push scheduler redesign (day view + audit) to all devices
 const ASSETS = [
   '/Nudo-hub/',
   '/Nudo-hub/index.html',

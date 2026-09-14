@@ -1059,7 +1059,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.106";
+  const APP_VERSION = "v0.107";
   document.getElementById('ver').textContent = APP_VERSION;
   // PKCE flow (flowType:'pkce') is the permanent fix for the recurring
   // "magic link lands on the bare org root" error. Implicit flow made
@@ -1180,7 +1180,7 @@
     showMsg($('login-msg'), 'Enviando código...', 'info');
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { redirectTo: 'https://asian-food-concepts.github.io/Nudo-hub/app.html' }
+      options: { emailRedirectTo: 'https://asian-food-concepts.github.io/Nudo-hub/app.html' }
     });
     if (error) { showMsg($('login-msg'), 'Error: ' + error.message, 'err'); $('send-code').disabled = false; return; }
     enterOtpState();
@@ -1204,7 +1204,7 @@
     showMsg($('login-msg'), 'Reenviando código...', 'info');
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { redirectTo: 'https://asian-food-concepts.github.io/Nudo-hub/app.html' }
+      options: { emailRedirectTo: 'https://asian-food-concepts.github.io/Nudo-hub/app.html' }
     });
     $('resend-code').disabled = false;
     if (error) { showMsg($('login-msg'), 'Error: ' + error.message, 'err'); return; }
