@@ -1063,7 +1063,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.111";
+  const APP_VERSION = "v0.112";
   document.getElementById('ver').textContent = APP_VERSION;
   // SERVER-SIDE CACHE OVERRIDE (v0.108): on load AND every return-to-foreground,
   // compare running version to version.json; if server differs and we haven't
@@ -1936,7 +1936,7 @@
   // Find the shift for a given slot + day.
   function planShiftForSlot(slot, dayIdx) {
     const date = fmtDate(new Date(planState.weekStart.getTime() + dayIdx*86400000));
-    return planState.shifts.find(x => x.slot === slot && x.shift_date === date);
+    return planState.shifts.find(x => x.slot === slot && x.shift_date === date && x.branch === planState.branch);
   }
 
   // Normalize a profile role string to a canonical planner group.
@@ -2042,11 +2042,11 @@
         const r = await supabase.from('shifts').update({ staff_id: staffId, role, status: 'programado' }).eq('id', existing.id);
         if (r.error) err = r.error; else saved = Object.assign({}, existing, { staff_id: staffId, role, status: 'programado' });
       } else {
-        const r = await supabase.from('shifts').insert({
+        const r = await supabase.from('shifts').upsert({
           staff_id: staffId, shift_date: date, branch: planState.branch,
           role, slot, status: 'programado',
           start_time: def.start, end_time: def.end
-        }).select().single();
+        }, { onConflict: 'branch,slot,shift_date' }).select().single();
         if (r.error) err = r.error; else saved = r.data;
       }
     } catch(e) { err = e; }
@@ -2220,10 +2220,10 @@
           if (!taken) { slot = s; break; }
         }
         if (!slot) { slot = `${role} ${allSlots.length + 1}`; const ex = planState.extraSlots[role] || []; ex.push(slot); planState.extraSlots[role] = ex; }
-        const r = await supabase.from('shifts').insert({
+        const r = await supabase.from('shifts').upsert({
           staff_id: staffId, shift_date: date, branch: planState.branch,
           role, slot, status: 'programado', start_time: start, end_time: end
-        }).select().single();
+        }, { onConflict: 'branch,slot,shift_date' }).select().single();
         if (r.error) err = r.error; else saved = r.data;
       }
     } catch(e) { err = e; }
