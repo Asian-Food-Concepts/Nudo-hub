@@ -1061,6 +1061,19 @@
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
   const APP_VERSION = "v0.107";
   document.getElementById('ver').textContent = APP_VERSION;
+  // SERVER-SIDE CACHE OVERRIDE: fetch version.json; if server version differs
+  // from the running page, unregister SW, wipe caches, hard-reload (v0.107).
+  fetch('/Nudo-hub/version.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : null)
+    .then(v => {
+      if (!v || v.version === APP_VERSION) return;
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+      }
+      if (window.caches && caches.keys) {
+        caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))).then(() => location.reload(true));
+      } else { location.reload(true); }
+    }).catch(() => {});
   // PKCE flow (flowType:'pkce') is the permanent fix for the recurring
   // "magic link lands on the bare org root" error. Implicit flow made
   // supabase-js navigate to window.location.origin to strip the #access_token

@@ -20,6 +20,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   // Network-first for navigation, cache-first for assets
+  if (e.request.url.includes('version.json')) { e.respondWith(fetch(e.request)); return; }
   if (e.request.mode === 'navigate') {
     e.respondWith(fetch(e.request).catch(() => caches.match('/Nudo-hub/app.html')));
     return;
