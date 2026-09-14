@@ -284,7 +284,7 @@
   }
   /* Entrevistas Puesto — Apple-style vertical wheel picker (v0.102, Ben 2026-09-12) */
   .wheel-picker { user-select: none; -webkit-user-select: none; position: relative; touch-action: pan-y; }
-  .wheel-mask { height: 178px; overflow: hidden; position: relative; border-radius: 14px;
+  .wheel-mask { height: 112px; overflow: hidden; position: relative; border-radius: 14px; /* v0.115: compact — was 178px, Ben 2026-09-14 */
     background: linear-gradient(var(--input-bg), var(--input-bg)); border: 1px solid var(--border); }
   /* top + bottom fade to give the wheel a 3D-ish highlight window */
   .wheel-mask::before, .wheel-mask::after {
@@ -293,7 +293,7 @@
   .wheel-mask::before { top: 0; background: linear-gradient(var(--bg, #f8f7f2), transparent); }
   .wheel-mask::after  { bottom: 0; background: linear-gradient(transparent, var(--bg, #f8f7f2)); }
   .wheel-picker::before {
-    content: ''; position: absolute; left: 8px; right: 8px; top: 50%; height: 34px;
+    content: ''; position: absolute; left: 8px; right: 8px; top: 56px; height: 34px; /* v0.115: anchor to mask centerline (112/2), not picker 50% — was ~15px low */
     transform: translateY(-50%); border-radius: 10px; background: var(--accent);
     opacity: 0.12; z-index: 1; pointer-events: none;
   }
@@ -1107,7 +1107,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.114";
+  const APP_VERSION = "v0.115";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1505,7 +1505,7 @@
     var rows = Array.prototype.slice.call(document.querySelectorAll('#wheel-puesto-rows .wheel-row'));
     if (!input || !wheel || !rowsEl || !rows.length) return;
 
-    var H = 34, CENTER = 72; // wheel-mask 178px: centerline at 178/2 - 17 = 72
+    var H = 34, CENTER = 39; // wheel-mask 112px: centerline at 112/2 - 17 = 39 (v0.115 compact)
     var idx = 0; // selected index (0 = Capitán)
     var fIndex = idx; // float index during drag/momentum
 
