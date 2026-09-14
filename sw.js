@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v7'; // v0.109: planner fixes (Producción group, branch gating, mobile day-default, 16px/44px selects)
+const CACHE = 'nudo-hub-v8'; // v0.109: planner fixes (Producción group, branch gating, mobile day-default, 16px/44px selects)
 const ASSETS = [
   '/Nudo-hub/',
   '/Nudo-hub/index.html',

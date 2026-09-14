@@ -733,6 +733,13 @@
             </div>
             <textarea class="t-detail hidden" data-for="t-reservaciones" data-ph-ok="Reservaciones, mesas, esperas — nota (opcional)" data-ph-problema="Problema con reservaciones — qué pasó, quién, cómo se resolvió" placeholder="Reservaciones, mesas, esperas, cancelaciones"></textarea>
           </div>
+          <div class="field"><label>Propinas <span style="color:var(--muted);font-size:0.8rem;">(total, reparto, faltantes)</span></label>
+            <div class="radio-group">
+              <label><input type="radio" name="b-propinas" value="normal"><span>✅ Normales</span></label>
+              <label><input type="radio" name="b-propinas" value="no_normal"><span>⚠️ Irregulares</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="b-propinas" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)" placeholder="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)"></textarea>
+          </div>
           <div class="field"><label>Descuentos y Cortesías <span style="color:var(--muted);font-size:0.8rem;">(qué, a quién, por qué)</span></label>
             <div class="radio-group">
               <label><input type="radio" name="t-promos" value="ok"><span>✅ Ninguno</span></label>
@@ -743,13 +750,6 @@
               <label>🍽️ Comida de empleados <span style="color:var(--muted);font-size:0.8rem;">(domingo — monto aproximado $)</span></label>
               <input type="number" id="b-empleados-monto" inputmode="decimal" min="0" step="0.01" placeholder="Monto $ (requerido domingo)">
             </div>
-          </div>
-          <div class="field"><label>Propinas <span style="color:var(--muted);font-size:0.8rem;">(total, reparto, faltantes)</span></label>
-            <div class="radio-group">
-              <label><input type="radio" name="b-propinas" value="normal"><span>✅ Normales</span></label>
-              <label><input type="radio" name="b-propinas" value="no_normal"><span>⚠️ Irregulares</span></label>
-            </div>
-            <textarea class="t-detail hidden" data-for="b-propinas" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)" placeholder="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)"></textarea>
           </div>
           <div class="field"><label>Notas / incidentes <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label><textarea id="b-notas"></textarea></div>
           <div class="field"><label>📷 Foto <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label>
@@ -1063,7 +1063,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.110";
+  const APP_VERSION = "v0.111";
   document.getElementById('ver').textContent = APP_VERSION;
   // SERVER-SIDE CACHE OVERRIDE (v0.108): on load AND every return-to-foreground,
   // compare running version to version.json; if server differs and we haven't
