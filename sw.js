@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v13'; // v0.116: userbar merged into header card (one unified card) // v0.115: compact wheel picker (112px, highlight-bar realigned) // v0.114: dock-under-modal fix (z-index + modal-open body class) // v0.109: planner fixes (Producción group, branch gating, mobile day-default, 16px/44px selects)
+const CACHE = 'nudo-hub-v14'; // v0.117: Mantenimiento preventivo placeholder card (leaders only, greyed) // v0.116: userbar merged into header card (one unified card) // v0.115: compact wheel picker (112px, highlight-bar realigned) // v0.114: dock-under-modal fix (z-index + modal-open body class) // v0.109: planner fixes (Producción group, branch gating, mobile day-default, 16px/44px selects)
 const ASSETS = [
   '/Nudo-hub/',
   '/Nudo-hub/index.html',

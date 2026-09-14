@@ -611,6 +611,15 @@
           </a>
         </div>
 
+        <!-- Mantenimiento preventivo — placeholder, leaders only (Ben 2026-09-14) -->
+        <div class="section-title" id="mantprev-section" style="display:none;">Mantenimiento</div>
+        <div class="card-list" id="mantprev-list" style="display:none;">
+          <div class="card" id="mantprev-card" style="display:none;opacity:0.5;cursor:not-allowed;filter:grayscale(0.6);">
+            <div class="icon icon-sheet">🧯</div>
+            <div class="text"><div class="title">Mantenimiento preventivo</div><div class="sub">Próximamente · fechas de extintores, inventarios programados</div></div>
+          </div>
+        </div>
+
         <div class="section-title">Reclutamiento</div>
         <div class="card-list">
           <a class="card" href="#" id="entrevistas-card" data-form="entrevistas" style="display:none;">
@@ -1108,7 +1117,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.116";
+  const APP_VERSION = "v0.117";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1379,6 +1388,16 @@
     if (entrevistadosCard) {
       if (isLeader) { entrevistadosCard.style.display = ''; }
       else { entrevistadosCard.style.display = 'none'; }
+    }
+    // Role-gate Mantenimiento preventivo placeholder: Dueño, Capitán, Gerente (v0.117)
+    const mantprevSection = document.getElementById('mantprev-section');
+    const mantprevList = document.getElementById('mantprev-list');
+    const mantprevCard = document.getElementById('mantprev-card');
+    if (mantprevSection && mantprevList && mantprevCard) {
+      const show = isLeader ? '' : 'none';
+      mantprevSection.style.display = show;
+      mantprevList.style.display = show;
+      mantprevCard.style.display = show;
     }
     // Role-gate Usuarios (account management): Dueño only
     const usuariosCard = document.getElementById('usuarios-card');
