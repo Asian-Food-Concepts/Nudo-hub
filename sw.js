@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v1';
+const CACHE = 'nudo-hub-v2'; // bumped v0.105: force-clear stale cache-first app.html that broke the login redirect
 const ASSETS = [
   '/Nudo-hub/',
   '/Nudo-hub/index.html',

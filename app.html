@@ -1017,14 +1017,14 @@
 
   <footer>Nudo — Ramen y Boba · CDMX · <span id="ver">v0.0</span></footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"></script>
   <script>
   // Define initApp FIRST, then load supabase and call it when ready.
   // (The old loader called initApp before it was defined -> crash.)
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.104";
+  const APP_VERSION = "v0.105";
   document.getElementById('ver').textContent = APP_VERSION;
   // PKCE flow (flowType:'pkce') is the permanent fix for the recurring
   // "magic link lands on the bare org root" error. Implicit flow made
@@ -3155,10 +3155,27 @@
       .catch(() => { /* offline / hub unreachable — leave empty */ });
   })();
 
-  // PWA: register service worker
+  // PWA: register service worker (v0.105: hard-reload when a new SW takes over)
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/Nudo-hub/sw.js').catch(() => {});
+      navigator.serviceWorker.register('/Nudo-hub/sw.js').then(reg => {
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              // New SW installed while an old one controls the page: activate + reload
+              nw.postMessage({ type: 'SKIP_WAITING' });
+            }
+          });
+        });
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
+      }).catch(() => {});
     });
   }
 
