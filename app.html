@@ -380,7 +380,7 @@
   .plan-day-shift:active { background: var(--frame-bg, rgba(0,0,0,0.05)); }
   .plan-day-shift .t { font-weight: 700; color: var(--accent); margin-right: 6px; }
   .plan-audit-row b { font-size: 0.85rem; }
-  .plan-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .plan-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 70; padding: 16px; } /* z70: above floating dock (z50) — v0.114 fix */
   .plan-modal .box { background: var(--card-bg, #fff); border-radius: 12px; padding: 18px; width: 100%; max-width: 340px; }
   .plan-modal h3 { margin: 0 0 12px; font-size: 1rem; }
   .plan-modal .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
@@ -461,6 +461,8 @@
     padding: 6px; gap: 2px;
     box-sizing: border-box;
   }
+  /* Dock hides while any modal/sheet is open so it never covers action buttons (v0.114) */
+  body.modal-open .bottom-tabs { opacity: 0; pointer-events: none; transition: opacity .15s ease; }
   .tab-btn {
     flex: 1; display: flex; align-items: center; justify-content: center;
     gap: 6px; padding: 9px 10px; border: none; background: transparent;
@@ -1105,8 +1107,20 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.113";
+  const APP_VERSION = "v0.114";
   document.getElementById('ver').textContent = APP_VERSION;
+  // v0.114: floating dock must never cover sheet action buttons. Toggle
+  // body.modal-open whenever any modal's .hidden state changes (v0.113 added
+  // bottom-sheet layout + kept the dock at z50; equal z-index + later DOM
+  // order put the dock ON TOP of Guardar/Quitar on phones).
+  const _modalSel = '.plan-modal, .review-modal';
+  const _syncModalOpen = () => {
+    const open = [...document.querySelectorAll(_modalSel)].some(m => !m.classList.contains('hidden'));
+    document.body.classList.toggle('modal-open', open);
+  };
+  new MutationObserver(_syncModalOpen).observe(document.documentElement, {
+    subtree: true, attributes: true, attributeFilter: ['class']
+  });
   // SERVER-SIDE CACHE OVERRIDE (v0.108): on load AND every return-to-foreground,
   // compare running version to version.json; if server differs and we haven't
   // already reloaded FOR that version, unregister SW, wipe caches, hard-reload.
