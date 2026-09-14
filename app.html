@@ -389,6 +389,46 @@
   .plan-modal .actions { display: flex; gap: 8px; margin-top: 14px; }
   .plan-modal .actions button { flex: 1; }
 
+
+  /* ===== v0.113 vocab.design patterns ===== */
+  /* [toast] success confirmations acknowledge then leave */
+  .toast-wrap { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 90; display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; width: min(calc(100% - 32px), 360px); }
+  .toast { pointer-events: auto; background: #1f2a20; color: #eafff0; border: 1px solid rgba(90,200,120,0.4); border-radius: 999px; padding: 10px 18px; font-size: 0.88rem; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,0.25); opacity: 0; transform: translateY(8px); transition: opacity 0.2s, transform 0.2s; max-width: 100%; text-align: center; }
+  .toast.in { opacity: 1; transform: translateY(0); }
+  .toast.err { background: #2a1a18; color: #ffe8e4; border-color: rgba(220,90,70,0.5); }
+  /* [empty-state] three jobs: name it, explain it, one action */
+  .empty-state { border: 1px dashed var(--border); border-radius: 12px; padding: 22px 16px; text-align: center; color: var(--muted); }
+  .empty-state .es-ico { font-size: 1.6rem; margin-bottom: 6px; }
+  .empty-state .es-title { font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+  .empty-state .es-sub { font-size: 0.85rem; margin-bottom: 12px; }
+  /* [bottom-sheet] sheets slide from the thumb edge on phones */
+  @media (max-width: 700px) {
+    .plan-modal, .review-modal { align-items: flex-end !important; padding: 0 !important; }
+    .plan-modal .box, .review-box { border-radius: 16px 16px 0 0 !important; max-width: 100% !important; width: 100% !important; max-height: 88vh; overflow-y: auto; animation: sheet-up 0.22s ease-out; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+    .plan-modal .box::before, .review-box::before { content: ''; display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 12px; }
+  }
+  @keyframes sheet-up { from { transform: translateY(40%); opacity: 0.6; } to { transform: translateY(0); opacity: 1; } }
+  /* [sticky-footer submit] always-visible submit with live readiness */
+  .sticky-submit { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 30; margin-top: 14px; }
+  .sticky-submit .ss-btn { width: 100%; }
+  .sticky-submit .ss-ready { text-align: center; font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .sticky-submit .ss-ready.ok { color: #2a7; }
+  /* [skeleton-screen] layout promise while loading */
+  .skel { background: linear-gradient(90deg, rgba(125,125,125,0.10) 25%, rgba(125,125,125,0.18) 50%, rgba(125,125,125,0.10) 90%); background-size: 200% 100%; animation: skel 1.2s infinite; border-radius: 8px; }
+  @keyframes skel { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  .skel-row { height: 44px; margin-bottom: 8px; }
+  /* [zebra-striping] rails for wide tables and long lists */
+  .plan-table tbody tr:nth-child(even) td { background: rgba(125,125,125,0.045); }
+  /* [stepper] numbers you adjust, not type */
+  .stepper { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; width: fit-content; background: var(--input-bg, transparent); }
+  .stepper button { min-width: 48px; min-height: 44px; border: none; background: transparent; color: var(--ink); font-size: 1.25rem; font-weight: 700; cursor: pointer; }
+  .stepper button:active { background: rgba(125,125,125,0.12); }
+  .stepper input { width: 84px; text-align: center; border: none; border-left: 1px solid var(--border); border-right: 1px solid var(--border); background: transparent; color: var(--ink); font-size: 16px; min-height: 44px; -moz-appearance: textfield; }
+  .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  /* [icon-button] tooltip */
+  .ico-btn { position: relative; }
+  .ico-btn:hover::after { content: attr(aria-label); position: absolute; top: -34px; left: 50%; transform: translateX(-50%); background: #222; color: #fff; font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 99; }
+
   /* Review-before-submit modal */
   .review-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
   .review-box { background: var(--card); border-radius: 16px; padding: 20px; width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
@@ -506,9 +546,9 @@
             <span class="switch"></span>
           </div>
           <div class="theme-switch" id="theme-switch" role="group" aria-label="Tema">
-            <button type="button" data-theme-opt="light" title="Claro">☀️</button>
-            <button type="button" data-theme-opt="dark" title="Oscuro">🌙</button>
-            <button type="button" data-theme-opt="system" title="Sistema">🖥️</button>
+            <button type="button" data-theme-opt="light" class="ico-btn" aria-label="Tema claro" title="Cambiar tema">☀️</button>
+            <button type="button" data-theme-opt="dark" class="ico-btn" aria-label="Tema oscuro" title="Cambiar tema">🌙</button>
+            <button type="button" data-theme-opt="system" class="ico-btn" aria-label="Tema del sistema" title="Cambiar tema">🖥️</button>
           </div>
           <button class="logout" id="logout">Salir</button>
         </div>
@@ -748,7 +788,7 @@
             <textarea class="t-detail hidden" data-for="t-promos" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué descuentos y cortesías, y por qué?" placeholder="¿Qué descuentos y cortesías, y por qué?"></textarea>
             <div id="b-empleados-comida" class="field hidden" style="margin-top:8px;">
               <label>🍽️ Comida de empleados <span style="color:var(--muted);font-size:0.8rem;">(domingo — monto aproximado $)</span></label>
-              <input type="number" id="b-empleados-monto" inputmode="decimal" min="0" step="0.01" placeholder="Monto $ (requerido domingo)">
+              <div class="stepper" id="b-empleados-stepper"><button type="button" data-step="-10">−</button><input type="number" id="b-empleados-monto" inputmode="decimal" min="0" step="10" placeholder="0"><button type="button" data-step="10">+</button></div>
             </div>
           </div>
           <div class="field"><label>Notas / incidentes <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label><textarea id="b-notas"></textarea></div>
@@ -756,7 +796,7 @@
             <input type="file" id="b-photo" accept="image/*" style="width:100%">
           </div>
           <div class="checkbox-row"><input type="checkbox" id="b-confirm"><label>Confirmo el cierre de la unidad</label></div>
-          <button class="btn" id="b-submit">Enviar bitácora</button>
+          <div class="sticky-submit"><div class="ss-ready" id="b-ready"></div><button class="btn ss-btn" id="b-submit">Enviar bitácora</button></div>
           <div class="msg hidden" id="b-msg"></div>
       </div>
     </div>
@@ -1025,6 +1065,8 @@
       <nav class="bottom-tabs" id="bottom-tabs" aria-label="Navegación principal">
         <button class="tab-btn active" data-tab="home"><span class="tab-ico">🏠</span>Inicio</button>
         <button class="tab-btn" data-tab="estatus"><span class="tab-ico">📋</span>Seguimiento</button>
+        <button class="tab-btn" data-tab="plan" id="tab-plan" style="display:none;"><span class="tab-ico">🗓️</span>Planear</button>
+        <button class="tab-btn" data-tab="bitacora" id="tab-bitacora" style="display:none;"><span class="tab-ico">📓</span>Bitácora</button>
         <button class="tab-btn" data-tab="guia"><span class="tab-ico">📘</span>Guía</button>
       </nav>
 
@@ -1063,7 +1105,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.112";
+  const APP_VERSION = "v0.113";
   document.getElementById('ver').textContent = APP_VERSION;
   // SERVER-SIDE CACHE OVERRIDE (v0.108): on load AND every return-to-foreground,
   // compare running version to version.json; if server differs and we haven't
@@ -1129,6 +1171,12 @@
   function showApp() { views.login.classList.add('hidden'); views.app.classList.remove('hidden'); showBottomTabs(true); }
   function showBottomTabs(show) {
     const tabs = $('bottom-tabs');
+    if (currentProfile) {
+      const r = (currentProfile.role || '');
+      const isLeader = (r === 'Dueño' || r.toLowerCase().includes('gerente') || r.toLowerCase().includes('capit'));
+      const tp = $('tab-plan'); if (tp) tp.style.display = isLeader ? '' : 'none';
+      const tb = $('tab-bitacora'); if (tb) tb.style.display = isLeader ? '' : 'none';
+    }
     if (tabs) tabs.style.display = show ? 'flex' : 'none';
   }
 
@@ -1136,6 +1184,18 @@
     el.textContent = text;
     el.className = 'msg ' + type;
     el.classList.remove('hidden');
+  }
+
+  // [toast] auto-dismissing acknowledgement (vocab.design). Errors stay sticky.
+  function toast(text, ms) {
+    let wrap = document.querySelector('.toast-wrap');
+    if (!wrap) { wrap = document.createElement('div'); wrap.className = 'toast-wrap'; document.body.appendChild(wrap); }
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = text;
+    wrap.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('in'));
+    setTimeout(() => { t.classList.remove('in'); setTimeout(() => t.remove(), 250); }, ms || 2400);
   }
 
   function clearMsg(el) { el.classList.add('hidden'); el.textContent = ''; }
@@ -1651,6 +1711,14 @@
         $('home-view').style.display = 'none';
         $('form-estatus').classList.add('active');
         loadEstatus();
+      } else if (tab === 'plan') {
+        $('home-view').style.display = 'none';
+        $('form-plan').classList.add('active');
+        loadPlanner();
+      } else if (tab === 'bitacora') {
+        $('home-view').style.display = 'none';
+        $('form-bitacora').classList.add('active');
+        bitacoraReadiness();
       } else if (tab === 'guia') {
         $('home-view').style.display = 'none';
         $('guide-frame').src = '/Nudo-hub/guia.html';
@@ -1885,6 +1953,7 @@
   }
 
   async function loadPlanner() {
+    $('plan-grid').innerHTML = '<div>' + Array(6).fill('<div class="skel skel-row"></div>').join('') + '</div>';
     if (!planState.weekStart) planState.weekStart = planMonday();
     document.querySelectorAll('#plan-branch-seg button').forEach(b => {
       b.classList.toggle('on', b.getAttribute('data-branch') === planState.branch);
@@ -1896,7 +1965,7 @@
     try { await requireUser(); } catch(e) { return; }
     const { data: staff, error } = await supabase.from('profiles')
       .select('id,name,role,branch').eq('active', true).order('name');
-    if (error) { $('plan-grid').innerHTML = '<p style="color:var(--muted);">No se pudo cargar el equipo.</p>'; return; }
+    if (error) { $('plan-grid').innerHTML = `<div class="empty-state"><div class="es-ico">⚠️</div><div class="es-title">No se pudo cargar el equipo</div><div class="es-sub">Revisa tu conexión e inténtalo de nuevo.</div><button class="btn" onclick="loadPlanner()">Reintentar</button></div>`; return; }
     planState.staff = staff || [];
     // capture caller identity for audit rows + gate audit log visibility
     planState.currentProfileId = (currentProfile && currentProfile.id) || null;
@@ -1993,7 +2062,7 @@
             opts += `<option value="${s.id}"${sel}>${s.name}</option>`;
           });
           // cell content: dropdown + time (if assigned)
-          let inner = `<select class="plan-slot-select" data-slot="${slot}" data-day="${i}" data-role="${role}">${opts}</select>`;
+          let inner = `<select class="plan-slot-select" data-slot="${slot}" data-day="${i}" data-role="${role}" data-prev="${assigned ? assigned.id : ''}">${opts}</select>`;
           if (assigned && !isDescanso) {
             inner += `<div class="plan-slot-time" data-slot="${slot}" data-day="${i}" data-role="${role}">${sh.start_time||''}–${sh.end_time||''}</div>`;
           } else if (isDescanso) {
@@ -2026,6 +2095,8 @@
 
   // Assign a person to a slot+day (or clear if empty).
   async function planAssignSlot(sel) {
+    const prevVal = sel.getAttribute('data-prev') || '';
+    sel.setAttribute('data-prev', sel.value);
     const slot = sel.getAttribute('data-slot');
     const dayIdx = parseInt(sel.getAttribute('data-day'), 10);
     const role = sel.getAttribute('data-role');
@@ -2051,6 +2122,8 @@
       }
     } catch(e) { err = e; }
     if (err) {
+      // [optimistic-ui] rollback the select to its previous value
+      sel.value = prevVal;
       const box = $('plan-warnings');
       box.innerHTML = `<div class="plan-warn red">⚠️ No se pudo guardar: ${err.message || err}</div>` + box.innerHTML;
       return;
@@ -2144,7 +2217,7 @@
       const cover = (min && active < min) ? ` <span style="color:var(--err,#c0392b);">(${active}/${min} ⚠️)</span>` : (min ? ` <span style="color:var(--muted);">(${active}/${min})</span>` : '');
       html += `<div class="plan-day-area"><div class="plan-day-area-head">${role}${cover}</div>`;
       if (!shiftsToday.length) {
-        html += `<div class="plan-day-empty" style="color:var(--muted);font-size:0.85rem;padding:6px 0;">Nadie asignado</div>`;
+        html += `<div class="empty-state" style="padding:12px 10px;"><div class="es-title" style="font-size:0.85rem;">Nadie asignado</div><div class="es-sub" style="font-size:0.78rem;margin-bottom:8px;">Usa “+ Agregar ${role}” para cubrir este puesto.</div></div>`;
       }
       shiftsToday.forEach(sh => {
         const name = planStaffName(sh.staff_id);
@@ -2745,7 +2818,7 @@
       });
       if (error) { showMsg($('b-msg'), 'Error: ' + error.message, 'err'); $('b-submit').disabled = false; return; }
       // Reset form, re-enable, and return home so a captain can log another branch
-      $('b-msg').textContent = '✅ Bitácora enviada. ¡Gracias!'; $('b-msg').className = 'msg ok'; $('b-msg').classList.remove('hidden');
+      toast('✅ Bitácora enviada');
       setTimeout(() => {
         resetForm('bitacora');
         clearMsg($('b-msg'));
@@ -3498,6 +3571,36 @@
       }).catch(() => {});
     });
   }
+
+
+  // ---- [sticky-submit] live readiness for Bitácora (v0.113) ----
+  function missingBitacoraCount() {
+    let n = 0;
+    ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','promos'].forEach(t => { if (!document.querySelector(`input[name="t-${t}"]:checked`)) n++; });
+    ['b-corte','b-afluencia','b-sucursal','b-propinas'].forEach(nm => { if (!document.querySelector(`input[name="${nm}"]:checked`)) n++; });
+    if ($('b-confirm') && !$('b-confirm').checked) n++;
+    return n;
+  }
+  function bitacoraReadiness() {
+    const el = $('b-ready');
+    if (!el) return;
+    const left = missingBitacoraCount();
+    if (left === 0) { el.textContent = '✅ Listo para enviar'; el.classList.add('ok'); }
+    else { el.textContent = `Faltan ${left} campos`; el.classList.remove('ok'); }
+  }
+  document.addEventListener('change', e => { if (e.target.closest && e.target.closest('#form-bitacora')) bitacoraReadiness(); });
+
+  // ---- [stepper] ± buttons (v0.113) ----
+  document.querySelectorAll('.stepper button').forEach(b => {
+    b.addEventListener('click', () => {
+      const inp = b.parentElement.querySelector('input');
+      const cur = parseFloat(inp.value || '0') || 0;
+      const nv = Math.max(0, cur + parseFloat(b.getAttribute('data-step')));
+      inp.value = nv % 1 === 0 ? String(nv) : nv.toFixed(2);
+      inp.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+
 
   // ================= USUARIOS — account management (Dueño only, v0.103) =================
   // Client calls the manage-user edge function. Real auth gate is the caller's
