@@ -178,14 +178,15 @@
   .msg.ok { background: var(--msg-ok-bg); color: var(--green); }
   .msg.info { background: var(--msg-info-bg); color: var(--accent); }
 
-  /* User bar */
+  /* User bar — inner row of the header card (v0.116: unified shape) */
   .userbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    gap: 8px; margin-top: 10px; padding: 10px 2px 0;
+    border-top: 1px solid var(--border);
   }
   .userbar .who { font-size: 0.9rem; font-weight: 600; }
-  .userbar .logout { font-size: 0.85rem; color: var(--accent); background: none; border: none; cursor: pointer; }
-  .userbar-right { display: flex; align-items: center; gap: 10px; }
+  .userbar .logout { font-size: 0.85rem; color: var(--accent); background: none; border: none; cursor: pointer; padding: 6px 8px; }
+  .userbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
   .theme-switch { display: flex; align-items: center; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 3px; }
   .theme-switch button {
     background: none; border: none; cursor: pointer; font-size: 0.95rem;
@@ -503,6 +504,23 @@
   <header>
     <h1><a href="/Nudo-hub/">Nudo Hub</a></h1>
     <p id="header-sub">Acceso del equipo</p>
+    <!-- User row now lives INSIDE the header card (v0.116: unified shape) -->
+    <div class="userbar hidden" id="userbar">
+      <span class="who" id="user-name">Equipo</span>
+      <div class="userbar-right">
+        <div class="notif-toggle" id="notif-toggle" role="switch" aria-checked="false" aria-label="Notificaciones" title="Recibe avisos en tu teléfono">
+          <span class="notif-bell">🔔</span>
+          <span class="notif-label">Notificaciones</span>
+          <span class="switch"></span>
+        </div>
+        <div class="theme-switch" id="theme-switch" role="group" aria-label="Tema">
+          <button type="button" data-theme-opt="light" class="ico-btn" aria-label="Tema claro" title="Cambiar tema">☀️</button>
+          <button type="button" data-theme-opt="dark" class="ico-btn" aria-label="Tema oscuro" title="Cambiar tema">🌙</button>
+          <button type="button" data-theme-opt="system" class="ico-btn" aria-label="Tema del sistema" title="Cambiar tema">🖥️</button>
+        </div>
+        <button class="logout" id="logout">Salir</button>
+      </div>
+    </div>
   </header>
 
     <!-- LOGIN VIEW -->
@@ -539,23 +557,6 @@
 
     <!-- APP VIEW -->
     <div id="app-view" class="hidden">
-      <div class="userbar">
-        <span class="who" id="user-name">Equipo</span>
-        <div class="userbar-right">
-          <div class="notif-toggle" id="notif-toggle" role="switch" aria-checked="false" aria-label="Notificaciones" title="Recibe avisos en tu teléfono">
-            <span class="notif-bell">🔔</span>
-            <span class="notif-label">Notificaciones</span>
-            <span class="switch"></span>
-          </div>
-          <div class="theme-switch" id="theme-switch" role="group" aria-label="Tema">
-            <button type="button" data-theme-opt="light" class="ico-btn" aria-label="Tema claro" title="Cambiar tema">☀️</button>
-            <button type="button" data-theme-opt="dark" class="ico-btn" aria-label="Tema oscuro" title="Cambiar tema">🌙</button>
-            <button type="button" data-theme-opt="system" class="ico-btn" aria-label="Tema del sistema" title="Cambiar tema">🖥️</button>
-          </div>
-          <button class="logout" id="logout">Salir</button>
-        </div>
-      </div>
-
       <!-- Visible push-status toast (live in app view, unlike login-msg) -->
       <div id="push-toast" class="push-toast hidden"></div>
 
@@ -1107,7 +1108,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.115";
+  const APP_VERSION = "v0.116";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1181,8 +1182,15 @@
   }
   initTheme();
 
-  function showLogin() { views.login.classList.remove('hidden'); views.app.classList.add('hidden'); showBottomTabs(false); }
-  function showApp() { views.login.classList.add('hidden'); views.app.classList.remove('hidden'); showBottomTabs(true); }
+  function showLogin() {
+    views.login.classList.remove('hidden'); views.app.classList.add('hidden'); showBottomTabs(false);
+    const ub = $('userbar'); if (ub) ub.classList.add('hidden'); // header card back to pre-login shape
+    const hs = $('header-sub'); if (hs) hs.textContent = 'Acceso del equipo';
+  }
+  function showApp() {
+    views.login.classList.add('hidden'); views.app.classList.remove('hidden'); showBottomTabs(true);
+    const ub = $('userbar'); if (ub) ub.classList.remove('hidden');
+  }
   function showBottomTabs(show) {
     const tabs = $('bottom-tabs');
     if (currentProfile) {
@@ -3352,8 +3360,8 @@
       const presenceEl = document.createElement('div');
       presenceEl.id = 'presence-bar';
       presenceEl.style.cssText = 'display:none;align-items:center;gap:6px;padding:8px 16px;font-size:0.8rem;color:var(--muted);background:var(--card);border-bottom:1px solid var(--border);';
-      const userbar = document.querySelector('.userbar');
-      if (userbar) userbar.after(presenceEl);
+      const appView = document.getElementById('app-view');
+      if (appView) appView.prepend(presenceEl); // v0.116: userbar moved inside <header>
       const channel = supabase.channel('presence-' + (Math.random().toString(36).slice(2)));
       channel.on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
