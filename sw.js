@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v2'; // bumped v0.105: force-clear stale cache-first app.html that broke the login redirect
+const CACHE = 'nudo-hub-v3'; // bumped v0.106: push scheduler redesign (day view + audit) to all devices
 const ASSETS = [
   '/Nudo-hub/',
   '/Nudo-hub/index.html',

@@ -369,6 +369,17 @@
   .plan-slot-desc { margin-top: 3px; font-size: 0.7rem; color: var(--muted); font-style: italic; cursor: pointer; }
   .plan-add-slot { text-align: left; padding: 4px 6px !important; }
   .plan-add-slot-btn { font-size: 0.72rem; padding: 4px 10px; }
+  /* Day view (v0.106) */
+  .plan-day-seg { display: flex; gap: 4px; flex-wrap: wrap; }
+  .plan-day-btn { flex: 1 1 40px; min-height: 40px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg, transparent); color: var(--ink); font-size: 0.75rem; padding: 4px 2px; }
+  .plan-day-btn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .plan-day-areas { display: flex; flex-direction: column; gap: 14px; }
+  .plan-day-area { border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+  .plan-day-area-head { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; }
+  .plan-day-shift { display: block; width: 100%; min-height: 44px; margin-top: 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg, transparent); color: var(--ink); text-align: left; padding: 8px 10px; font-size: 0.9rem; }
+  .plan-day-shift:active { background: var(--frame-bg, rgba(0,0,0,0.05)); }
+  .plan-day-shift .t { font-weight: 700; color: var(--accent); margin-right: 6px; }
+  .plan-audit-row b { font-size: 0.85rem; }
   .plan-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
   .plan-modal .box { background: var(--card-bg, #fff); border-radius: 12px; padding: 18px; width: 100%; max-width: 340px; }
   .plan-modal h3 { margin: 0 0 12px; font-size: 1rem; }
@@ -583,11 +594,11 @@
             <div class="text"><div class="title">Mi horario</div><div class="sub">Próximamente</div></div>
             <div class="arrow">›</div>
           </div>
-          <div class="card" id="plan-card" style="display:none;opacity:0.5;cursor:not-allowed;filter:grayscale(0.6);">
+          <a class="card" id="plan-card" data-form="plan" href="#">
             <div class="icon icon-sheet">📝</div>
-            <div class="text"><div class="title">Planear horario</div><div class="sub">Próximamente</div></div>
+            <div class="text"><div class="title">Planear horario</div><div class="sub">Capitanes · semana y día</div></div>
             <div class="arrow">›</div>
-          </div>
+          </a>
         </div>
 
         <div class="section-title">Guía</div>
@@ -827,7 +838,7 @@
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card">
           <h2>🗓️ Planear horario</h2>
-          <p style="font-size:0.85rem;color:var(--muted);margin-bottom:10px;">Arma la semana por puesto. Elige quién cubre cada posición. Las alertas son avisos — puedes ignorarlas.</p>
+          <p style="font-size:0.85rem;color:var(--muted);margin-bottom:10px;">Arma la semana por puesto. Elige quién cubre cada posición y sus horas. Las alertas son avisos — puedes ignorarlas.</p>
           <div class="plan-toolbar">
             <div class="seg" id="plan-branch-seg">
               <button data-branch="Roma Norte">Roma</button>
@@ -839,9 +850,33 @@
               <button id="plan-next">›</button>
             </div>
           </div>
+          <div class="seg" id="plan-view-seg" style="margin-top:10px;">
+            <button data-view="week" class="on">Semana</button>
+            <button data-view="day">Día</button>
+          </div>
 
           <div id="plan-warnings"></div>
           <div class="plan-grid" id="plan-grid"></div>
+          <div class="plan-dayview hidden" id="plan-dayview"></div>
+
+          <div id="plan-audit-section" class="hidden" style="margin-top:18px;">
+            <button class="btn btn-secondary" id="plan-audit-toggle" style="width:100%;min-height:44px;">📜 Historial de cambios</button>
+            <div id="plan-audit-log" class="hidden" style="margin-top:10px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLAN DAY PERSON MODAL (day view: assign person to area at a time) -->
+      <div class="plan-modal hidden" id="plan-day-modal">
+        <div class="box">
+          <h3 id="plan-day-modal-title"></h3>
+          <div class="row"><label>Persona</label><select id="plan-day-staff" class="panelist-select"></select></div>
+          <div class="row"><label>Entra</label><input type="time" id="plan-day-start"></div>
+          <div class="row"><label>Sale</label><input type="time" id="plan-day-end"></div>
+          <div class="actions">
+            <button class="btn btn-secondary" id="plan-day-delete">Quitar</button>
+            <button class="btn" id="plan-day-save">Guardar</button>
+          </div>
         </div>
       </div>
 
@@ -1024,7 +1059,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.105";
+  const APP_VERSION = "v0.106";
   document.getElementById('ver').textContent = APP_VERSION;
   // PKCE flow (flowType:'pkce') is the permanent fix for the recurring
   // "magic link lands on the bare org root" error. Implicit flow made
@@ -1200,7 +1235,7 @@
     if (!user) return;
     currentProfile = null;
     // Look up the profile (name + role) for this user
-    const { data } = await supabase.from('profiles').select('name,role,active').eq('id', user.id).maybeSingle();
+    const { data } = await supabase.from('profiles').select('id,name,role,active').eq('id', user.id).maybeSingle();
     if (data && data.name) currentProfile = data;
     // If this staffer has been deactivated, force them out immediately
     if (data && data.active === false) {
@@ -1773,7 +1808,36 @@
     'Loza':      ['Loza 1']
   };
 
-  let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [], extraSlots: {} };
+  let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [], extraSlots: {}, view: 'week', dayIdx: 0, auditRole: false, currentProfileId: null };
+
+  // ---- AUDIT HELPERS (v0.106) ----
+  // Every create/update/delete of a shift writes a row to shift_audit.
+  // Reads of the log are gated to Dueño/Gerente (RLS server-side + UI gate here).
+  function planStaffName(id) {
+    const s = planState.staff.find(x => x.id === id);
+    return s ? s.name : (id ? '(persona)' : '');
+  }
+  async function planAudit(action, shift, oldShift) {
+    try {
+      await supabase.from('shift_audit').insert({
+        shift_id: shift ? shift.id : (oldShift ? oldShift.id : null),
+        staff_id: shift ? shift.staff_id : (oldShift ? oldShift.staff_id : null),
+        action,
+        branch: planState.branch,
+        shift_date: shift ? shift.shift_date : (oldShift ? oldShift.shift_date : null),
+        role: shift ? shift.role : (oldShift ? oldShift.role : null),
+        slot: shift ? shift.slot : (oldShift ? oldShift.slot : null),
+        old_start: oldShift ? oldShift.start_time : null,
+        old_end: oldShift ? oldShift.end_time : null,
+        new_start: shift ? shift.start_time : null,
+        new_end: shift ? shift.end_time : null,
+        old_staff: oldShift ? planStaffName(oldShift.staff_id) : null,
+        new_staff: shift ? planStaffName(shift.staff_id) : null,
+        changed_by: planState.currentProfileId,
+        changed_by_name: (currentProfile && currentProfile.name) || ''
+      });
+    } catch (e) { /* audit is best-effort; never block the save */ }
+  }
 
   function planMonday() {
     const now = new Date();
@@ -1795,12 +1859,30 @@
     document.querySelectorAll('#plan-branch-seg button').forEach(b => {
       b.classList.toggle('on', b.getAttribute('data-branch') === planState.branch);
     });
+    document.querySelectorAll('#plan-view-seg button').forEach(b => {
+      b.classList.toggle('on', b.getAttribute('data-view') === planState.view);
+    });
     $('plan-week-label').textContent = planWeekLabel();
     try { await requireUser(); } catch(e) { return; }
     const { data: staff, error } = await supabase.from('profiles')
       .select('id,name,role,branch').eq('active', true).order('name');
     if (error) { $('plan-grid').innerHTML = '<p style="color:var(--muted);">No se pudo cargar el equipo.</p>'; return; }
     planState.staff = staff || [];
+    // capture caller identity for audit rows + gate audit log visibility
+    planState.currentProfileId = (currentProfile && currentProfile.id) || null;
+    const role = (currentProfile && currentProfile.role) || '';
+    planState.auditRole = (role === 'Dueño' || role.toLowerCase().includes('gerente'));
+    $('plan-audit-section').classList.toggle('hidden', !planState.auditRole);
+    // rebuild extraSlots from persisted shifts (v0.106 fix: extras survive reload)
+    planState.extraSlots = {};
+    (planState.shifts || []).forEach(sh => {
+      const base = (PLAN_SLOT_LABELS[sh.role] || []);
+      if (sh.slot && !base.includes(sh.slot)) {
+        const ex = planState.extraSlots[sh.role] || [];
+        if (!ex.includes(sh.slot)) ex.push(sh.slot);
+        planState.extraSlots[sh.role] = ex;
+      }
+    });
     await planLoadShifts();
     planRender();
   }
@@ -1850,7 +1932,10 @@
   }
 
   function planRender() {
+    if (planState.view === 'day') { planRenderDay(); planRenderWarnings(); return; }
     const grid = $('plan-grid');
+    grid.classList.remove('hidden');
+    $('plan-dayview').classList.add('hidden');
     let html = '<table class="plan-table"><thead><tr><th>Puesto</th>';
     PLAN_DAYS.forEach((d,i) => {
       const dt = new Date(planState.weekStart.getTime() + i*86400000);
@@ -1916,21 +2001,21 @@
     const date = fmtDate(new Date(planState.weekStart.getTime() + dayIdx*86400000));
     const existing = planShiftForSlot(slot, dayIdx);
     const def = PLAN_DEFAULT_TIMES[role] || { start: '11:00', end: '21:00' };
-    let err = null;
+    let err = null, saved = null;
     try {
       if (!staffId) {
         // clear
-        if (existing) { const r = await supabase.from('shifts').delete().eq('id', existing.id); if (r.error) err = r.error; }
+        if (existing) { const r = await supabase.from('shifts').delete().eq('id', existing.id); if (r.error) err = r.error; else await planAudit('delete', null, existing); }
       } else if (existing) {
         const r = await supabase.from('shifts').update({ staff_id: staffId, role, status: 'programado' }).eq('id', existing.id);
-        if (r.error) err = r.error;
+        if (r.error) err = r.error; else saved = Object.assign({}, existing, { staff_id: staffId, role, status: 'programado' });
       } else {
         const r = await supabase.from('shifts').insert({
           staff_id: staffId, shift_date: date, branch: planState.branch,
           role, slot, status: 'programado',
           start_time: def.start, end_time: def.end
-        });
-        if (r.error) err = r.error;
+        }).select().single();
+        if (r.error) err = r.error; else saved = r.data;
       }
     } catch(e) { err = e; }
     if (err) {
@@ -1938,6 +2023,7 @@
       box.innerHTML = `<div class="plan-warn red">⚠️ No se pudo guardar: ${err.message || err}</div>` + box.innerHTML;
       return;
     }
+    if (saved) await planAudit(existing ? 'update' : 'create', saved, existing ? existing : null);
     await planLoadShifts();
     planRender();
   }
@@ -1962,13 +2048,13 @@
     if (!planCell) return;
     const { slot, dayIdx, role, date } = planCell;
     const existing = planShiftForSlot(slot, dayIdx);
-    let err = null;
+    let err = null, saved = null;
     try {
       if (status === 'clear') {
-        if (existing) { const r = await supabase.from('shifts').delete().eq('id', existing.id); if (r.error) err = r.error; }
+        if (existing) { const r = await supabase.from('shifts').delete().eq('id', existing.id); if (r.error) err = r.error; else await planAudit('delete', null, existing); }
       } else if (existing) {
         const r = await supabase.from('shifts').update({ status, start_time: start, end_time: end }).eq('id', existing.id);
-        if (r.error) err = r.error;
+        if (r.error) err = r.error; else saved = Object.assign({}, existing, { status, start_time: start, end_time: end });
       }
     } catch(e) { err = e; }
     if (err) {
@@ -1977,6 +2063,7 @@
       planCloseModal();
       return;
     }
+    if (saved) await planAudit('update', saved, existing);
     await planLoadShifts();
     planRender();
     planCloseModal();
@@ -1990,6 +2077,183 @@
     extras.push(`${role} ${n}`);
     planState.extraSlots[role] = extras;
     planRender();
+  }
+
+  // ---- DAY VIEW (v0.106): per-area timeline for one day ----
+  // Shows every area (role) as a group; within it, every shift that day as a
+  // person card with entra→sale times. Tap a card to edit (person/times) or
+  // tap "+ Agregar" to add a person to that area. Empty slots from the week
+  // grid are NOT shown here — this view lists actual scheduled people.
+  function planHHMMtoMin(t) { if (!t) return null; const [h,m] = t.split(':').map(Number); return h*60 + (m||0); }
+
+  function planRenderDay() {
+    const wrap = $('plan-dayview');
+    wrap.classList.remove('hidden');
+    $('plan-grid').classList.add('hidden');
+    // day selector
+    let html = '<div class="seg plan-day-seg" style="margin-bottom:12px;">';
+    PLAN_DAYS.forEach((d,i) => {
+      const dt = new Date(planState.weekStart.getTime() + i*86400000);
+      const on = (i === planState.dayIdx) ? ' on' : '';
+      html += `<button data-day="${i}" class="plan-day-btn${on}">${d} ${dt.getDate()}</button>`;
+    });
+    html += '</div>';
+    const date = fmtDate(new Date(planState.weekStart.getTime() + planState.dayIdx*86400000));
+    const dayName = PLAN_DAYS[planState.dayIdx] + ' ' + date.slice(8,10);
+    // group shifts by role, sorted by start_time
+    const rolesWithShifts = PLAN_ROLES.filter(role => PLAN_ROLES.includes(role));
+    html += '<div class="plan-day-areas">';
+    rolesWithShifts.forEach(role => {
+      const shiftsToday = planState.shifts
+        .filter(x => x.shift_date === date && x.role === role)
+        .sort((a,b) => (a.start_time||'99:99').localeCompare(b.start_time||'99:99'));
+      const min = (PLAN_MIN[planState.branch] && PLAN_MIN[planState.branch][role]) ? PLAN_MIN[planState.branch][role][planState.dayIdx] : 0;
+      const active = shiftsToday.filter(x => x.status !== 'descanso').length;
+      const cover = (min && active < min) ? ` <span style="color:var(--err,#c0392b);">(${active}/${min} ⚠️)</span>` : (min ? ` <span style="color:var(--muted);">(${active}/${min})</span>` : '');
+      html += `<div class="plan-day-area"><div class="plan-day-area-head">${role}${cover}</div>`;
+      if (!shiftsToday.length) {
+        html += `<div class="plan-day-empty" style="color:var(--muted);font-size:0.85rem;padding:6px 0;">Nadie asignado</div>`;
+      }
+      shiftsToday.forEach(sh => {
+        const name = planStaffName(sh.staff_id);
+        if (sh.status === 'descanso') {
+          html += `<button class="plan-day-shift" data-shift="${sh.id}" style="opacity:0.7;">😴 ${esc(name)} · Descanso</button>`;
+        } else {
+          html += `<button class="plan-day-shift" data-shift="${sh.id}"><span class="t">${sh.start_time||'?'}–${sh.end_time||'?'}</span> ${esc(name)}</button>`;
+        }
+      });
+      html += `<button class="btn btn-secondary plan-day-add" data-role="${role}" style="margin-top:8px;">+ Agregar ${role}</button></div>`;
+    });
+    html += '</div>';
+    wrap.innerHTML = html;
+    // bind day selector
+    wrap.querySelectorAll('.plan-day-btn').forEach(b => {
+      b.addEventListener('click', () => { planState.dayIdx = parseInt(b.getAttribute('data-day'),10); planRenderDay(); planRenderWarnings(); });
+    });
+    // bind shift cards -> edit modal
+    wrap.querySelectorAll('.plan-day-shift').forEach(b => {
+      b.addEventListener('click', () => planOpenDayModal(b.getAttribute('data-shift')));
+    });
+    // bind add buttons
+    wrap.querySelectorAll('.plan-day-add').forEach(b => {
+      b.addEventListener('click', () => planOpenDayModal(null, b.getAttribute('data-role')));
+    });
+  }
+
+  let planDayTarget = null; // {shiftId} or {role} for new
+  function planOpenDayModal(shiftId, roleForNew) {
+    const date = fmtDate(new Date(planState.weekStart.getTime() + planState.dayIdx*86400000));
+    const sh = shiftId ? planState.shifts.find(x => x.id === shiftId) : null;
+    const role = sh ? sh.role : roleForNew;
+    $('plan-day-modal-title').textContent = `${PLAN_DAYS[planState.dayIdx]} · ${role}`;
+    // person dropdown: eligible for role, plus current assignee
+    const eligible = planStaffForRole(role);
+    if (sh && !eligible.find(s => s.id === sh.staff_id)) eligible.push(planState.staff.find(s => s.id === sh.staff_id) || {id: sh.staff_id, name: planStaffName(sh.staff_id)});
+    let opts = '<option value="">— Nadie —</option>';
+    eligible.forEach(s => {
+      const sel = (sh && sh.staff_id === s.id) ? ' selected' : '';
+      opts += `<option value="${s.id}"${sel}>${esc(s.name)}</option>`;
+    });
+    $('plan-day-staff').innerHTML = opts;
+    $('plan-day-start').value = sh && sh.start_time ? sh.start_time : ((PLAN_DEFAULT_TIMES[role]||{}).start || '11:00');
+    $('plan-day-end').value = sh && sh.end_time ? sh.end_time : ((PLAN_DEFAULT_TIMES[role]||{}).end || '21:00');
+    $('plan-day-delete').style.display = sh ? '' : 'none';
+    $('plan-day-modal').classList.remove('hidden');
+    planDayTarget = { shiftId: sh ? sh.id : null, role, date };
+  }
+  function planCloseDayModal() { $('plan-day-modal').classList.add('hidden'); planDayTarget = null; }
+
+  async function planSaveDayShift() {
+    if (!planDayTarget) return;
+    const { shiftId, role, date } = planDayTarget;
+    const staffId = $('plan-day-staff').value || null;
+    const start = $('plan-day-start').value;
+    const end = $('plan-day-end').value;
+    const old = shiftId ? planState.shifts.find(x => x.id === shiftId) : null;
+    let err = null, saved = null;
+    try {
+      if (!staffId) {
+        if (old) { const r = await supabase.from('shifts').delete().eq('id', old.id); if (r.error) err = r.error; else { await planAudit('delete', null, old); } }
+      } else if (old) {
+        const r = await supabase.from('shifts').update({ staff_id: staffId, start_time: start, end_time: end, status: 'programado' }).eq('id', old.id);
+        if (r.error) err = r.error; else saved = Object.assign({}, old, { staff_id: staffId, start_time: start, end_time: end, status: 'programado' });
+      } else {
+        // find a free slot label for this role
+        const base = (PLAN_SLOT_LABELS[role] || []);
+        const extras = planState.extraSlots[role] || [];
+        const allSlots = base.concat(extras);
+        let slot = null;
+        for (const s of allSlots) {
+          const taken = planState.shifts.find(x => x.slot === s && x.shift_date === date && x.status !== 'descanso');
+          if (!taken) { slot = s; break; }
+        }
+        if (!slot) { slot = `${role} ${allSlots.length + 1}`; const ex = planState.extraSlots[role] || []; ex.push(slot); planState.extraSlots[role] = ex; }
+        const r = await supabase.from('shifts').insert({
+          staff_id: staffId, shift_date: date, branch: planState.branch,
+          role, slot, status: 'programado', start_time: start, end_time: end
+        }).select().single();
+        if (r.error) err = r.error; else saved = r.data;
+      }
+    } catch(e) { err = e; }
+    if (err) {
+      const box = $('plan-warnings');
+      box.innerHTML = `<div class="plan-warn red">⚠️ No se pudo guardar: ${err.message || err}</div>` + box.innerHTML;
+      planCloseDayModal();
+      return;
+    }
+    if (saved) await planAudit(old ? 'update' : 'create', saved, old);
+    planCloseDayModal();
+    await planLoadShifts();
+    planRender();
+  }
+
+  async function planDeleteDayShift() {
+    if (!planDayTarget || !planDayTarget.shiftId) { planCloseDayModal(); return; }
+    const old = planState.shifts.find(x => x.id === planDayTarget.shiftId);
+    let err = null;
+    try {
+      const r = await supabase.from('shifts').delete().eq('id', planDayTarget.shiftId);
+      if (r.error) err = r.error;
+    } catch(e) { err = e; }
+    if (err) {
+      const box = $('plan-warnings');
+      box.innerHTML = `<div class="plan-warn red">⚠️ No se pudo quitar: ${err.message || err}</div>` + box.innerHTML;
+      planCloseDayModal();
+      return;
+    }
+    await planAudit('delete', null, old);
+    planCloseDayModal();
+    await planLoadShifts();
+    planRender();
+  }
+
+  // ---- AUDIT LOG VIEW (Dueño/Gerente only; RLS enforces server-side too) ----
+  async function planToggleAudit() {
+    const log = $('plan-audit-log');
+    if (!log.classList.contains('hidden')) { log.classList.add('hidden'); return; }
+    log.classList.remove('hidden');
+    log.innerHTML = '<p style="color:var(--muted);">Cargando…</p>';
+    const s = fmtDate(planState.weekStart);
+    const e = fmtDate(new Date(planState.weekStart.getTime() + 6*86400000));
+    const { data, error } = await supabase.from('shift_audit')
+      .select('*').eq('branch', planState.branch)
+      .gte('shift_date', s).lte('shift_date', e)
+      .order('created_at', { ascending: false }).limit(100);
+    if (error) { log.innerHTML = `<p style="color:var(--err,#c0392b);">No se pudo cargar: ${esc(error.message)}</p>`; return; }
+    if (!data || !data.length) { log.innerHTML = '<p style="color:var(--muted);">Sin cambios registrados esta semana.</p>'; return; }
+    const ACT = { create:'➕', update:'✏️', delete:'🗑️', assign:'👤', unassign:'👤' };
+    log.innerHTML = data.map(a => {
+      const d = new Date(a.created_at);
+      const when = `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const day = a.shift_date ? a.shift_date.slice(8,10) + '/' + a.shift_date.slice(5,7) : '';
+      let detail = '';
+      if (a.action === 'delete') detail = `quitaron a ${esc(a.old_staff||'—')}`;
+      else if (a.action === 'create') detail = `asignaron a ${esc(a.new_staff||'—')} ${esc(a.new_start||'')}–${esc(a.new_end||'')}`;
+      else detail = `${esc(a.old_staff||'—')} ${esc(a.old_start||'')}–${esc(a.old_end||'')} → ${esc(a.new_staff||'—')} ${esc(a.new_start||'')}–${esc(a.new_end||'')}`;
+      return `<div class="plan-audit-row" style="padding:7px 0;border-bottom:1px solid var(--frame,#eee);font-size:0.85rem;">
+        <b>${ACT[a.action]||'•'} ${esc(a.slot||a.role||'')} ${day}</b> — ${detail}
+        <br><span style="color:var(--muted);">${esc(a.changed_by_name||'?')} · ${when}</span></div>`;
+    }).join('');
   }
 
   function planRenderWarnings() {
@@ -2017,6 +2281,18 @@
   $('plan-descanso').addEventListener('click', () => planSaveShift('descanso', '', ''));
   $('plan-clear').addEventListener('click', () => planSaveShift('clear', '', ''));
   $('plan-modal').addEventListener('click', e => { if (e.target === $('plan-modal')) planCloseModal(); });
+  // day view modal + view toggle + audit (v0.106)
+  $('plan-day-save').addEventListener('click', planSaveDayShift);
+  $('plan-day-delete').addEventListener('click', planDeleteDayShift);
+  $('plan-day-modal').addEventListener('click', e => { if (e.target === $('plan-day-modal')) planCloseDayModal(); });
+  $('plan-audit-toggle').addEventListener('click', planToggleAudit);
+  document.querySelectorAll('#plan-view-seg button').forEach(b => {
+    b.addEventListener('click', () => {
+      planState.view = b.getAttribute('data-view');
+      if (planState.view === 'day') { const now = new Date(); const diff = (now.getDay() === 0 ? 6 : now.getDay() - 1); planState.dayIdx = Math.max(0, Math.min(6, diff)); }
+      planRender();
+    });
+  });
 
   // branch + week nav
   document.querySelectorAll('#plan-branch-seg button').forEach(b => {
