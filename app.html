@@ -833,8 +833,10 @@
             <div class="radio-group">
               <label><input type="radio" name="m-sucursal" value="Roma Norte"><span>Roma Norte</span></label>
               <label><input type="radio" name="m-sucursal" value="Del Valle"><span>Del Valle</span></label>
+              <label><input type="radio" name="m-sucursal" value="Otra"><span>Otra</span></label>
             </div>
           </div>
+          <div class="field hidden" id="m-sucursal-otra-wrap"><input type="text" id="m-sucursal-otra" placeholder="¿Cuál sucursal? Ej. Reforma" style="width:100%;font-size:16px;"></div>
           <div class="field"><label>Área / equipo</label><input type="text" id="m-area" placeholder="Ej. Barra, Caja, Terminales, Cocina, Baño…" style="width:100%"></div>
           <div class="field"><label>Describe el problema</label><textarea id="m-desc" placeholder="¿Qué se descompuso? ¿Desde cuándo?"></textarea></div>
           <div class="field"><label>Prioridad</label>
@@ -2542,6 +2544,11 @@
       const key = r.branch || 'Sin sucursal';
       (groups[key] = groups[key] || []).push(r);
     });
+    // v0.119: requests with OTHER branches (Mantenimiento 'Otra' free text)
+    // must still render — known branches first, then any other values
+    // alphabetically (Ben). 'Sin sucursal' legacy rows render last if present.
+    Object.keys(groups).filter(b => !branchOrder.includes(b) && b !== 'Sin sucursal').sort().forEach(b => branchOrder.push(b));
+    if (groups['Sin sucursal']) branchOrder.push('Sin sucursal');
 
     // Priority badge color + label (uses the shared PRIO_META map)
     function prioBadge(p) {
@@ -3235,15 +3242,36 @@
     return supabase.storage.from('maintenance-photos').getPublicUrl(path).data.publicUrl;
   }
 
+  // v0.119: 'Otra' sucursal for Mantenimiento — free-text branch entry.
+  // Show/clear the extra input when Otra is toggled; resetForm clears it via
+  // the standard text-input sweep, but re-hide explicitly on the next choice.
+  document.querySelectorAll('input[name="m-sucursal"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const wrap = $('m-sucursal-otra-wrap');
+      const otra = $('m-sucursal-otra');
+      if (r.value === 'Otra' && r.checked) { wrap.classList.remove('hidden'); otra.focus(); }
+      else { wrap.classList.add('hidden'); otra.value = ''; }
+    });
+  });
+
   $('m-submit').addEventListener('click', async () => {
     const sucursal = document.querySelector('input[name="m-sucursal"]:checked');
     const area = $('m-area').value.trim();
     const desc = $('m-desc').value.trim();
     const prioridad = document.querySelector('input[name="m-prioridad"]:checked');
     if (!sucursal || !area || !desc) { showMsg($('m-msg'), 'Completa sucursal, área y descripción', 'err'); return; }
+    // v0.119: Otra requires the free-text branch name
+    const branch = sucursal.value === 'Otra' ? $('m-sucursal-otra').value.trim() : sucursal.value;
+    if (!branch) { showMsg($('m-msg'), 'Especifica la sucursal', 'err'); return; }
     const mPhoto = $('m-photo').files[0];
+    // v0.119: requester name + timestamp on the review modal (Ben); branch
+    // shows 'Otra — <name>' when the free-text path is used.
+    const requesterName = (currentProfile && currentProfile.name) ? currentProfile.name : '—';
+    const branchLabel = sucursal.value === 'Otra' ? ('Otra — ' + branch) : branch;
     const rows = [
-      ['Sucursal', sucursal.value],
+      ['Solicitante', esc(requesterName)],
+      ['Fecha y hora', new Date().toLocaleString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })],
+      ['Sucursal', esc(branchLabel)],
       ['Área / equipo', area],
       ['Descripción', desc],
       ['Prioridad', prioridad ? prioridad.value : 'Normal'],
@@ -3259,7 +3287,7 @@
       } catch(e) { showMsg($('m-msg'), 'Error al subir la foto: ' + e.message, 'err'); $('m-submit').disabled = false; return; }
       const { error } = await supabase.from('maintenance_requests').insert({
         submitted_by: user.id,
-        branch: sucursal.value,
+        branch: branch, // v0.119: effective branch (Otra uses free text)
         area,
         description: desc,
         priority: prioridad ? prioridad.value : 'Normal',
@@ -3284,7 +3312,11 @@
     const amountVal = $('c-amount').value.trim();
     const cPhoto = $('c-photo').files[0];
     const cPrioridad = document.querySelector('input[name="c-prioridad"]:checked');
+    // v0.119: requester name + timestamp on the review modal (Ben)
+    const cRequester = (currentProfile && currentProfile.name) ? currentProfile.name : '—';
     const rows = [
+      ['Solicitante', esc(cRequester)],
+      ['Fecha y hora', new Date().toLocaleString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })],
       ['Sucursal', sucursal.value],
       ['Artículo', item],
       ['Proveedor / tienda', $('c-vendor').value.trim() || '—'],
