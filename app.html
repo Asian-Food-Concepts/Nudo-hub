@@ -838,7 +838,8 @@
           </div>
           <div class="field hidden" id="m-sucursal-otra-wrap"><input type="text" id="m-sucursal-otra" placeholder="¿Cuál sucursal? Ej. Reforma" style="width:100%;font-size:16px;"></div>
           <div class="field"><label>Área / equipo</label><input type="text" id="m-area" placeholder="Ej. Barra, Caja, Terminales, Cocina, Baño…" style="width:100%"></div>
-          <div class="field"><label>Describe el problema</label><textarea id="m-desc" placeholder="¿Qué se descompuso? ¿Desde cuándo?"></textarea></div>
+          <div class="field"><label>Describe el problema <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label><textarea id="m-desc" placeholder="¿Qué se descompuso? ¿Desde cuándo?"></textarea></div>
+          <div class="field"><label>Notas / comentarios <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label><textarea id="m-notes" placeholder="Detalles extra: refacción tentativa, proveedor, costos…"></textarea></div>
           <div class="field"><label>Prioridad</label>
             <div class="radio-group">
               <label><input type="radio" name="m-prioridad" value="Urgente"><span>🔴 Urgente</span></label>
@@ -2494,7 +2495,7 @@
     // Fetch both request tables (newest first)
     const { data: mant, error: em } = await supabase
       .from('maintenance_requests')
-      .select('id, branch, area, description, priority, status, submitted_by, created_at, photo_urls')
+      .select('id, branch, area, description, notes, priority, status, submitted_by, created_at, photo_urls')
       .order('created_at', { ascending: false });
     const { data: comp, error: ec } = await supabase
       .from('purchases')
@@ -2510,7 +2511,8 @@
     const rows = [];
     (mant || []).forEach(r => rows.push({
       kind: 'mant', typeLabel: '🔧 Mantenimiento', title: r.area || 'Solicitud',
-      detail: r.description || '', priority: r.priority || 'Normal',
+      detail: r.description || '', notes: r.notes || '',
+      priority: r.priority || 'Normal',
       branch: r.branch, status: r.status, created_at: r.created_at,
       id: r.id, table: 'maintenance_requests', submitted_by: r.submitted_by,
       link: '', photo_urls: r.photo_urls || [], vendor: '', amount: null
@@ -2607,7 +2609,7 @@
     const linkHtml = row.link ? `<div class="rv-row"><div class="rv-label">Enlace</div><div class="rv-value"><a href="${escAttr(row.link)}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600;">🔗 Abrir enlace</a></div></div>` : '';
     const photosHtml = (row.photo_urls && row.photo_urls.length) ? `<div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap;">${row.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" onclick="window.open('${escAttr(u)}','_blank')" />`).join('')}</div>` : '';
     const detailRows = row.kind === 'mant'
-      ? [['Tipo','🔧 Mantenimiento'], ['Área / equipo', row.title], ['Descripción', row.detail], ['Prioridad', prio], ['Sucursal', row.branch], ['Status', statusLabel], ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]]
+      ? [['Tipo','🔧 Mantenimiento'], ['Área / equipo', row.title], ['Descripción', row.detail], ['Notas', row.notes || '—'], ['Prioridad', prio], ['Sucursal', row.branch], ['Status', statusLabel], ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]]
       : [['Tipo','🛒 Compra'], ['Artículo', row.title], ['Proveedor', row.vendor || '—'], ['Monto', row.amount ? '$' + Number(row.amount).toLocaleString('es-MX') + ' MXN' : '—'], ['Prioridad', prio], ['Sucursal', row.branch], ['Status', statusLabel], ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]];
     $('estatus-detail-title').textContent = row.typeLabel + ' · ' + row.title;
     $('estatus-detail-body').innerHTML = detailRows.map(r => `<div class="rv-row"><div class="rv-label">${esc(r[0])}</div><div class="rv-value">${r[1] || '—'}</div></div>`).join('') + linkHtml + photosHtml;
@@ -2672,7 +2674,7 @@
     if (!ADMIN_ROLES.includes(prof && prof.role)) { showMsg($('estatus-msg'), 'Solo el Dueño puede descargar PDFs', 'err'); return; }
     const q = table === 'purchases'
       ? { cols: 'id, item, vendor, amount, link, notes, status, branch, submitted_by, created_at, photo_urls', titleField: 'item' }
-      : { cols: 'id, area, description, priority, status, branch, submitted_by, created_at, photo_urls', titleField: 'area' };
+      : { cols: 'id, area, description, notes, priority, status, branch, submitted_by, created_at, photo_urls', titleField: 'area' };
     const { data, error } = await supabase.from(table).select(q.cols).eq('id', id).maybeSingle();
     if (error || !data) { showMsg($('estatus-msg'), 'No se pudo cargar la solicitud', 'err'); return; }
     openPdfWindow(table, data, q.titleField);
@@ -3259,7 +3261,8 @@
     const area = $('m-area').value.trim();
     const desc = $('m-desc').value.trim();
     const prioridad = document.querySelector('input[name="m-prioridad"]:checked');
-    if (!sucursal || !area || !desc) { showMsg($('m-msg'), 'Completa sucursal, área y descripción', 'err'); return; }
+    // v0.120: descripción + notas are OPTIONAL (Ben); sucursal + área stay required
+    if (!sucursal || !area) { showMsg($('m-msg'), 'Completa sucursal y área', 'err'); return; }
     // v0.119: Otra requires the free-text branch name
     const branch = sucursal.value === 'Otra' ? $('m-sucursal-otra').value.trim() : sucursal.value;
     if (!branch) { showMsg($('m-msg'), 'Especifica la sucursal', 'err'); return; }
@@ -3273,7 +3276,8 @@
       ['Fecha y hora', new Date().toLocaleString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })],
       ['Sucursal', esc(branchLabel)],
       ['Área / equipo', area],
-      ['Descripción', desc],
+      ['Descripción', desc || '—'],
+      ['Notas', $('m-notes').value.trim() || '—'],
       ['Prioridad', prioridad ? prioridad.value : 'Normal'],
       ['Foto', mPhoto ? mPhoto.name : '—']
     ];
@@ -3289,7 +3293,8 @@
         submitted_by: user.id,
         branch: branch, // v0.119: effective branch (Otra uses free text)
         area,
-        description: desc,
+        description: desc, // v0.120: optional
+        notes: $('m-notes').value.trim(), // v0.120: optional
         priority: prioridad ? prioridad.value : 'Normal',
         photo_url: photoUrls[0] || '',
         photo_urls: photoUrls,
