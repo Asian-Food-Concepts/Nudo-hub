@@ -866,7 +866,7 @@
             </div>
           </div>
           <div class="field"><label>Artículo</label><input type="text" id="c-item" placeholder="¿Qué necesitas comprar?" style="width:100%"></div>
-          <div class="field"><label>Proveedor / tienda</label><input type="text" id="c-vendor" placeholder="¿Dónde lo compramos?" style="width:100%"></div>
+          <div class="field"><label>Proveedor / tienda</label><input type="text" id="c-vendor" placeholder="¿Dónde lo compramos?" style="width:100%"><div style="font-size:0.8rem;color:var(--muted);margin-top:4px;">Opcional — déjalo en blanco si no estás seguro</div></div>
           <div class="field"><label>Monto aprox. (MXN)</label><input type="number" id="c-amount" placeholder="Ej. 350" style="width:100%"></div>
           <div class="field"><label>Prioridad</label>
             <div class="radio-group">
@@ -1133,7 +1133,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.121";
+  const APP_VERSION = "v0.122";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
