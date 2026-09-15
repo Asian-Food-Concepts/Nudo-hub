@@ -1133,7 +1133,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.120";
+  const APP_VERSION = "v0.121";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -2480,6 +2480,13 @@
   };
   function prioMeta(p) { return PRIO_META[p] || PRIO_META['Normal']; }
 
+  // v0.121: 'done' = terminal status per request kind (Entregado for Compras,
+  // Completado for Mantenimiento). Done cards drop the red/urgency priority
+  // badge and move to a separate Completadas section at the bottom (Ben).
+  function isDoneRow(r) {
+    return r.kind === 'comp' ? r.status === 'Entregado' : r.status === 'Completado';
+  }
+
   async function loadEstatus() {
     const listEl = $('estatus-list');
     const msgEl = $('estatus-msg');
@@ -2540,9 +2547,14 @@
     // Group by OUTLET (Roma Norte / Del Valle), so the owner sees the
     // clustering around each branch at a glance. Within each outlet, keep
     // newest-first. Urgency is shown as a colored badge on every card.
+    // v0.121: completed requests (Compras Entregado / Mantenimiento Completado)
+    // are pulled OUT of the per-outlet groups and rendered in a separate
+    // "Completadas" section at the very bottom (Ben 2026-09-15).
+    const doneRows = visible.filter(isDoneRow);
+    const liveRows = visible.filter(r => !isDoneRow(r));
     const branchOrder = ['Roma Norte', 'Del Valle'];
     const groups = {};
-    visible.forEach(r => {
+    liveRows.forEach(r => {
       const key = r.branch || 'Sin sucursal';
       (groups[key] = groups[key] || []).push(r);
     });
@@ -2558,29 +2570,32 @@
       return `<span style="display:inline-block;background:${m.bg};color:${m.c};font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">${m.label}</span>`;
     }
 
-    let html = '';
-    branchOrder.forEach(br => {
-      const list = groups[br];
-      if (!list || !list.length) return;
-      html += `<div class="section-title" style="margin-top:6px;">📍 ${esc(br)} <span style="color:var(--muted);font-weight:400;">(${list.length})</span></div>`;
-      list.forEach(r => {
-        const linkHtml = r.link ? `<div style="margin:6px 0 4px;"><a href="${escAttr(r.link)}" target="_blank" rel="noopener" style="color:var(--accent);font-size:0.9rem;font-weight:600;">🔗 Abrir enlace</a></div>` : '';
-        const photosHtml = (r.photo_urls && r.photo_urls.length) ? `<div style="display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;">${r.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" />`).join('')}</div>` : '';
-        const statusLabel = statusMeta(r)[r.status] ? statusMeta(r)[r.status].label : esc(r.status);
-        // Strip the leading colored-dot emoji from the status label on the card —
-        // the priority badge already carries the color, so a second colored dot
-        // reads as duplicate status info (Ben 2026-09-09). Only strip when there
-        // IS an emoji prefix (legacy statuses like "Pendiente" have none).
-        const statusPlain = /^[^\s]+\s/.test(statusLabel) ? statusLabel.replace(/^[^\s]+\s/, '') : statusLabel;
-        // Whole card is tappable -> opens the detail modal
-        html += `<div class="estatus-card" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card);cursor:pointer;">
+    // v0.121: single card builder shared by per-outlet lists AND the bottom
+    // Completadas section — identical layout/behavior, one source of truth.
+    function estatusCard(r, done) {
+      const linkHtml = r.link ? `<div style="margin:6px 0 4px;"><a href="${escAttr(r.link)}" target="_blank" rel="noopener" style="color:var(--accent);font-size:0.9rem;font-weight:600;">🔗 Abrir enlace</a></div>` : '';
+      const photosHtml = (r.photo_urls && r.photo_urls.length) ? `<div style="display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;">${r.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" />`).join('')}</div>` : '';
+      const statusLabel = statusMeta(r)[r.status] ? statusMeta(r)[r.status].label : esc(r.status);
+      // Strip the leading colored-dot emoji from the status label on the card —
+      // the priority badge already carries the color, so a second colored dot
+      // reads as duplicate status info (Ben 2026-09-09). Only strip when there
+      // IS an emoji prefix (legacy statuses like "Pendiente" have none).
+      const statusPlain = /^[^\s]+\s/.test(statusLabel) ? statusLabel.replace(/^[^\s]+\s/, '') : statusLabel;
+      // v0.121: completed cards swap the urgency-colored priority badge for a
+      // neutral green "✓ <status>" pill — a red Urgente badge on a finished
+      // request still reads as alarming (Ben 2026-09-15). Live cards keep the
+      // priority badge + plain status text exactly as before.
+      const badgeHtml = done
+        ? `<span style="display:inline-block;background:#e6f4ea;color:#188038;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">✓ ${esc(statusPlain)}</span>`
+        : prioBadge(r.priority) + `<span style="font-size:0.8rem;color:var(--muted);">${statusPlain}</span>`;
+      // Whole card is tappable -> opens the detail modal
+      return `<div class="estatus-card" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card);cursor:pointer;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
             <div style="font-weight:600;flex:1;">${r.typeLabel} · ${esc(r.title)}</div>
             <div style="font-size:0.8rem;color:var(--muted);white-space:nowrap;">${fmtAgo(r.created_at)}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px;flex-wrap:wrap;">
-            ${prioBadge(r.priority)}
-            <span style="font-size:0.8rem;color:var(--muted);">${statusPlain}</span>
+            ${badgeHtml}
           </div>
           ${r.detail ? `<div style="font-size:0.9rem;color:var(--muted);margin:4px 0;">${esc(r.detail)}</div>` : ''}
           ${linkHtml}
@@ -2590,8 +2605,20 @@
             ${(isAdmin && statusMeta(r)[r.status] && statusMeta(r)[r.status].next) ? `<button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;" data-advance="${r.table}|${r.id}|${statusMeta(r)[r.status].next}">Marcar ${statusMeta(r)[r.status].next}</button>` : ''}
           </div>
         </div>`;
-      });
+    }
+
+    let html = '';
+    branchOrder.forEach(br => {
+      const list = groups[br];
+      if (!list || !list.length) return;
+      html += `<div class="section-title" style="margin-top:6px;">📍 ${esc(br)} <span style="color:var(--muted);font-weight:400;">(${list.length})</span></div>`;
+      list.forEach(r => { html += estatusCard(r, false); });
     });
+    // v0.121: completed requests sit in their own section at the very bottom
+    if (doneRows.length) {
+      html += `<div class="section-title" style="margin-top:6px;">✅ Completadas <span style="color:var(--muted);font-weight:400;">(${doneRows.length})</span></div>`;
+      doneRows.forEach(r => { html += estatusCard(r, true); });
+    }
 
     listEl.innerHTML = html;
   }
