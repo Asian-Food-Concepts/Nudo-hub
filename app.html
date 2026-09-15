@@ -1103,13 +1103,11 @@
         </div>
       </div>
 
-      <!-- BOTTOM TAB BAR (v0.88) — floating dock, 3 tabs -->
+      <!-- BOTTOM TAB BAR (v0.126) — floating dock, 2 tabs (Ben: "Inicio and Seguimiento
+           should be enough"; Bitácora/Planear/Guía stay reachable via Home cards) -->
       <nav class="bottom-tabs" id="bottom-tabs" aria-label="Navegación principal">
         <button class="tab-btn active" data-tab="home"><span class="tab-ico">🏠</span>Inicio</button>
         <button class="tab-btn" data-tab="estatus"><span class="tab-ico">📋</span>Seguimiento</button>
-        <button class="tab-btn" data-tab="plan" id="tab-plan" style="display:none;"><span class="tab-ico">🗓️</span>Planear</button>
-        <button class="tab-btn" data-tab="bitacora" id="tab-bitacora" style="display:none;"><span class="tab-ico">📓</span>Bitácora</button>
-        <button class="tab-btn" data-tab="guia"><span class="tab-ico">📘</span>Guía</button>
       </nav>
 
       <!-- ESTATUS DETAIL MODAL -->
@@ -1147,7 +1145,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.125";
+  const APP_VERSION = "v0.126";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1239,14 +1237,8 @@
   }
   function showBottomTabs(show) {
     const tabs = $('bottom-tabs');
-    if (currentProfile) {
-      const r = (currentProfile.role || '');
-      const isLeader = (r === 'Dueño' || r.toLowerCase().includes('gerente') || r.toLowerCase().includes('capit'));
-      // v0.125: Planear dock tab = Dueño/Gerente only (captains disabled)
-      const isPlan = (r === 'Dueño' || r.toLowerCase().includes('gerente'));
-      const tp = $('tab-plan'); if (tp) tp.style.display = isPlan ? '' : 'none';
-      const tb = $('tab-bitacora'); if (tb) tb.style.display = isLeader ? '' : 'none';
-    }
+    // v0.126: dock trimmed to Inicio + Seguimiento only (Ben) — no role-conditional
+    // tabs remain; the old tab-plan/tab-bitacora logic is gone with the buttons.
     if (tabs) tabs.style.display = show ? 'flex' : 'none';
   }
 
@@ -1446,10 +1438,9 @@
     }
     // Owner follow-up badge on Estatus de solicitudes (Dueño only)
     if (role === 'Dueño') updateEstatusBadge();
-    // v0.125: re-apply dock-tab state AFTER the profile is known. All login
-    // paths call showApp() → showBottomTabs() BEFORE loadUser() resolves, so
-    // tabs were computed on a stale/null profile (tab-plan stayed hidden for
-    // Dueño on fresh loads). loadUser is the only place the real role is known.
+    // v0.126: dock is role-independent now (Inicio + Seguimiento only), but the
+    // end-of-loadUser showBottomTabs(true) call stays — it guarantees the dock
+    // is visible after the login view hands over to the app view.
     showBottomTabs(true);
   }
 
@@ -1796,19 +1787,9 @@
         $('home-view').style.display = 'none';
         $('form-estatus').classList.add('active');
         loadEstatus();
-      } else if (tab === 'plan') {
-        $('home-view').style.display = 'none';
-        $('form-plan').classList.add('active');
-        loadPlanner();
-      } else if (tab === 'bitacora') {
-        $('home-view').style.display = 'none';
-        $('form-bitacora').classList.add('active');
-        bitacoraReadiness();
-      } else if (tab === 'guia') {
-        $('home-view').style.display = 'none';
-        $('guide-frame').src = '/Nudo-hub/guia.html';
-        $('form-guide').classList.add('active');
       }
+      // v0.126: plan/bitacora/guia branches removed with the dock buttons —
+      // those pages are still reachable from Home cards (data-form / data-guide).
       setActiveTab(tab);
     });
   });
