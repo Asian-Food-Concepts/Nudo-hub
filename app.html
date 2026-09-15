@@ -622,8 +622,8 @@
           </div>
         </div>
 
-        <div class="section-title">Reclutamiento</div>
-        <div class="card-list">
+        <div class="section-title" id="recl-section">Reclutamiento</div>
+        <div class="card-list" id="recl-list">
           <a class="card" href="#" id="entrevistas-card" data-form="entrevistas" style="display:none;">
             <div class="icon icon-form">🎯</div>
             <div class="text"><div class="title">Entrevistas</div><div class="sub">Registra candidatos y ofertas</div></div>
@@ -641,18 +641,15 @@
           </a>
         </div>
 
-        <div class="section-title">Horario</div>
-        <div class="card-list">
+        <!-- Horario (v0.125): Mi horario + Planear horario for staff/captains only;
+             Dueño gets the real planner in the Próximamente zone at the bottom. -->
+        <div class="section-title" id="horario-title">Horario</div>
+        <div class="card-list" id="horario-list">
           <div class="card" style="opacity:0.5;cursor:not-allowed;filter:grayscale(0.6);">
             <div class="icon icon-sheet">🗓️</div>
             <div class="text"><div class="title">Mi horario</div><div class="sub">Próximamente</div></div>
             <div class="arrow">›</div>
           </div>
-          <a class="card" id="plan-card" data-form="plan" href="#">
-            <div class="icon icon-sheet">📝</div>
-            <div class="text"><div class="title">Planear horario</div><div class="sub">Capitanes · semana y día</div></div>
-            <div class="arrow">›</div>
-          </a>
         </div>
 
         <div class="section-title">Guía</div>
@@ -682,6 +679,33 @@
             <div class="text"><div class="title">Contactos de servicios</div><div class="sub">Electricista, plomero y más</div></div>
             <div class="arrow">›</div>
           </a>
+        </div>
+
+        <!-- DESHABILITADO (v0.125): sections temporarily off for captains, parked at the
+             bottom of Home. Hidden by default; loadUser() reveals per role:
+             - Reclutamiento: greyed for captains, real cards for Dueño/Gerente
+             - Planear horario: greyed for captains, REAL planner card for Dueño -->
+        <div class="section-title" id="recl-disabled-section" style="display:none;">Reclutamiento</div>
+        <div class="card-list" id="recl-disabled-list" style="display:none;">
+          <div class="card" id="recl-disabled-card" style="opacity:0.5;cursor:not-allowed;filter:grayscale(0.6);">
+            <div class="icon icon-form">🎯</div>
+            <div class="text"><div class="title">Entrevistas y Reclutamiento</div><div class="sub">Próximamente</div></div>
+            <div class="arrow">›</div>
+          </div>
+        </div>
+
+        <div class="section-title" id="plan-disabled-section" style="display:none;">Horario</div>
+        <div class="card-list" id="plan-disabled-list" style="display:none;">
+          <a class="card" id="plan-card" data-form="plan" href="#" style="display:none;">
+            <div class="icon icon-sheet">📝</div>
+            <div class="text"><div class="title">Planear horario</div><div class="sub">Semana y día</div></div>
+            <div class="arrow">›</div>
+          </a>
+          <div class="card" id="plan-disabled-card" style="opacity:0.5;cursor:not-allowed;filter:grayscale(0.6);">
+            <div class="icon icon-sheet">📝</div>
+            <div class="text"><div class="title">Planear horario</div><div class="sub">Próximamente</div></div>
+            <div class="arrow">›</div>
+          </div>
         </div>
 
         <!-- Live sections pulled from the hub (Desempeño + Opiniones) so the
@@ -1123,7 +1147,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.124";
+  const APP_VERSION = "v0.125";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1218,7 +1242,9 @@
     if (currentProfile) {
       const r = (currentProfile.role || '');
       const isLeader = (r === 'Dueño' || r.toLowerCase().includes('gerente') || r.toLowerCase().includes('capit'));
-      const tp = $('tab-plan'); if (tp) tp.style.display = isLeader ? '' : 'none';
+      // v0.125: Planear dock tab = Dueño/Gerente only (captains disabled)
+      const isPlan = (r === 'Dueño' || r.toLowerCase().includes('gerente'));
+      const tp = $('tab-plan'); if (tp) tp.style.display = isPlan ? '' : 'none';
       const tb = $('tab-bitacora'); if (tb) tb.style.display = isLeader ? '' : 'none';
     }
     if (tabs) tabs.style.display = show ? 'flex' : 'none';
@@ -1270,6 +1296,7 @@
   // the visible test-account buttons — staff never see this list.
   const TEST_ACCOUNTS = {
     '123456':    { email: 'test-pin@nudo.hub', password: 'NudoPin#123456' },
+    '112233':    { email: 'ben.captain@nudo.hub', password: 'NudoUg1J6g70GV!B' },
     'capitan':   { email: 'capitan.test@nudo.hub',  password: 'NudoTest#Cap2026' },
     'encargado': { email: 'encargado.test@nudo.hub', password: 'NudoTest#Enc2026' },
     'mesero':    { email: 'mesero.test@nudo.hub',    password: 'NudoTest#Mes2026' },
@@ -1373,24 +1400,40 @@
       if (isLeader) { bitCard.style.display = ''; }
       else { bitCard.style.display = 'none'; }
     }
-    // Role-gate the schedule planner: Dueño, Capitán, Gerente
-    const planCard = document.getElementById('plan-card');
-    if (planCard) {
-      if (isLeader) { planCard.style.display = ''; }
-      else { planCard.style.display = 'none'; }
-    }
-    // Role-gate Entrevistas: Dueño, Capitán, Gerente
+    // v0.125 (Ben): RECLUTAMIENTO + PLANEADOR disabled for CAPITANES.
+    // isRecl = Dueño or Gerente keep the real features; captains (isLeader
+    // without management role) get greyed "Próximamente" placeholders parked
+    // at the BOTTOM of Home; non-leaders see nothing (unchanged).
+    const isRecl = (role === 'Dueño' || role.toLowerCase().includes('gerente'));
+    const isCaptainOnly = (isLeader && !isRecl);
+    const reclSection = document.getElementById('recl-section');
+    const reclList = document.getElementById('recl-list');
     const entrevistasCard = document.getElementById('entrevistas-card');
-    if (entrevistasCard) {
-      if (isLeader) { entrevistasCard.style.display = ''; }
-      else { entrevistasCard.style.display = 'none'; }
-    }
-    // Role-gate Entrevistados (edit all): same leader gate
     const entrevistadosCard = document.getElementById('entrevistados-card');
-    if (entrevistadosCard) {
-      if (isLeader) { entrevistadosCard.style.display = ''; }
-      else { entrevistadosCard.style.display = 'none'; }
-    }
+    const usuariosCard = document.getElementById('usuarios-card');
+    const showTop = isRecl ? '' : 'none';
+    if (reclSection) reclSection.style.display = showTop;
+    if (reclList) reclList.style.display = showTop;
+    if (entrevistasCard) entrevistasCard.style.display = showTop;
+    if (entrevistadosCard) entrevistadosCard.style.display = showTop;
+    if (usuariosCard) usuariosCard.style.display = (role === 'Dueño') ? '' : 'none';
+    const reclDisSection = document.getElementById('recl-disabled-section');
+    const reclDisList = document.getElementById('recl-disabled-list');
+    const reclDisCard = document.getElementById('recl-disabled-card');
+    const showBottomRecl = isCaptainOnly ? '' : 'none';
+    if (reclDisSection) reclDisSection.style.display = showBottomRecl;
+    if (reclDisList) reclDisList.style.display = showBottomRecl;
+    if (reclDisCard) reclDisCard.style.display = showBottomRecl;
+    // Planner: real card (bottom zone) for Dueño/Gerente; greyed placeholder for captains
+    const planCard = document.getElementById('plan-card');
+    if (planCard) { planCard.style.display = isRecl ? '' : 'none'; }
+    const planDisSection = document.getElementById('plan-disabled-section');
+    const planDisList = document.getElementById('plan-disabled-list');
+    const planDisCard = document.getElementById('plan-disabled-card');
+    const showBottomPlan = isCaptainOnly ? '' : 'none';
+    if (planDisSection) planDisSection.style.display = showBottomPlan;
+    if (planDisList) planDisList.style.display = showBottomPlan;
+    if (planDisCard) planDisCard.style.display = showBottomPlan;
     // Role-gate Mantenimiento preventivo placeholder: Dueño, Capitán, Gerente (v0.117)
     const mantprevSection = document.getElementById('mantprev-section');
     const mantprevList = document.getElementById('mantprev-list');
@@ -1401,14 +1444,13 @@
       mantprevList.style.display = show;
       mantprevCard.style.display = show;
     }
-    // Role-gate Usuarios (account management): Dueño only
-    const usuariosCard = document.getElementById('usuarios-card');
-    if (usuariosCard) {
-      if (role === 'Dueño') { usuariosCard.style.display = ''; }
-      else { usuariosCard.style.display = 'none'; }
-    }
     // Owner follow-up badge on Estatus de solicitudes (Dueño only)
     if (role === 'Dueño') updateEstatusBadge();
+    // v0.125: re-apply dock-tab state AFTER the profile is known. All login
+    // paths call showApp() → showBottomTabs() BEFORE loadUser() resolves, so
+    // tabs were computed on a stale/null profile (tab-plan stayed hidden for
+    // Dueño on fresh loads). loadUser is the only place the real role is known.
+    showBottomTabs(true);
   }
 
   // Owner follow-up badge on Estatus de solicitudes (Dueño only). Shows two
@@ -2006,6 +2048,14 @@
     });
     $('plan-week-label').textContent = planWeekLabel();
     try { await requireUser(); } catch(e) { return; }
+    // v0.125: planner is Dueño/Gerente only — captains get the greyed card.
+    // Defense in depth: even if a captain reaches the form via a stale dock
+    // tab, the grid renders nothing and every save path is unreachable.
+    const _planGateRole = (currentProfile && currentProfile.role) || '';
+    if (!(_planGateRole === 'Dueño' || _planGateRole.toLowerCase().includes('gerente'))) {
+      $('plan-grid').innerHTML = '<div class="empty-state"><div class="es-ico">🔒</div><div class="es-title">Deshabilitado temporalmente</div><div class="es-sub">El planeador de horarios pronto estará disponible.</div></div>';
+      return;
+    }
     const { data: staff, error } = await supabase.from('profiles')
       .select('id,name,role,branch').eq('active', true).order('name');
     if (error) { $('plan-grid').innerHTML = `<div class="empty-state"><div class="es-ico">⚠️</div><div class="es-title">No se pudo cargar el equipo</div><div class="es-sub">Revisa tu conexión e inténtalo de nuevo.</div><button class="btn" onclick="loadPlanner()">Reintentar</button></div>`; return; }
@@ -2935,13 +2985,12 @@
     openReview('🎯 Revisa la entrevista', rows, async () => {
       let user; try { user = await requireUser(); } catch(e) { return; }
       // Enforce leader role at submit (defense in depth)
+      // v0.125: entrevistas insert = Dueño/Gerente only (captains disabled)
       const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
       const role = (prof && prof.role) || '';
-      const roleGroup = planRoleGroup(role);
-      const allowed = ['Dueño', 'Capitán', 'Gerente'];
-      const isLeader = allowed.includes(role) || roleGroup === 'Capitán';
-      if (!isLeader) {
-        showMsg($('i-msg'), 'Solo Dueño, Capitán o Gerente pueden registrar entrevistas.', 'err');
+      const isRecl = role === 'Dueño' || role.toLowerCase().includes('gerente');
+      if (!isRecl) {
+        showMsg($('i-msg'), 'Solo Dueño o Gerente pueden registrar entrevistas.', 'err');
         goHome();
         return;
       }
@@ -3060,7 +3109,8 @@
     const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
     const role = (prof && prof.role) || '';
     const roleGroup = planRoleGroup(role);
-    isLeader = ['Dueño', 'Capitán', 'Gerente'].includes(role) || roleGroup === 'Capitán';
+    // v0.125: entrevistas now Dueño/Gerente only (captains disabled)
+    isLeader = role === 'Dueño' || role.toLowerCase().includes('gerente');
     if (!isLeader) { return; }
     const { error } = await supabase.from('interviews').update({ status }).eq('id', id);
     if (error) { showMsg($('entrevistas-msg'), 'Error al cambiar estado: ' + error.message, 'err'); return; }
@@ -3188,11 +3238,11 @@
       const paterno = $('ee-paterno').value.trim();
       if (!first || !paterno) { showMsg(msg, 'Nombre y apellido paterno son obligatorios', 'err'); return; }
       let user; try { user = await requireUser(); } catch(err) { return; }
-      // leader gate
+      // leader gate — v0.125: entrevistas edit = Dueño/Gerente only
       const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
       const role = (prof && prof.role) || '';
-      const isLeader = ['Dueño','Capitán','Gerente'].includes(role) || planRoleGroup(role) === 'Capitán';
-      if (!isLeader) { showMsg(msg, 'Solo líderes pueden editar entrevistas.', 'err'); return; }
+      const isRecl = role === 'Dueño' || role.toLowerCase().includes('gerente');
+      if (!isRecl) { showMsg(msg, 'Solo Dueño o Gerente pueden editar entrevistas.', 'err'); return; }
       const panelists = Array.from(document.querySelectorAll('.ee-panelist')).map(v => v.value.trim()).filter(Boolean);
       const sal = $('ee-salario').value;
       const { error } = await supabase.from('interviews').update({
@@ -3230,10 +3280,11 @@
       const name = ($('ee-first').value.trim() + ' ' + $('ee-paterno').value.trim()).trim();
       if (!confirm('¿Eliminar definitivamente a "' + name + '"? Esta acción no se puede deshacer.')) return;
       let user; try { user = await requireUser(); } catch(err) { return; }
+      // v0.125: entrevistas delete = Dueño/Gerente only
       const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
       const role = (prof && prof.role) || '';
-      const isLeader = ['Dueño','Capitán','Gerente'].includes(role) || planRoleGroup(role) === 'Capitán';
-      if (!isLeader) { showMsg(msg, 'Solo líderes pueden eliminar.', 'err'); return; }
+      const isRecl = role === 'Dueño' || role.toLowerCase().includes('gerente');
+      if (!isRecl) { showMsg(msg, 'Solo Dueño o Gerente pueden eliminar.', 'err'); return; }
       const { error } = await supabase.from('interviews').delete().eq('id', _editingId);
       if (error) { showMsg(msg, 'Error: ' + error.message, 'err'); return; }
       showMsg(msg, '🗑️ Candidato eliminado.', 'ok');
