@@ -548,6 +548,13 @@
         <div class="login-links" id="login-test-link" style="display:flex;justify-content:center;margin-top:14px;">
           <a class="link-btn" href="https://raw.githack.com/Asian-Food-Concepts/Nudo-hub/dev-preview/app.html" target="_blank" rel="noopener" style="text-decoration:none;font-size:0.8rem;">🧪 Página de pruebas (preview)</a>
         </div>
+        <!-- v0.124: LIVE button — only rendered when the page is NOT served
+             from production GitHub Pages (i.e. on the githack preview/test
+             page). Lets Ben jump from the testing page back to the live app
+             with one tap. Never visible to staff on prod. -->
+        <div class="login-links hidden" id="login-live-link" style="display:flex;justify-content:center;margin-top:6px;">
+          <a class="btn" href="https://asian-food-concepts.github.io/Nudo-hub/app.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.85rem;padding:10px 18px;min-height:44px;">🏠 Ir a la página en vivo</a>
+        </div>
       </div>
     </div>
     <!-- APP VIEW -->
@@ -1116,7 +1123,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.123";
+  const APP_VERSION = "v0.124";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1194,6 +1201,13 @@
     views.login.classList.remove('hidden'); views.app.classList.add('hidden'); showBottomTabs(false);
     const ub = $('userbar'); if (ub) ub.classList.add('hidden'); // header card back to pre-login shape
     const hs = $('header-sub'); if (hs) hs.textContent = 'Acceso del equipo';
+    // v0.124: on the testing page (anything other than the production GitHub
+    // Pages origin), reveal the "Ir a la página en vivo" button. On prod it
+    // stays hidden — staff never see a link back to a test page or vice versa.
+    try {
+      const live = $('login-live-link');
+      if (live) live.classList.toggle('hidden', location.hostname === 'asian-food-concepts.github.io');
+    } catch(e) {}
   }
   function showApp() {
     views.login.classList.add('hidden'); views.app.classList.remove('hidden'); showBottomTabs(true);
