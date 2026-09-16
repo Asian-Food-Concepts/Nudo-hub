@@ -493,6 +493,11 @@
   .flip-card .flip-hint { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
   .flip-card .flip-code { display: none; }
   .flip-card.revealed .flip-hint { display: none; }
+  /* Install / add-to-home-screen card (v0.131) */
+  .install-steps { margin-top: 6px; font-size: 0.85rem; line-height: 1.5; color: var(--muted); }
+  .install-steps b { color: var(--ink); font-weight: 600; }
+  .install-steps ol { margin: 4px 0 0 18px; padding: 0; }
+  .install-steps li { margin-bottom: 3px; }
   .flip-card.revealed .flip-code { display: block; }
   .flip-code .code-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px dashed var(--border); font-size: 0.9rem; }
   .flip-code .code-row:last-child { border-bottom: none; }
@@ -589,6 +594,17 @@
                 <div class="code-row"><span class="code-lbl">Alarma (ADT)</span><span class="code-val">0000</span></div>
               </div>
             </div>
+          </div>
+        </div>
+        <div class="card-list" id="install-list" style="margin-bottom:4px; display:none;">
+          <div class="card" id="install-card" style="cursor:pointer;">
+            <div class="icon icon-form">📲</div>
+            <div class="text">
+              <div class="title">Instalar la app</div>
+              <div class="sub" id="install-sub">Agrega Nudo Hub a tu pantalla de inicio</div>
+              <div class="install-steps hidden" id="install-steps"></div>
+            </div>
+            <div class="arrow">›</div>
           </div>
         </div>
         <div class="section-title">Formularios</div>
@@ -1168,7 +1184,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.130";
+  const APP_VERSION = "v0.131";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1836,6 +1852,50 @@
   if (codesFlip) {
     codesFlip.addEventListener('click', () => codesFlip.classList.toggle('revealed'));
   }
+
+  // ---- INSTALL / ADD TO HOME SCREEN (v0.131, Ben) ----
+  // Ben: "once in Nudo Hub, there should be a button for them to bookmark,
+  // and/or add to home screen." Android/Chrome fire beforeinstallprompt so we
+  // can raise the REAL native install dialog; iOS Safari exposes no such API,
+  // so we fall back to written steps. The card hides itself once installed.
+  (function installCard(){
+    const list = $('install-list'), card = $('install-card');
+    const sub = $('install-sub'), steps = $('install-steps');
+    if (!list || !card || !sub || !steps) return;
+    const installed = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+                      || window.navigator.standalone === true;
+    if (installed) return;                // already on the home screen — never nag
+    list.style.display = '';
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/.test(ua);
+    const iosOtherBrowser = /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+    if (!isIOS && !isAndroid) sub.textContent = 'Guarda Nudo Hub en favoritos o instálala como app';
+    function stepsHtml(){
+      if (isIOS) {
+        if (iosOtherBrowser) return '<b>Abre esta página en Safari.</b> En iOS solo Safari permite agregar a la pantalla de inicio.';
+        return '<ol><li>Toca <b>Compartir</b> (el cuadro con la flecha ↑) en la barra de abajo.</li><li>Desliza y elige <b>Añadir a pantalla de inicio</b>.</li><li>Toca <b>Agregar</b>.</li></ol>';
+      }
+      if (isAndroid) return '<ol><li>Toca el menú <b>⋮</b> (arriba a la derecha).</li><li>Elige <b>Instalar app</b> o <b>Añadir a pantalla de inicio</b>.</li><li>Confirma con <b>Instalar</b>.</li></ol>';
+      return '<ol><li>Para guardarlo en favoritos, toca la <b>estrella ⭐</b> de la barra del navegador.</li><li>Para instalarlo como app, usa el <b>icono de instalar</b> de la barra de direcciones.</li></ol>';
+    }
+    let deferred = null;
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; });
+    window.addEventListener('appinstalled', () => { list.style.display = 'none'; });
+    card.addEventListener('click', async () => {
+      if (deferred) {
+        try {
+          deferred.prompt();
+          const choice = await deferred.userChoice;
+          deferred = null;
+          if (choice && choice.outcome === 'accepted') { list.style.display = 'none'; return; }
+        } catch (err) { deferred = null; }
+      }
+      const open = !steps.classList.contains('hidden');
+      if (open) { steps.classList.add('hidden'); steps.innerHTML = ''; sub.style.display = ''; }
+      else { steps.innerHTML = stepsHtml(); steps.classList.remove('hidden'); sub.style.display = 'none'; }
+    });
+  })();
   // Guide cards open an in-app iframe (back stays inside the app)
   document.querySelectorAll('[data-guide]').forEach(a => {
     a.addEventListener('click', e => {
