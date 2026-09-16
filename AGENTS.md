@@ -49,8 +49,9 @@ NOT `top: 50%`. Ben prefers compact 3-row wheels.
 
 - userbar lives INSIDE `<header>` as bottom row with hairline separator
   (v0.116 — Ben explicitly wants ONE unified card, no standalone strips).
-- Bitácora field order: Reservaciones → Propinas → Descuentos y Cortesías
-  (Comida de empleados nested below) → Notas → Foto → Confirmación.
+- Bitácora field order: Reservaciones → Corte → Propinas → Descuentos y
+  Cortesías (Comida de empleados nested below) → Notas → Foto → Confirmación.
+  Corte = 2-state category (✅ / ⚠️ + nota).
   Comida de empleados = Sunday-only, required Sundays.
 - Producción is its OWN role group in the planner (not merged with Cocina).
 - shifts table unique index (branch, slot, shift_date) — save paths UPSERT

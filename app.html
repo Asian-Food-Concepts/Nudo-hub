@@ -584,8 +584,8 @@
               <!-- Hidden by default: tap reveals the actual codes -->
               <div class="flip-hint">👆 Toca para mostrar los códigos</div>
               <div class="flip-code">
-                <div class="code-row"><span class="code-lbl">Roma Norte</span><span class="code-val">0000</span></div>
-                <div class="code-row"><span class="code-lbl">Del Valle</span><span class="code-val">0000</span></div>
+                <div class="code-row"><span class="code-lbl">Roma Norte</span><span class="code-val">5626</span></div>
+                <div class="code-row"><span class="code-lbl">Del Valle</span><span class="code-val">139678</span></div>
                 <div class="code-row"><span class="code-lbl">Alarma (ADT)</span><span class="code-val">0000</span></div>
               </div>
             </div>
@@ -822,6 +822,13 @@
               <label><input type="radio" name="t-reservaciones" value="problema"><span>⚠️ + nota</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="t-reservaciones" data-ph-ok="Reservaciones, mesas, esperas — nota (opcional)" data-ph-problema="Problema con reservaciones — qué pasó, quién, cómo se resolvió" placeholder="Reservaciones, mesas, esperas, cancelaciones"></textarea>
+          </div>
+          <div class="field"><label>Corte <span style="color:var(--muted);font-size:0.8rem;">(¿salió bien?)</span></label>
+            <div class="radio-group">
+              <label><input type="radio" name="t-corte" value="ok"><span>✅</span></label>
+              <label><input type="radio" name="t-corte" value="problema"><span>⚠️</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="t-corte" data-ph-problema="¿Qué pasó con el corte? (qué, cuánto, cómo se resolvió)" placeholder="¿Qué pasó con el corte?"></textarea>
           </div>
           <div class="field"><label>Propinas <span style="color:var(--muted);font-size:0.8rem;">(total, reparto, faltantes)</span></label>
             <div class="radio-group">
@@ -1161,7 +1168,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.128";
+  const APP_VERSION = "v0.129";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -2851,10 +2858,10 @@
     const sucursal = document.querySelector('input[name="b-sucursal"]:checked');
     if (!sucursal || !corte || !afluencia) { showMsg($('b-msg'), 'Selecciona sucursal, corte y afluencia', 'err'); return; }
     // All theme toggles + propinas are mandatory (Ben 2026-09-08)
-    const requiredThemes = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','promos'];
+    const requiredThemes = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','corte','promos'];
     const missingTheme = requiredThemes.find(t => !document.querySelector(`input[name="t-${t}"]:checked`));
     if (missingTheme) {
-      const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', reservaciones:'Reservaciones', promos:'Descuentos y cortesías' };
+      const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', reservaciones:'Reservaciones', corte:'Corte', promos:'Descuentos y cortesías' };
       showMsg($('b-msg'), `Falta calificar: ${themeLabels[missingTheme]}`, 'err'); return;
     }
     const propinasSel = document.querySelector('input[name="b-propinas"]:checked');
@@ -2884,7 +2891,7 @@
     const bPhoto = $('b-photo').files[0];
 
     // Build a read-only summary for the review modal
-    const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', reservaciones:'Reservaciones', promos:'Descuentos y cortesías' };
+    const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', reservaciones:'Reservaciones', corte:'Corte', promos:'Descuentos y cortesías' };
     const themeRows = Object.keys(themeLabels).map(t => {
       const v = temas[t];
       if (!v || v.ok === null) return null;
@@ -3725,7 +3732,7 @@
   // ---- [sticky-submit] live readiness for Bitácora (v0.113) ----
   function missingBitacoraCount() {
     let n = 0;
-    ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','promos'].forEach(t => { if (!document.querySelector(`input[name="t-${t}"]:checked`)) n++; });
+    ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','corte','promos'].forEach(t => { if (!document.querySelector(`input[name="t-${t}"]:checked`)) n++; });
     ['b-corte','b-afluencia','b-sucursal','b-propinas'].forEach(nm => { if (!document.querySelector(`input[name="${nm}"]:checked`)) n++; });
     if ($('b-confirm') && !$('b-confirm').checked) n++;
     return n;
