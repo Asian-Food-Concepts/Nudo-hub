@@ -1161,7 +1161,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.127";
+  const APP_VERSION = "v0.128";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1303,12 +1303,25 @@
   // access) signs in directly without email OTP. Kept after v0.123 removed
   // the visible test-account buttons — staff never see this list.
   const TEST_ACCOUNTS = {
+    // Ben's own accounts
     '123456':    { email: 'test-pin@nudo.hub', password: 'NudoPin#123456' },
     '112233':    { email: 'ben.captain@nudo.hub', password: 'NudoUg1J6g70GV!B' },
-    'capitan':   { email: 'capitan.test@nudo.hub',  password: 'NudoTest#Cap2026' },
-    'encargado': { email: 'encargado.test@nudo.hub', password: 'NudoTest#Enc2026' },
-    'mesero':    { email: 'mesero.test@nudo.hub',    password: 'NudoTest#Mes2026' },
-    'gerente':   { email: 'gerente.test@nudo.hub',   password: 'NudoTest#Ger2026' },
+    // v0.128 — PREVIEW accounts: one dedicated account per rank, created
+    // 2026-09-16. Each is a BRAND-NEW auth user + profiles row named
+    // "Vista previa - <Rank>" (branch 'Ambos'). They do NOT overlap with any
+    // live staff account, so previewing a rank can never touch real data or
+    // impersonate a real person (Ben: "a totally new profile that doesn't
+    // overlap with live accounts"). The legacy *.test@nudo.hub accounts still
+    // exist in the DB but are no longer mapped to any magic word.
+    'capitan':         { email: 'vista.capitan@nudo.hub',         password: 'Vista#OcFSm0T0rdSQuRInDALC' },
+    'capitanpiso':     { email: 'vista.capitanpiso@nudo.hub',     password: 'Vista#1jptMqKjAZ84Bo7yBmbI' },
+    'mesero':          { email: 'vista.mesero@nudo.hub',          password: 'Vista#MbEpGom21pn1Zf0YKDi3' },
+    'cocina':          { email: 'vista.cocina@nudo.hub',          password: 'Vista#E0fqr384ctcd1R6ZQhjh' },
+    'barra':           { email: 'vista.barra@nudo.hub',           password: 'Vista#dQcmh4k1ZYGPndsW3h4v' },
+    'encargado':       { email: 'vista.encargado@nudo.hub',       password: 'Vista#CuNTdUjOzePx2jYsI0Hr' },
+    'gerente':         { email: 'vista.gerente@nudo.hub',         password: 'Vista#RSNFw5qoksDahcmWnyJN' },
+    'gerenteregional': { email: 'vista.gerenteregional@nudo.hub', password: 'Vista#uC75q9Dx6QUVWO3gMgHu' },
+    'dueno':           { email: 'vista.dueno@nudo.hub',           password: 'Vista#zErAIQn50h1BnrGRJgRV' },
   };
   // v0.123: quick-login buttons removed from the login page (Ben: staff must
   // not see test accounts). Testing now happens on the dev-preview page
