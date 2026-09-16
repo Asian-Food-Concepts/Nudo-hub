@@ -562,9 +562,6 @@
           <button class="link-btn" id="change-email">Cambiar correo</button>
         </div>
         <div class="msg hidden" id="login-msg"></div>
-        <div class="login-links" id="login-test-link" style="display:flex;justify-content:center;margin-top:14px;">
-          <a class="link-btn" href="https://raw.githack.com/Asian-Food-Concepts/Nudo-hub/dev-preview/app.html" target="_blank" rel="noopener" style="text-decoration:none;font-size:0.8rem;">🧪 Página de pruebas (preview)</a>
-        </div>
         <!-- v0.124: LIVE button — only rendered when the page is NOT served
              from production GitHub Pages (i.e. on the githack preview/test
              page). Lets Ben jump from the testing page back to the live app
@@ -1184,7 +1181,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.131";
+  const APP_VERSION = "v0.132";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1347,8 +1344,9 @@
     'dueno':           { email: 'vista.dueno@nudo.hub',           password: 'Vista#zErAIQn50h1BnrGRJgRV' },
   };
   // v0.123: quick-login buttons removed from the login page (Ben: staff must
-  // not see test accounts). Testing now happens on the dev-preview page
-  // (link below the login box); this magic-word path stays for Ben.
+  // not see test accounts). v0.132: the visible preview-page link was removed
+  // too (Ben) — the dev-preview URL is now unlisted, shared with Ben only.
+  // This magic-word path stays for Ben.
   $('send-code').addEventListener('click', async () => {
     const raw = $('email').value.trim();
     if (!raw) { showMsg($('login-msg'), 'Escribe tu correo', 'err'); return; }
