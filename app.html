@@ -443,6 +443,18 @@
   .review-body .rv-value { flex: 1; word-break: break-word; }
   .review-actions { display: flex; gap: 10px; margin-top: 18px; }
   .review-actions .btn { flex: 1; margin: 0; }
+  /* [v0.127] Confirm/Cancel at the TOP of the review box (Ben).
+     On phones .review-box is a scrollable bottom sheet, so a long Bitácora
+     review pushed ✏️ Editar / ✅ Enviar below the fold. Sticky keeps both
+     reachable on open AND while scrolling. Background must be opaque so the
+     review rows don't show through while pinned. Sits inside .review-box
+     (z60 modal) so it never competes with the dock (z50) — and the dock is
+     faded out anyway via body.modal-open. */
+  .review-actions-top {
+    position: sticky; top: 0; z-index: 2;
+    margin-top: 0; margin-bottom: 12px; padding-bottom: 10px;
+    background: var(--card); border-bottom: 1px solid var(--border);
+  }
   .plan-add { border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 12px; background: var(--frame-bg); }
   .plan-add-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
   .plan-add-row:last-child { margin-bottom: 0; }
@@ -1126,11 +1138,15 @@
       <div class="review-modal hidden" id="review-modal">
         <div class="review-box">
           <h3 id="review-title">Revisa tu solicitud</h3>
-          <div id="review-body" class="review-body"></div>
-          <div class="review-actions">
+          <!-- v0.127 (Ben): actions FIRST so Editar/Enviar are visible on open.
+               Sticky so they stay reachable while scrolling a long review.
+               Uses IDs only (review-edit / review-submit) — no JS depends on
+               DOM order, so moving this block is safe. -->
+          <div class="review-actions review-actions-top">
             <button class="btn btn-outline" id="review-edit">✏️ Editar</button>
             <button class="btn" id="review-submit">✅ Enviar</button>
           </div>
+          <div id="review-body" class="review-body"></div>
         </div>
       </div>
     </div>
@@ -1145,7 +1161,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.126";
+  const APP_VERSION = "v0.127";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
