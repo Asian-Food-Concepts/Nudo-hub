@@ -6,6 +6,11 @@
 <title>Nudo Hub</title>
 <link rel="manifest" href="/Nudo-hub/manifest.json">
 <meta name="theme-color" content="#2f3a2f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nudo Hub">
+<link rel="apple-touch-icon" href="/Nudo-hub/icon-192.png">
 <script>
   // Apply saved theme before first paint to avoid a flash of the wrong mode.
   (function () {
@@ -472,6 +477,13 @@
   .plan-add input[type="time"] { padding: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg, transparent); color: var(--ink); }
 
   footer { text-align: center; padding: 8px 20px 20px; color: var(--muted); font-size: 0.8rem; }
+  .ver-btn {
+    background: none; border: none; padding: 4px 8px;
+    font: inherit; color: var(--muted); cursor: pointer;
+    text-decoration: underline; text-underline-offset: 2px;
+    border-radius: 6px;
+  }
+  .ver-btn:hover, .ver-btn:active { color: var(--ink); background: var(--border); }
 
   /* ---- Bottom tab bar (v0.91) — floating centered dock, sits low ---- */
   body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); } /* reserved for the dock */
@@ -1188,10 +1200,24 @@
           <div id="review-body" class="review-body"></div>
         </div>
       </div>
+
+      <!-- CHANGELOG / NOVEDADES MODAL (v0.138) -->
+      <div class="review-modal hidden" id="changelog-modal">
+        <div class="review-box" style="max-height:85vh;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <h3 style="margin:0;font-size:1.05rem;">📋 Novedades y Versiones</h3>
+            <button type="button" class="btn btn-outline" id="changelog-close-top" style="margin:0;padding:4px 10px;font-size:0.8rem;">✕</button>
+          </div>
+          <div id="changelog-body" class="review-body" style="flex:1;overflow-y:auto;padding-right:4px;"></div>
+          <div class="review-actions" style="margin-top:12px;">
+            <button type="button" class="btn btn-outline" id="changelog-close" style="margin:0;width:100%;">Cerrar</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <footer>Nudo — Ramen y Boba · CDMX · <span id="ver">v0.0</span></footer>
+  <footer>Nudo — Ramen y Boba · CDMX · <button type="button" class="ver-btn" id="ver-btn" title="Ver registro de cambios y novedades"><span id="ver">v0.0</span></button></footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"></script>
   <script>
@@ -1200,7 +1226,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.137";
+  const APP_VERSION = "v0.138";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -3663,7 +3689,7 @@
     } catch (e) { /* presence unavailable — non-fatal */ }
   })();
 
-  // ---- PUSH NOTIFICATIONS ----
+  // ---- PUSH NOTIFICATIONS (v0.138: iOS standalone support & robust enrollment) ----
   const VAPID_PUBLIC = 'BDoOetZXhZRlNEPW10oucp4Y_vgCZaafyb2SDlxz_aJymKD9bGnZvgclTPiHHj11FjluYYVjhlgjum5wq0yqqOQ';
   const notifToggle = $('notif-toggle');
 
@@ -3683,6 +3709,14 @@
     notifToggle.setAttribute('aria-checked', on ? 'true' : 'false');
   }
 
+  function checkIOSStandalone() {
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+                         || window.navigator.standalone === true;
+    return { isIOS, isStandalone };
+  }
+
   function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -3694,32 +3728,14 @@
 
   async function getPushSubscription() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
-    const reg = await navigator.serviceWorker.ready;
-    return reg.pushManager.getSubscription();
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      return await reg.pushManager.getSubscription();
+    } catch (_) { return null; }
   }
 
   async function subscribeToPush() {
     try {
-      // Push requires the Notification permission to be granted first.
-      // On iOS, requestPermission() MUST run synchronously inside the tap
-      // handler — any await before it drops the user-gesture context and iOS
-      // silently never prompts. So the permission check is moved to the top of
-      // the toggle handler (see tapToggle below) and here we just verify.
-      let perm = ('Notification' in window) ? Notification.permission : 'denied';
-      if (perm === 'denied') {
-        setNotifState(false);
-        pushToast('Las notificaciones están bloqueadas. Actívalas en los ajustes del navegador.', true);
-        return;
-      }
-      if (perm === 'default') {
-        // Shouldn't reach here if the toggle handler requested first, but if the
-        // gesture was lost, request now as a last resort.
-        perm = await Notification.requestPermission();
-        if (perm !== 'granted') { setNotifState(false); pushToast('Permiso de notificaciones requerido.', true); return; }
-        // Re-check after the call.
-        perm = ('Notification' in window) ? Notification.permission : 'denied';
-        if (perm !== 'granted') { setNotifState(false); pushToast('Permiso de notificaciones requerido.', true); return; }
-      }
       const reg = await navigator.serviceWorker.ready;
       let sub = await reg.pushManager.getSubscription();
       if (!sub) {
@@ -3729,17 +3745,36 @@
         });
       }
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { pushToast('No estás conectado.', true); return; }
+      if (!user) { pushToast('No estás conectado.', true); setNotifState(false); return; }
+
+      const subJson = (sub && typeof sub.toJSON === 'function') ? sub.toJSON() : null;
+      let p256dh = (subJson && subJson.keys && subJson.keys.p256dh) || '';
+      let auth = (subJson && subJson.keys && subJson.keys.auth) || '';
+      if (!p256dh && sub.getKey) {
+        try { p256dh = btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')))); } catch(e){}
+      }
+      if (!auth && sub.getKey) {
+        try { auth = btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth')))); } catch(e){}
+      }
+
       const { error } = await supabase.from('push_subscriptions').upsert({
         user_id: user.id,
         endpoint: sub.endpoint,
-        p256dh: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')))),
-        auth: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth'))))
+        p256dh: p256dh,
+        auth: auth
       }, { onConflict: 'endpoint' });
       if (error) throw error;
       setNotifState(true);
       haptic(8);
       pushToast('🔔 Notificaciones activadas. Recibirás avisos aquí.');
+      try {
+        reg.showNotification('Nudo Hub', {
+          body: '🔔 Notificaciones activadas con éxito.',
+          icon: '/Nudo-hub/icon-192.png',
+          badge: '/Nudo-hub/icon-192.png',
+          data: { url: '/Nudo-hub/app.html' }
+        });
+      } catch (_) {}
     } catch (e) {
       setNotifState(false);
       pushToast('No se pudieron activar: ' + e.message, true);
@@ -3761,26 +3796,53 @@
   }
 
   notifToggle.addEventListener('click', async () => {
-    // IMPORTANT (iOS): requestPermission() MUST run synchronously as the very
-    // first statement, before ANY await, or iOS drops the tap gesture and
-    // silently never shows the prompt. So grant the permission FIRST, then do
-    // the subscribe/unsubscribe decision.
-    if (!('Notification' in window)) {
+    // 1. iOS detection: In Safari browser tabs, Apple disables Web Push.
+    // Must be installed as standalone PWA on Home Screen.
+    const { isIOS, isStandalone } = checkIOSStandalone();
+    if (isIOS && !isStandalone) {
       setNotifState(false);
-      pushToast('Tu navegador no soporta notificaciones.', true);
+      pushToast('En iPhone primero agrega la app a la pantalla de inicio (Compartir ↑ → Añadir a inicio).', true);
+      const steps = $('install-steps');
+      const card = $('install-card');
+      if (steps && steps.classList.contains('hidden') && card) {
+        card.click();
+      }
       return;
     }
-    let perm = Notification.permission;
-    if (perm === 'default') {
-      try { perm = await Notification.requestPermission(); }
-      catch (_) { setNotifState(false); pushToast('Tu navegador bloqueó el permiso de notificaciones.', true); return; }
+
+    // 2. Browser feature check
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setNotifState(false);
+      pushToast('Tu navegador o modo actual no soporta notificaciones.', true);
+      return;
     }
+
+    // 3. Permission check & request (synchronous gesture in WebKit)
+    let perm = Notification.permission;
     if (perm === 'denied') {
       setNotifState(false);
-      pushToast('Las notificaciones están bloqueadas. Actívalas en los ajustes del navegador.', true);
+      pushToast('Las notificaciones están bloqueadas. Actívalas en los ajustes del dispositivo.', true);
       return;
     }
-    // Permission is granted (or was already). Now decide subscribe/unsubscribe.
+    if (perm === 'default') {
+      try {
+        perm = await new Promise(resolve => {
+          const res = Notification.requestPermission(resolve);
+          if (res && typeof res.then === 'function') res.then(resolve);
+        });
+      } catch (_) {
+        setNotifState(false);
+        pushToast('Permiso de notificaciones denegado.', true);
+        return;
+      }
+      if (perm !== 'granted') {
+        setNotifState(false);
+        pushToast('Permiso de notificaciones no otorgado.', true);
+        return;
+      }
+    }
+
+    // 4. Decide subscribe or unsubscribe
     const sub = await getPushSubscription();
     if (sub) await unsubscribeFromPush();
     else await subscribeToPush();
@@ -3788,9 +3850,124 @@
 
   // On load, reflect the current subscription state
   (async function initNotifState() {
-    const sub = await getPushSubscription();
-    setNotifState(!!sub);
+    try {
+      const sub = await getPushSubscription();
+      setNotifState(!!sub);
+    } catch (_) {
+      setNotifState(false);
+    }
   })();
+
+  // ---- CHANGELOG / NOVEDADES MODAL (v0.138) ----
+  const CHANGELOG_ENTRIES = [
+    {
+      ver: 'v0.138', date: '17 Sep 2026',
+      badge: 'Notificaciones',
+      items: [
+        'Soporte completo de notificaciones Web Push en iPhone/iPad (iOS 16.4+).',
+        'Metadatos Apple PWA para instalación limpia en pantalla de inicio con sandbox propio.',
+        'Detección de modo Safari en iOS con guía paso a paso para añadir a inicio.',
+        'Prueba de verificación inmediata en dispositivo al activar.',
+        'Sección interactiva de Novedades y Registro de Cambios (Changelog).'
+      ]
+    },
+    {
+      ver: 'v0.137', date: '16 Sep 2026',
+      badge: 'Login',
+      items: [
+        'Inicio de sesión rápido: tecla Enter activa "Enviar código" en correo y "Entrar" en código de 6 dígitos.',
+        'Enfoque automático en el campo de código de 6 dígitos.'
+      ]
+    },
+    {
+      ver: 'v0.136', date: '16 Sep 2026',
+      badge: 'Bitácora',
+      items: [
+        '6 subtítulos organizadores en Bitácora: Turno, Equipo y servicio, Producto, Instalaciones, Operación y caja, y Cierre.'
+      ]
+    },
+    {
+      ver: 'v0.135', date: '16 Sep 2026',
+      badge: 'Bitácora',
+      items: [
+        'Recordatorio explícito en Limpieza para reporte de fauna, fumigación y trampa de grasa.'
+      ]
+    },
+    {
+      ver: 'v0.134', date: '15 Sep 2026',
+      badge: 'Seguridad',
+      items: [
+        'Códigos de acceso de sucursales movidos al servidor Supabase con Row-Level Security (RLS).'
+      ]
+    },
+    {
+      ver: 'v0.131', date: '14 Sep 2026',
+      badge: 'PWA',
+      items: [
+        'Tarjeta en Inicio para instalar o guardar Nudo Hub en pantalla de inicio.'
+      ]
+    },
+    {
+      ver: 'v0.130', date: '14 Sep 2026',
+      badge: 'Bitácora',
+      items: [
+        'Botones de radio uniformes (✅ / ⚠️) en Propinas y Descuentos/Cortesías.'
+      ]
+    },
+    {
+      ver: 'v0.129', date: '14 Sep 2026',
+      badge: 'Bitácora',
+      items: [
+        'Nueva categoría de revisión de Corte de caja (¿Salió bien? ✅ / ⚠️ + nota).'
+      ]
+    },
+    {
+      ver: 'v0.128', date: '13 Sep 2026',
+      badge: 'Modo Pruebas',
+      items: [
+        'Perfiles de prueba dedicados por puesto (capitán, mesero, cocina, barra, dueño).'
+      ]
+    },
+    {
+      ver: 'v0.118', date: '12 Sep 2026',
+      badge: 'Horarios',
+      items: [
+        'Vistas Semana / Día con asignación táctil de turnos y personal.'
+      ]
+    }
+  ];
+
+  function openChangelog() {
+    const m = $('changelog-modal');
+    const b = $('changelog-body');
+    if (!m || !b) return;
+    b.innerHTML = CHANGELOG_ENTRIES.map(e => `
+      <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;">
+          <div>
+            <b style="font-size:0.95rem;color:var(--ink);">${esc(e.ver)}</b>
+            <span style="font-size:0.75rem;color:var(--muted);margin-left:6px;">${esc(e.date)}</span>
+          </div>
+          <span style="font-size:0.72rem;background:var(--frame-bg);border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-weight:600;color:var(--accent);">${esc(e.badge)}</span>
+        </div>
+        <ul style="margin:0;padding-left:18px;color:var(--ink);">
+          ${e.items.map(it => `<li style="margin-bottom:3px;">${esc(it)}</li>`).join('')}
+        </ul>
+      </div>
+    `).join('');
+    m.classList.remove('hidden');
+  }
+
+  function closeChangelog() {
+    const m = $('changelog-modal');
+    if (m) m.classList.add('hidden');
+  }
+
+  const verBtn = $('ver-btn') || $('ver');
+  if (verBtn) verBtn.addEventListener('click', (e) => { e.preventDefault(); openChangelog(); });
+  if ($('changelog-close')) $('changelog-close').addEventListener('click', closeChangelog);
+  if ($('changelog-close-top')) $('changelog-close-top').addEventListener('click', closeChangelog);
+  if ($('changelog-modal')) $('changelog-modal').addEventListener('click', (e) => { if (e.target === $('changelog-modal')) closeChangelog(); });
 
   // ---- INIT ----
   (async () => {
@@ -3850,9 +4027,9 @@
       .catch(() => { /* offline / hub unreachable — leave empty */ });
   })();
 
-  // PWA: register service worker (v0.105: hard-reload when a new SW takes over)
+  // PWA: register service worker (v0.105: hard-reload when a new SW takes over; v0.138: readyState check)
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
+    const registerSW = () => {
       navigator.serviceWorker.register('/Nudo-hub/sw.js').then(reg => {
         reg.addEventListener('updatefound', () => {
           const nw = reg.installing;
@@ -3871,7 +4048,9 @@
           window.location.reload();
         });
       }).catch(() => {});
-    });
+    };
+    if (document.readyState === 'complete') registerSW();
+    else window.addEventListener('load', registerSW);
   }
 
 
