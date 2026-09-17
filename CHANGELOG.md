@@ -5,6 +5,20 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
+## [v0.139] - 2026-09-17
+
+### Modificado (Changed)
+- **Área segura superior en iOS PWA (safe-area-inset-top)**:
+  - Añadido soporte de insets de área segura en `body` (`padding-top: env(safe-area-inset-top, 0px)`), `.push-toast`, `.back` y cabeceras sticky.
+  - Corrige el oscurecimiento y corte del encabezado ("Nudo Hub" y "Bienvenido") que ocurría bajo la barra de estado y Dynamic Island / notch al instalar como PWA independiente en iPhone.
+  - Aumentado el contraste del título en modo oscuro con `--accent2`.
+- **Claridad de envío en formularios**:
+  - En **Bitácora**, **Mantenimiento**, **Compras** y **Entrevistas**, el botón de acción cambia de *"Enviar..."* / *"Registrar..."* a **"Revisar antes de enviar"**, alineando la acción con la apertura de la ventana modal de revisión previa (`openReview`).
+  - El indicador en vivo de Bitácora cambia de *"✅ Listo para enviar"* a **"✅ Listo para revisar"**.
+  - La acción de envío definitivo permanece sin cambios dentro del diálogo de revisión (**"✅ Enviar"**).
+
+---
+
 ## [v0.138] - 2026-09-17
 
 ### Añadido (Added)

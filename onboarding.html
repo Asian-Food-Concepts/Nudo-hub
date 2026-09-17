@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Registro de nuevo empleado · Nudo</title>
+<meta name="theme-color" content="#2f3a2f">
+<meta name="robots" content="noindex">
+<style>
+  :root {
+    --bg: #f7f5f0; --card: #ffffff; --ink: #1a1a1a; --muted: #6b6b6b;
+    --accent: #2f3a2f; --accent2: #4a5d4a; --border: #e3e0d8;
+    --radius: 16px; --green: #2e7d32; --red: #c62828;
+    --input-bg: #ffffff; --msg-err-bg: #fdecea; --msg-ok-bg: #e8f5e9;
+    --msg-info-bg: #eef1fb; --checked-bg: #eef1fb; --shadow: rgba(0,0,0,0.05);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+         background:var(--bg); color:var(--ink); line-height:1.5; min-height:100vh; }
+  .wrap { max-width:540px; margin:0 auto; padding:16px 16px 60px; }
+  header { background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+           padding:18px 20px; text-align:center; margin-bottom:16px; box-shadow:0 1px 3px var(--shadow); }
+  header h1 { font-size:1.15rem; font-weight:700; color:var(--accent); }
+  header p  { font-size:0.85rem; color:var(--muted); margin-top:2px; }
+  .steps-bar { display:flex; align-items:center; justify-content:center; gap:0; margin-bottom:20px; }
+  .step-dot { width:32px; height:32px; border-radius:50%; border:2px solid var(--border);
+              display:flex; align-items:center; justify-content:center;
+              font-size:0.8rem; font-weight:700; color:var(--muted); background:var(--card);
+              flex-shrink:0; transition:all 0.2s; }
+  .step-dot.active { border-color:var(--accent); background:var(--accent); color:#fff; }
+  .step-dot.done   { border-color:var(--green);  background:var(--green);  color:#fff; }
+  .step-line { flex:1; height:2px; background:var(--border); max-width:40px; }
+  .step-line.done { background:var(--green); }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+          padding:22px; box-shadow:0 1px 3px var(--shadow); margin-bottom:14px; }
+  .card h2 { font-size:1.15rem; font-weight:700; margin-bottom:6px; }
+  .card .card-sub { font-size:0.85rem; color:var(--muted); margin-bottom:20px; }
+  .field { margin-bottom:16px; }
+  .field label { display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--ink); }
+  .field input, .field select, .field textarea {
+    width:100%; padding:14px; font-size:16px;
+    border:1px solid var(--border); border-radius:12px;
+    background:var(--input-bg); color:var(--ink);
+    -webkit-appearance:none; appearance:none; }
+  .field textarea { min-height:80px; resize:vertical; }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline:2px solid var(--accent); outline-offset:-1px; }
+  .field-hint { font-size:0.78rem; color:var(--muted); margin-top:4px; }
+  .field-valid { position:relative; }
+  .field-valid .val-badge { position:absolute; right:14px; top:50%; transform:translateY(-50%);
+                             font-size:1rem; line-height:1; }
+  .field-valid input { padding-right:44px; }
+  .field input.ok  { border-color:var(--green); }
+  .field input.err { border-color:var(--red); }
+  .radio-group { display:flex; flex-wrap:wrap; gap:8px; }
+  .radio-group label { flex:1; min-width:80px; text-align:center; padding:12px 8px;
+                        border:1px solid var(--border); border-radius:12px; cursor:pointer;
+                        font-size:0.9rem; font-weight:500; user-select:none; }
+  .radio-group input[type="radio"] { display:none; }
+  .radio-group label:has(input:checked) {
+    border-color:var(--accent); background:var(--checked-bg); color:var(--accent); font-weight:700; }
+  .btn { width:100%; padding:16px; font-size:1.05rem; font-weight:600;
+         border:none; border-radius:12px; cursor:pointer;
+         background:var(--accent); color:#fff; transition:opacity 0.15s; min-height:52px; }
+  .btn:active  { opacity:0.85; }
+  .btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .btn-outline { background:transparent; border:1px solid var(--border); color:var(--ink); }
+  .btn-sm { width:auto; padding:10px 18px; font-size:0.9rem; min-height:44px;
+            display:inline-flex; align-items:center; justify-content:center; }
+  .link-btn { background:none; border:none; color:var(--accent);
+              font-size:0.88rem; font-weight:600; cursor:pointer; padding:6px 0;
+              text-decoration:underline; }
+  .link-btn:active { opacity:0.7; }
+  .msg { font-size:0.9rem; margin-top:10px; padding:12px 14px; border-radius:12px; }
+  .msg.err  { background:var(--msg-err-bg); color:var(--red); }
+  .msg.ok   { background:var(--msg-ok-bg);  color:var(--green); }
+  .msg.info { background:var(--msg-info-bg); color:var(--accent); }
+  .hidden { display:none !important; }
+  .section-sep { font-size:0.78rem; font-weight:700; text-transform:uppercase;
+                 letter-spacing:0.8px; color:var(--accent);
+                 margin:24px 0 14px; padding-bottom:6px; border-bottom:2px solid var(--border); }
+  .consent-block { background:var(--msg-info-bg); border:1px solid var(--accent);
+                   border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+  .consent-block p { font-size:0.88rem; line-height:1.55; color:var(--ink); margin-bottom:10px; }
+  .consent-row { display:flex; align-items:center; gap:12px; }
+  .consent-row input[type="checkbox"] { width:24px; height:24px; flex-shrink:0;
+                                         cursor:pointer; accent-color:var(--accent); }
+  .consent-row label { font-size:0.92rem; font-weight:600; cursor:pointer; }
+  .doc-upload { border:1px dashed var(--border); border-radius:12px; padding:14px;
+                margin-bottom:12px; background:var(--card); }
+  .doc-upload .doc-label { font-size:0.88rem; font-weight:700; margin-bottom:6px;
+                            display:flex; align-items:center; gap:6px; }
+  .doc-upload .doc-label .req { color:var(--red);   font-size:0.75rem; }
+  .doc-upload .doc-label .opt { color:var(--muted); font-size:0.75rem; }
+  .doc-upload .doc-hint { font-size:0.78rem; color:var(--muted); margin-bottom:8px; }
+  .doc-upload input[type="file"] { font-size:0.9rem; width:100%; }
+  .doc-status { font-size:0.82rem; margin-top:6px; padding:6px 10px; border-radius:8px; }
+  .doc-status.uploading { background:var(--msg-info-bg); color:var(--accent); }
+  .doc-status.done      { background:var(--msg-ok-bg);  color:var(--green); }
+  .doc-status.error     { background:var(--msg-err-bg); color:var(--red); }
+  .progress-wrap { height:4px; background:var(--border); border-radius:2px;
+                   margin-bottom:20px; overflow:hidden; }
+  .progress-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.3s ease; }
+  .done-screen { text-align:center; padding:30px 0; }
+  .done-screen .done-ico { font-size:3rem; margin-bottom:14px; }
+  .done-screen h2 { font-size:1.3rem; font-weight:700; margin-bottom:8px; }
+  .done-screen p  { font-size:0.95rem; color:var(--muted); max-width:340px; margin:0 auto; }
+  .autosave-toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+                    background:var(--ink); color:#fff; font-size:0.8rem; font-weight:600;
+                    padding:8px 16px; border-radius:999px; z-index:200;
+                    opacity:0; pointer-events:none; transition:opacity 0.3s; }
+  .autosave-toast.show { opacity:1; }
+  .otp-links { display:flex; justify-content:space-between; margin-top:10px; }
+  .nav-row { display:flex; gap:10px; margin-top:8px; }
+  .nav-row .btn-back { flex:0 0 auto; width:auto; padding:14px 20px; }
+  .nav-row .btn-next { flex:1; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app-wrap">
+  <header>
+    <h1>🍜 Nudo · Incorporación</h1>
+    <p>Registro de nuevo empleado</p>
+  </header>
+
+  <!-- SCREEN 0: AUTH -->
+  <div id="screen-auth">
+    <div class="card">
+      <h2>Bienvenido 👋</h2>
+      <p class="card-sub">Ingresa tu correo. Te enviamos un código de 6 dígitos para verificar tu identidad y comenzar el registro.</p>
+      <div class="field">
+        <label for="ob-email">Tu correo electrónico</label>
+        <input type="email" id="ob-email" inputmode="email" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+      </div>
+      <button class="btn" id="ob-send-code">Enviar código</button>
+      <div class="field hidden" id="ob-code-field" style="margin-top:14px;">
+        <label for="ob-code">Código de 6 dígitos</label>
+        <input type="text" id="ob-code" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="one-time-code">
+      </div>
+      <button class="btn hidden" id="ob-verify-code" style="margin-top:10px;">Verificar y continuar</button>
+      <div class="otp-links hidden" id="ob-otp-links">
+        <button class="link-btn" id="ob-resend-code">↻ Reenviar código</button>
+        <button class="link-btn" id="ob-change-email">Cambiar correo</button>
+      </div>
+      <div class="msg hidden" id="auth-msg"></div>
+    </div>
+    <div style="text-align:center;margin-top:8px;">
+      <a href="/Nudo-hub/app.html" class="link-btn">← Ya tengo cuenta, iniciar sesión</a>
+    </div>
+  </div>
+
+  <!-- STEP PROGRESS BAR -->
+  <div id="steps-bar-wrap" class="hidden">
+    <div class="progress-wrap">
+      <div class="progress-fill" id="progress-fill" style="width:25%;"></div>
+    </div>
+    <div class="steps-bar">
+      <div class="step-dot active" id="sd-1">1</div>
+      <div class="step-line" id="sl-1"></div>
+      <div class="step-dot" id="sd-2">2</div>
+      <div class="step-line" id="sl-2"></div>
+      <div class="step-dot" id="sd-3">3</div>
+      <div class="step-line" id="sl-3"></div>
+      <div class="step-dot" id="sd-4">4</div>
+    </div>
+  </div>
+
+  <!-- SCREEN 1: DATOS PERSONALES -->
+  <div id="screen-1" class="hidden">
+    <div class="card">
+      <h2>Paso 1 de 4 · Datos personales</h2>
+      <p class="card-sub">Tus datos tal como aparecen en tus documentos oficiales.</p>
+      <div class="field">
+        <label for="s1-nombres">Nombre(s) *</label>
+        <input type="text" id="s1-nombres" placeholder="Ej. María Elena" autocomplete="given-name">
+      </div>
+      <div class="field">
+        <label for="s1-paterno">Apellido paterno *</label>
+        <input type="text" id="s1-paterno" placeholder="Ej. García" autocomplete="family-name">
+      </div>
+      <div class="field">
+        <label for="s1-materno">Apellido materno</label>
+        <input type="text" id="s1-materno" placeholder="Ej. López">
+      </div>
+      <div class="field">
+        <label>Sexo *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="s1-sexo" value="Hombre"><span>Hombre</span></label>
+          <label><input type="radio" name="s1-sexo" value="Mujer"><span>Mujer</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="s1-apodo">Apodo para etiqueta (gafete)</label>
+        <input type="text" id="s1-apodo" placeholder="Ej. Mary">
+        <div class="field-hint">El nombre corto que prefieres en el trabajo.</div>
+      </div>
+      <div class="field">
+        <label for="s1-nacimiento">Fecha de nacimiento *</label>
+        <input type="date" id="s1-nacimiento" autocomplete="bday">
+      </div>
+      <div class="field">
+        <label for="s1-estado-civil">Estado civil *</label>
+        <select id="s1-estado-civil">
+          <option value="">— Seleccionar —</option>
+          <option>Soltero/a</option>
+          <option>Casado/a</option>
+          <option>Divorciado/a</option>
+          <option>Viudo/a</option>
+          <option>Separado/a</option>
+          <option>Unión libre</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="s1-nacionalidad">Nacionalidad *</label>
+        <input type="text" id="s1-nacionalidad" placeholder="Mexicana" value="Mexicana">
+      </div>
+      <div class="msg hidden" id="s1-msg"></div>
+      <button class="btn" id="s1-next" style="margin-top:8px;">Guardar y siguiente →</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: CONTACTO Y DOMICILIO -->
+  <div id="screen-2" class="hidden">
+    <div class="card">
+      <h2>Paso 2 de 4 · Contacto y domicilio</h2>
+      <p class="card-sub">Datos de contacto y tu domicilio fiscal para nómina.</p>
+      <div class="field">
+        <label for="s2-movil">Número móvil / WhatsApp *</label>
+        <input type="tel" id="s2-movil" placeholder="+52 55 1234 5678" inputmode="tel" autocomplete="tel">
+      </div>
+      <div class="field">
+        <label for="s2-direccion">Dirección donde vives *</label>
+        <input type="text" id="s2-direccion" placeholder="Calle, número, colonia" autocomplete="street-address">
+      </div>
+      <div class="section-sep">Domicilio fiscal (para timbrar nómina)</div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;">El domicilio que tienes registrado ante el SAT. Puede ser diferente a donde vives.</p>
+      <div class="field">
+        <label for="s2-ciudad-fiscal">Ciudad del domicilio fiscal *</label>
+        <input type="text" id="s2-ciudad-fiscal" placeholder="Ej. Ciudad de México">
+      </div>
+      <div class="field field-valid">
+        <label for="s2-cp-fiscal">Código postal fiscal * (5 dígitos)</label>
+        <input type="text" id="s2-cp-fiscal" inputmode="numeric" maxlength="5" placeholder="12345">
+        <span class="val-badge" id="cp-badge"></span>
+      </div>
+      <div class="field">
+        <label for="s2-dir-fiscal">Dirección fiscal completa *</label>
+        <input type="text" id="s2-dir-fiscal" placeholder="Calle, número, colonia, alcaldía">
+        <div class="field-hint">Ej. Av. Insurgentes 100, Col. Roma Norte, Cuauhtémoc</div>
+      </div>
+      <div class="msg hidden" id="s2-msg"></div>
+      <div class="nav-row">
+        <button class="btn btn-outline btn-sm btn-back" id="s2-back">← Anterior</button>
+        <button class="btn btn-next" id="s2-next">Guardar y siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: DATOS FISCALES Y BANCARIOS -->
+  <div id="screen-3" class="hidden">
+    <div class="card">
+      <h2>Paso 3 de 4 · Datos fiscales y bancarios</h2>
+      <p class="card-sub">Para registrarte en nómina. Los campos se validan en tiempo real.</p>
+      <div class="section-sep">Datos fiscales</div>
+      <div class="field field-valid">
+        <label for="s3-rfc">RFC * (13 caracteres)</label>
+        <input type="text" id="s3-rfc" placeholder="GALO850101AB1" maxlength="13" style="text-transform:uppercase;">
+        <span class="val-badge" id="rfc-badge"></span>
+      </div>
+      <div class="field field-valid">
+        <label for="s3-curp">CURP * (18 caracteres)</label>
+        <input type="text" id="s3-curp" placeholder="GALO850101MDFRZR09" maxlength="18" style="text-transform:uppercase;">
+        <span class="val-badge" id="curp-badge"></span>
+        <div class="field-hint">Debe coincidir con tu fecha de nacimiento y sexo del Paso 1.</div>
+      </div>
+      <div class="field field-valid">
+        <label for="s3-nss">NSS – Número de Seguridad Social * (11 dígitos)</label>
+        <input type="text" id="s3-nss" placeholder="12345678901" maxlength="11" inputmode="numeric">
+        <span class="val-badge" id="nss-badge"></span>
+      </div>
+      <div class="field">
+        <label for="s3-regimen">Régimen fiscal (opcional)</label>
+        <select id="s3-regimen">
+          <option value="">— Seleccionar —</option>
+          <option value="605">605 · Sueldos y Salarios e Ingresos Asimilados</option>
+          <option value="621">621 · Actividades Empresariales y Profesionales</option>
+          <option value="626">626 · RESICO (Régimen Simplificado de Confianza)</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="section-sep">Datos bancarios</div>
+      <div class="field">
+        <label for="s3-banco">Nombre del banco *</label>
+        <input type="text" id="s3-banco" placeholder="Ej. BBVA, Santander, Banamex">
+      </div>
+      <div class="field field-valid">
+        <label for="s3-clabe">CLABE interbancaria * (18 dígitos)</label>
+        <input type="text" id="s3-clabe" placeholder="18 dígitos" maxlength="18" inputmode="numeric">
+        <span class="val-badge" id="clabe-badge"></span>
+        <div class="field-hint">Se usa para transferencias de nómina.</div>
+      </div>
+      <div class="field">
+        <label for="s3-cuenta">Número de cuenta * (10–11 dígitos)</label>
+        <input type="text" id="s3-cuenta" placeholder="10 u 11 dígitos" maxlength="11" inputmode="numeric">
+      </div>
+      <div class="msg hidden" id="s3-msg"></div>
+      <div class="nav-row">
+        <button class="btn btn-outline btn-sm btn-back" id="s3-back">← Anterior</button>
+        <button class="btn btn-next" id="s3-next">Guardar y siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: DOCUMENTOS Y CONSENTIMIENTO -->
+  <div id="screen-4" class="hidden">
+    <div class="card">
+      <h2>Paso 4 de 4 · Documentos y consentimiento</h2>
+      <p class="card-sub">Sube los documentos requeridos. Máx. 10 MB por archivo (PDF, JPG o PNG).</p>
+      <div class="section-sep">Documentos requeridos (4)</div>
+
+      <div class="doc-upload">
+        <div class="doc-label">🪪 INE <span class="req">Requerido</span></div>
+        <div class="doc-hint">Identificación oficial vigente. Ambos lados si son imágenes separadas.</div>
+        <input type="file" id="file-ine" accept=".pdf,.jpg,.jpeg,.png" multiple>
+        <div class="doc-status hidden" id="ds-ine"></div>
+      </div>
+
+      <div class="doc-upload">
+        <div class="doc-label">🏥 Número de Seguridad Social (NSS) <span class="req">Requerido</span></div>
+        <div class="doc-hint">Hoja rosa del IMSS o constancia de asignación de NSS.</div>
+        <input type="file" id="file-nss" accept=".pdf,.jpg,.jpeg,.png">
+        <div class="doc-status hidden" id="ds-nss"></div>
+      </div>
+
+      <div class="doc-upload">
+        <div class="doc-label">📄 Constancia de Situación Fiscal (CSF) <span class="req">Requerido</span></div>
+        <div class="doc-hint">Máximo 3 meses de antigüedad. Descárgala en sat.gob.mx con tu RFC y contraseña.</div>
+        <input type="file" id="file-csf" accept=".pdf,.jpg,.jpeg,.png">
+        <div class="doc-status hidden" id="ds-csf"></div>
+      </div>
+
+      <div class="doc-upload">
+        <div class="doc-label">🏠 Comprobante de domicilio <span class="req">Requerido</span></div>
+        <div class="doc-hint">Máximo 3 meses de antigüedad. Recibo de luz, agua, gas o teléfono fijo.</div>
+        <input type="file" id="file-comprobante" accept=".pdf,.jpg,.jpeg,.png">
+        <div class="doc-status hidden" id="ds-comprobante"></div>
+      </div>
+
+      <div class="section-sep">Documentos opcionales</div>
+
+      <div class="doc-upload">
+        <div class="doc-label">✉️ Cartas de recomendación <span class="opt">Opcional</span></div>
+        <div class="doc-hint">Hasta 2 cartas de empleos anteriores.</div>
+        <input type="file" id="file-carta" accept=".pdf,.jpg,.jpeg,.png" multiple>
+        <div class="doc-status hidden" id="ds-carta"></div>
+      </div>
+
+      <div class="doc-upload">
+        <div class="doc-label">🎓 Certificaciones o diplomas <span class="opt">Opcional</span></div>
+        <div class="doc-hint">Cursos, certificaciones o diplomas relevantes al puesto.</div>
+        <input type="file" id="file-cert" accept=".pdf,.jpg,.jpeg,.png" multiple>
+        <div class="doc-status hidden" id="ds-cert"></div>
+      </div>
+
+      <div class="section-sep">Aviso de privacidad (LFPDPPP)</div>
+      <div class="consent-block">
+        <p>De conformidad con la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong>, tus datos personales serán tratados de forma confidencial y utilizados exclusivamente para los fines indicados a continuación:</p>
+        <p>Autorizo el uso de mis datos personales para fines de contratación, nómina y cumplimiento de obligaciones fiscales y laborales.</p>
+        <div class="consent-row">
+          <input type="checkbox" id="s4-consent">
+          <label for="s4-consent">Acepto el aviso de privacidad y autorizo el uso de mis datos personales</label>
+        </div>
+      </div>
+
+      <div class="msg hidden" id="s4-msg"></div>
+      <div class="nav-row">
+        <button class="btn btn-outline btn-sm btn-back" id="s4-back">← Anterior</button>
+        <button class="btn btn-next" id="s4-submit">✅ Enviar solicitud de ingreso</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN DONE -->
+  <div id="screen-done" class="hidden">
+    <div class="card done-screen">
+      <div class="done-ico">🎉</div>
+      <h2>¡Solicitud enviada!</h2>
+      <p>Recibimos tu información. Ben revisará tu expediente y te contactará para los próximos pasos. Puedes cerrar esta página.</p>
+      <p style="margin-top:16px;font-size:0.82rem;color:var(--muted);">¿Necesitas hacer algún cambio? Escribe a tu contacto de Nudo o inicia sesión nuevamente antes de ser aprobado.</p>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+<div class="autosave-toast" id="autosave-toast">Borrador guardado ✓</div>
+
+<!-- Supabase JS — PINNED at @2.116.0 (same version as app.html) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
+<script>
+// ============================================================
+// NUDO HUB — EMPLOYEE ONBOARDING PAGE (Phase 1)
+// public signup -> email OTP -> 4 resumable steps -> done
+//
+// SECURITY NOTES
+//  - SUPABASE_ANON is the public anon key (same as app.html). RLS
+//    is the enforcement layer — the anon key alone grants nothing.
+//  - Verdict columns (tier2_ok, tier3_confidence, verification_status)
+//    are written ONLY by the server-side Edge Function using the service
+//    role key. A BEFORE UPDATE trigger blocks any non-privileged write.
+//    These columns are intentionally NOT written from this file.
+//  - Document images go into the PRIVATE bucket onboarding-documents.
+//    Storage RLS restricts upload paths to auth.uid()/<filename>.
+//    No public URL is ever generated.
+//  - Salary, position, and start-date are Stage 2 columns controlled
+//    by Ben; the hire has no access to them (trigger + RLS enforced).
+// ============================================================
+(function () {
+  'use strict';
+
+  var SUPABASE_URL  = 'https://dnzvkppytzjsipwfhafk.supabase.co';
+  // Public anon key — intentionally exposed (same key used in app.html).
+  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM';
+  // Edge Function for server-side document verification.
+  // CONFIGURE: deploy verify-onboarding before going live.
+  // If not deployed, verification is skipped silently (hire can still submit).
+  var VERIFY_FN_URL = SUPABASE_URL + '/functions/v1/verify-onboarding';
+  var BUCKET = 'onboarding-documents';
+
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  function $(id) { return document.getElementById(id); }
+  function showMsg(el, text, type) {
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'msg ' + type;
+    el.classList.remove('hidden');
+  }
+  function clearMsg(el) {
+    if (!el) return;
+    el.className = 'msg hidden'; el.textContent = '';
+  }
+  function gv(id) { var e = $(id); return e ? (e.value || '').trim() : ''; }
+  function setVal(id, val) { var e = $(id); if (!e || val == null) return; e.value = val; }
+  function showAutosave() {
+    var t = $('autosave-toast');
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2000);
+  }
+
+  var currentUser   = null;
+  var onboardingId  = null;
+  var currentStep   = 1;
+
+  var ALL_SCREENS = ['screen-auth','screen-1','screen-2','screen-3','screen-4','screen-done'];
+
+  function showScreen(id) {
+    ALL_SCREENS.forEach(function(sid) {
+      var el = $(sid); if (!el) return;
+      if (sid === id) { el.classList.remove('hidden'); } else { el.classList.add('hidden'); }
+    });
+    var bar = $('steps-bar-wrap');
+    if (bar) {
+      if (id === 'screen-auth' || id === 'screen-done') { bar.classList.add('hidden'); }
+      else { bar.classList.remove('hidden'); }
+    }
+    updateStepsBar();
+    window.scrollTo(0, 0);
+  }
+
+  function updateStepsBar() {
+    var step = (typeof currentStep === 'number') ? currentStep : 5;
+    var fill = $('progress-fill');
+    if (fill) fill.style.width = Math.min((step / 4) * 100, 100) + '%';
+    for (var i = 1; i <= 4; i++) {
+      var dot  = $('sd-' + i);
+      var line = $('sl-' + i);
+      if (dot) {
+        dot.classList.toggle('active', i === step);
+        dot.classList.toggle('done',   i < step);
+      }
+      if (line) line.classList.toggle('done', i < step);
+    }
+  }
+
+  // ---- AUTH ----
+  function enterOtpState() {
+    $('ob-send-code').classList.add('hidden');
+    $('ob-code-field').classList.remove('hidden');
+    $('ob-verify-code').classList.remove('hidden');
+    $('ob-otp-links').classList.remove('hidden');
+    try { $('ob-code').focus(); } catch(e) {}
+  }
+  function backToEmailState() {
+    $('ob-send-code').classList.remove('hidden');
+    $('ob-code-field').classList.add('hidden');
+    $('ob-verify-code').classList.add('hidden');
+    $('ob-otp-links').classList.add('hidden');
+  }
+  function submitOnEnter(input, btn) {
+    if (!input || !btn) return;
+    input.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter' && e.keyCode !== 13) return;
+      e.preventDefault();
+      if (!btn.classList.contains('hidden') && !btn.disabled) btn.click();
+    });
+  }
+  submitOnEnter($('ob-email'), $('ob-send-code'));
+  submitOnEnter($('ob-code'),  $('ob-verify-code'));
+
+  $('ob-send-code').addEventListener('click', async function() {
+    var email = gv('ob-email').toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showMsg($('auth-msg'), 'Escribe un correo válido.', 'err'); return;
+    }
+    this.disabled = true;
+    showMsg($('auth-msg'), 'Enviando código…', 'info');
+    // NOTE: signups may be disabled instance-wide. If signInWithOtp returns
+    // signup_disabled, we show a clear Spanish message rather than failing silently.
+    var res = await supabase.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: window.location.href, shouldCreateUser: true }
+    });
+    this.disabled = false;
+    if (res.error) {
+      var msg = res.error.message || '';
+      if (msg.toLowerCase().includes('signup') || msg.toLowerCase().includes('disabled')) {
+        showMsg($('auth-msg'), 'El registro está temporalmente desactivado. Pide al dueño o a tu capitán que lo habilite.', 'err');
+      } else {
+        showMsg($('auth-msg'), 'Error: ' + msg, 'err');
+      }
+      return;
+    }
+    enterOtpState();
+    showMsg($('auth-msg'), 'Código enviado a ' + email + '. Revisa tu correo (y el spam).', 'ok');
+  });
+
+  $('ob-verify-code').addEventListener('click', async function() {
+    var email = gv('ob-email').toLowerCase();
+    var code  = gv('ob-code');
+    if (!code) { showMsg($('auth-msg'), 'Escribe el código.', 'err'); return; }
+    this.disabled = true;
+    showMsg($('auth-msg'), 'Verificando…', 'info');
+    var res = await supabase.auth.verifyOtp({ email: email, token: code, type: 'email' });
+    this.disabled = false;
+    if (res.error) { showMsg($('auth-msg'), 'Código incorrecto o expirado. Inténtalo de nuevo.', 'err'); return; }
+    clearMsg($('auth-msg'));
+    currentUser = res.data.user;
+    await initAfterAuth();
+  });
+
+  $('ob-resend-code').addEventListener('click', async function() {
+    var email = gv('ob-email').toLowerCase();
+    this.disabled = true;
+    showMsg($('auth-msg'), 'Reenviando…', 'info');
+    var res = await supabase.auth.signInWithOtp({
+      email: email, options: { emailRedirectTo: window.location.href, shouldCreateUser: true }
+    });
+    this.disabled = false;
+    if (res.error) { showMsg($('auth-msg'), 'Error: ' + res.error.message, 'err'); return; }
+    showMsg($('auth-msg'), 'Código reenviado. Revisa tu correo.', 'ok');
+  });
+
+  $('ob-change-email').addEventListener('click', function() {
+    backToEmailState(); clearMsg($('auth-msg'));
+    $('ob-code').value = ''; $('ob-email').focus();
+  });
+
+  // ---- POST-AUTH: resume or create row ----
+  async function initAfterAuth() {
+    var qres = await supabase
+      .from('onboarding')
+      .select('id, current_step, stage1_submitted_at')
+      .eq('auth_user_id', currentUser.id)
+      .maybeSingle();
+    if (qres.error && qres.error.code !== 'PGRST116') {
+      showMsg($('auth-msg'), 'Error al recuperar tu registro: ' + qres.error.message, 'err'); return;
+    }
+    if (qres.data) {
+      onboardingId = qres.data.id;
+      currentStep  = qres.data.current_step || 1;
+      if (qres.data.stage1_submitted_at) { currentStep = 'done'; showScreen('screen-done'); return; }
+      await loadStepData(currentStep);
+      showScreen('screen-' + currentStep);
+    } else {
+      var ires = await supabase
+        .from('onboarding')
+        .insert({ auth_user_id: currentUser.id, email: currentUser.email, current_step: 1 })
+        .select('id')
+        .single();
+      if (ires.error) { showMsg($('auth-msg'), 'Error al crear registro: ' + ires.error.message, 'err'); return; }
+      onboardingId = ires.data.id;
+      currentStep  = 1;
+      showScreen('screen-1');
+    }
+  }
+
+  // ---- Load existing data into form ----
+  async function loadStepData(step) {
+    if (!onboardingId) return;
+    var colMap = {
+      1: 'nombres,apellido_paterno,apellido_materno,sexo,apodo_etiqueta,fecha_nacimiento,estado_civil,nacionalidad',
+      2: 'movil,direccion,ciudad_fiscal,cp_fiscal,direccion_fiscal_completa',
+      3: 'rfc,curp,nss,regimen_fiscal,banco,clabe,numero_cuenta',
+    };
+    if (!colMap[step]) return;
+    var { data } = await supabase.from('onboarding').select(colMap[step])
+                       .eq('id', onboardingId).maybeSingle();
+    if (!data) return;
+    if (step === 1) {
+      setVal('s1-nombres',      data.nombres);
+      setVal('s1-paterno',      data.apellido_paterno);
+      setVal('s1-materno',      data.apellido_materno);
+      setVal('s1-apodo',        data.apodo_etiqueta);
+      setVal('s1-nacimiento',   data.fecha_nacimiento);
+      setVal('s1-estado-civil', data.estado_civil);
+      setVal('s1-nacionalidad', data.nacionalidad || 'Mexicana');
+      if (data.sexo) {
+        document.querySelectorAll('input[name="s1-sexo"]').forEach(function(r) {
+          r.checked = (r.value === data.sexo);
+        });
+      }
+    }
+    if (step === 2) {
+      setVal('s2-movil',        data.movil);
+      setVal('s2-direccion',    data.direccion);
+      setVal('s2-ciudad-fiscal',data.ciudad_fiscal);
+      setVal('s2-cp-fiscal',    data.cp_fiscal);
+      setVal('s2-dir-fiscal',   data.direccion_fiscal_completa);
+    }
+    if (step === 3) {
+      setVal('s3-rfc',     data.rfc);
+      setVal('s3-curp',    data.curp);
+      setVal('s3-nss',     data.nss);
+      setVal('s3-regimen', data.regimen_fiscal);
+      setVal('s3-banco',   data.banco);
+      setVal('s3-clabe',   data.clabe);
+      setVal('s3-cuenta',  data.numero_cuenta);
+    }
+  }
+
+  // ---- Upsert helper ----
+  async function saveStep(payload, nextStep) {
+    if (!onboardingId) return new Error('No onboarding ID');
+    payload.current_step = nextStep;
+    payload.updated_at   = new Date().toISOString();
+    var { error } = await supabase.from('onboarding').update(payload).eq('id', onboardingId);
+    if (!error) { currentStep = nextStep; updateStepsBar(); }
+    return error;
+  }
+
+  // ---- Auto-save every 30 s ----
+  var autoSaveTimer = null;
+  function scheduleAutoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(async function() {
+      if (!onboardingId) return;
+      var payload = null;
+      if (currentStep === 1) payload = buildP1();
+      if (currentStep === 2) payload = buildP2();
+      if (currentStep === 3) payload = buildP3();
+      if (!payload) return;
+      payload.updated_at = new Date().toISOString();
+      await supabase.from('onboarding').update(payload).eq('id', onboardingId);
+      showAutosave();
+    }, 30000);
+  }
+  ['s1-nombres','s1-paterno','s1-materno','s1-apodo','s1-nacimiento','s1-estado-civil','s1-nacionalidad',
+   's2-movil','s2-direccion','s2-ciudad-fiscal','s2-cp-fiscal','s2-dir-fiscal',
+   's3-rfc','s3-curp','s3-nss','s3-regimen','s3-banco','s3-clabe','s3-cuenta'
+  ].forEach(function(id) {
+    var el = $(id); if (!el) return;
+    el.addEventListener('blur',  scheduleAutoSave);
+    el.addEventListener('input', scheduleAutoSave);
+  });
+
+  // ---- Payload builders ----
+  function getSexo() {
+    var r = document.querySelector('input[name="s1-sexo"]:checked');
+    return r ? r.value : '';
+  }
+  function buildP1() {
+    return { nombres:gv('s1-nombres'), apellido_paterno:gv('s1-paterno'),
+             apellido_materno:gv('s1-materno'), sexo:getSexo(),
+             apodo_etiqueta:gv('s1-apodo'), fecha_nacimiento:gv('s1-nacimiento') || null,
+             estado_civil:gv('s1-estado-civil'), nacionalidad:gv('s1-nacionalidad') };
+  }
+  function buildP2() {
+    return { movil:gv('s2-movil'), direccion:gv('s2-direccion'),
+             ciudad_fiscal:gv('s2-ciudad-fiscal'), cp_fiscal:gv('s2-cp-fiscal'),
+             direccion_fiscal_completa:gv('s2-dir-fiscal') };
+  }
+  function buildP3() {
+    return { rfc:gv('s3-rfc').toUpperCase(), curp:gv('s3-curp').toUpperCase(),
+             nss:gv('s3-nss'), regimen_fiscal:gv('s3-regimen'),
+             banco:gv('s3-banco'), clabe:gv('s3-clabe'), numero_cuenta:gv('s3-cuenta') };
+  }
+
+  // ---- Step 1 ----
+  $('s1-next').addEventListener('click', async function() {
+    clearMsg($('s1-msg'));
+    var p = buildP1();
+    if (!p.nombres)          { showMsg($('s1-msg'), 'El nombre es requerido.', 'err'); return; }
+    if (!p.apellido_paterno) { showMsg($('s1-msg'), 'El apellido paterno es requerido.', 'err'); return; }
+    if (!p.sexo)             { showMsg($('s1-msg'), 'Selecciona tu sexo.', 'err'); return; }
+    if (!p.fecha_nacimiento) { showMsg($('s1-msg'), 'La fecha de nacimiento es requerida.', 'err'); return; }
+    if (!p.estado_civil)     { showMsg($('s1-msg'), 'El estado civil es requerido.', 'err'); return; }
+    if (!p.nacionalidad)     { showMsg($('s1-msg'), 'La nacionalidad es requerida.', 'err'); return; }
+    this.disabled = true;
+    var err = await saveStep(p, 2);
+    this.disabled = false;
+    if (err) { showMsg($('s1-msg'), 'Error al guardar: ' + err.message, 'err'); return; }
+    await loadStepData(2); showScreen('screen-2');
+  });
+
+  // ---- Step 2 ----
+  $('s2-back').addEventListener('click', async function() {
+    await loadStepData(1); currentStep = 1; updateStepsBar(); showScreen('screen-1');
+  });
+  $('s2-next').addEventListener('click', async function() {
+    clearMsg($('s2-msg'));
+    var p = buildP2();
+    if (!p.movil)                     { showMsg($('s2-msg'), 'El número móvil es requerido.', 'err'); return; }
+    if (!p.direccion)                 { showMsg($('s2-msg'), 'La dirección es requerida.', 'err'); return; }
+    if (!p.ciudad_fiscal)             { showMsg($('s2-msg'), 'La ciudad fiscal es requerida.', 'err'); return; }
+    if (!validateCP(p.cp_fiscal))     { showMsg($('s2-msg'), 'El código postal debe ser de 5 dígitos.', 'err'); return; }
+    if (!p.direccion_fiscal_completa) { showMsg($('s2-msg'), 'La dirección fiscal completa es requerida.', 'err'); return; }
+    this.disabled = true;
+    var err = await saveStep(p, 3);
+    this.disabled = false;
+    if (err) { showMsg($('s2-msg'), 'Error al guardar: ' + err.message, 'err'); return; }
+    await loadStepData(3); showScreen('screen-3');
+  });
+
+  // ---- Step 3 ----
+  $('s3-back').addEventListener('click', async function() {
+    await loadStepData(2); currentStep = 2; updateStepsBar(); showScreen('screen-2');
+  });
+  $('s3-next').addEventListener('click', async function() {
+    clearMsg($('s3-msg'));
+    var p = buildP3();
+    if (!p.rfc  || p.rfc.length  !== 13)          { showMsg($('s3-msg'), 'El RFC debe tener 13 caracteres.', 'err'); return; }
+    if (!p.curp || p.curp.length !== 18)           { showMsg($('s3-msg'), 'El CURP debe tener 18 caracteres.', 'err'); return; }
+    if (!p.nss  || !/^\d{11}$/.test(p.nss))       { showMsg($('s3-msg'), 'El NSS debe ser de 11 dígitos.', 'err'); return; }
+    if (!p.banco)                                  { showMsg($('s3-msg'), 'El banco es requerido.', 'err'); return; }
+    if (!validateCLABE(p.clabe))                   { showMsg($('s3-msg'), 'La CLABE no es válida (18 dígitos, dígito verificador incorrecto).', 'err'); return; }
+    if (!p.numero_cuenta || p.numero_cuenta.length < 10) { showMsg($('s3-msg'), 'El número de cuenta debe tener mínimo 10 dígitos.', 'err'); return; }
+    this.disabled = true;
+    var err = await saveStep(p, 4);
+    this.disabled = false;
+    if (err) { showMsg($('s3-msg'), 'Error al guardar: ' + err.message, 'err'); return; }
+    showScreen('screen-4');
+  });
+
+  // ---- Step 4 / Submit ----
+  $('s4-back').addEventListener('click', async function() {
+    await loadStepData(3); currentStep = 3; updateStepsBar(); showScreen('screen-3');
+  });
+  $('s4-submit').addEventListener('click', async function() {
+    clearMsg($('s4-msg'));
+    var reqDocs = ['ine','nss','csf','comprobante'];
+    for (var i = 0; i < reqDocs.length; i++) {
+      var ds = $('ds-' + reqDocs[i]);
+      if (!ds || !ds.classList.contains('done')) {
+        showMsg($('s4-msg'), 'Falta subir el documento: ' + reqDocs[i].toUpperCase() + '. Todos los documentos requeridos son obligatorios.', 'err');
+        return;
+      }
+    }
+    if (!$('s4-consent').checked) {
+      showMsg($('s4-msg'), 'Debes aceptar el aviso de privacidad para continuar.', 'err'); return;
+    }
+    this.disabled = true;
+    showMsg($('s4-msg'), 'Enviando solicitud…', 'info');
+    var { error } = await supabase.from('onboarding').update({
+      lfpdppp_consent:     true,
+      lfpdppp_consent_at:  new Date().toISOString(),
+      stage1_submitted_at: new Date().toISOString(),
+      current_step:        4,
+      updated_at:          new Date().toISOString(),
+    }).eq('id', onboardingId);
+    this.disabled = false;
+    if (error) { showMsg($('s4-msg'), 'Error al enviar: ' + error.message, 'err'); return; }
+    currentStep = 'done';
+    showScreen('screen-done');
+  });
+
+  // ---- Document uploads ----
+  var DOC_CONFIG = [
+    { fileId:'file-ine',         statusId:'ds-ine',         docType:'ine',          required:true  },
+    { fileId:'file-nss',         statusId:'ds-nss',         docType:'nss',          required:true  },
+    { fileId:'file-csf',         statusId:'ds-csf',         docType:'csf',          required:true  },
+    { fileId:'file-comprobante', statusId:'ds-comprobante', docType:'comprobante',  required:true  },
+    { fileId:'file-carta',       statusId:'ds-carta',       docType:'carta',        required:false },
+    { fileId:'file-cert',        statusId:'ds-cert',        docType:'certificacion',required:false },
+  ];
+  var ALLOWED_MIMES = ['application/pdf','image/jpeg','image/png'];
+  var MAX_SIZE = 10 * 1024 * 1024;
+
+  DOC_CONFIG.forEach(function(cfg) {
+    var inp = $(cfg.fileId); if (!inp) return;
+    inp.addEventListener('change', async function() {
+      var statusEl = $(cfg.statusId);
+      statusEl.className = 'doc-status uploading';
+      statusEl.textContent = 'Subiendo…';
+      statusEl.classList.remove('hidden');
+      var files = inp.files;
+      if (!files || files.length === 0) { statusEl.classList.add('hidden'); return; }
+      for (var fi = 0; fi < files.length; fi++) {
+        var file = files[fi];
+        if (ALLOWED_MIMES.indexOf(file.type) === -1) {
+          statusEl.className = 'doc-status error';
+          statusEl.textContent = '❌ Formato no permitido. Usa PDF, JPG o PNG.';
+          inp.value = ''; return;
+        }
+        if (file.size > MAX_SIZE) {
+          statusEl.className = 'doc-status error';
+          statusEl.textContent = '❌ Archivo muy grande. Máximo 10 MB.';
+          inp.value = ''; return;
+        }
+        if (!currentUser) {
+          statusEl.className = 'doc-status error';
+          statusEl.textContent = '❌ Sesión expirada. Recarga la página.'; return;
+        }
+        var ext  = file.name.split('.').pop().toLowerCase();
+        var ts   = Date.now() + (fi > 0 ? '_' + fi : '');
+        var path = currentUser.id + '/' + cfg.docType + '_' + ts + '.' + ext;
+        var { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
+        if (upErr) {
+          statusEl.className = 'doc-status error';
+          statusEl.textContent = '❌ Error al subir: ' + upErr.message; return;
+        }
+        var { data: docRow, error: docErr } = await supabase.from('onboarding_documents')
+          .insert({ onboarding_id:onboardingId, doc_type:cfg.docType,
+                    storage_path:path, required:cfg.required })
+          .select('id').single();
+        if (docErr) {
+          statusEl.className = 'doc-status error';
+          statusEl.textContent = '❌ Error al registrar: ' + docErr.message; return;
+        }
+        // Kick off server-side verification (fire-and-forget).
+        // The DB trigger blocks this client from writing verdict columns.
+        // The Edge Function runs server-side with service role and writes them.
+        triggerVerification(docRow.id);
+      }
+      statusEl.className = 'doc-status done';
+      statusEl.textContent = '✅ ' + files.length + ' archivo' + (files.length > 1 ? 's' : '') + ' subido' + (files.length > 1 ? 's' : '');
+    });
+  });
+
+  async function triggerVerification(docId) {
+    // ⚠️ BEARER-TOKEN NOTE: this call carries the hire's Supabase JWT.
+    // The Edge Function will call AWS SES to email Ben if confidence is low.
+    // Deploy verify-onboarding before going live. If not deployed, this
+    // returns a 404 and is caught silently — the hire can still submit.
+    try {
+      var sess = (await supabase.auth.getSession()).data.session;
+      if (!sess) return;
+      await fetch(VERIFY_FN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + sess.access_token },
+        body: JSON.stringify({ doc_id:docId, onboarding_id:onboardingId }),
+      });
+    } catch (_) { /* non-fatal */ }
+  }
+
+  // ============================================================
+  // TIER 2 — CLIENT-SIDE CHECKSUM VALIDATION (UX only)
+  // Provides instant ✅/❌ feedback on the typed fields.
+  // The authoritative result is RECOMPUTED server-side by the
+  // Edge Function. The DB trigger blocks any client write to the
+  // verdict columns, so this cannot be forged by devtools.
+  // ============================================================
+
+  // CLABE 18-digit check: weights [3,7,1] repeating over pos 0-16
+  function validateCLABE(v) {
+    v = (v || '').replace(/\s/g, '');
+    if (!/^\d{18}$/.test(v)) return false;
+    var w = [3,7,1], sum = 0;
+    for (var i = 0; i < 17; i++) sum += parseInt(v[i],10) * w[i%3];
+    return ((10 - (sum % 10)) % 10) === parseInt(v[17],10);
+  }
+
+  // CURP: structure + date cross-check + sex cross-check
+  function validateCURPFull(v) {
+    if (!/^[A-Z]{4}\d{6}[HM][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z0-9]\d$/.test(v))
+      return { ok:false, reason:'Formato incorrecto' };
+    var nac = $('s1-nacimiento');
+    if (nac && nac.value) {
+      var dob = nac.value;
+      var expected = dob.slice(2,4) + dob.slice(5,7) + dob.slice(8,10);
+      if (v.slice(4,10) !== expected)
+        return { ok:false, reason:'La fecha del CURP no coincide con la fecha de nacimiento' };
+    }
+    var sexo = getSexo();
+    var cs = v[10];
+    if (sexo === 'Hombre' && cs !== 'H') return { ok:false, reason:'El sexo en el CURP debe ser H (Hombre)' };
+    if (sexo === 'Mujer'  && cs !== 'M') return { ok:false, reason:'El sexo en el CURP debe ser M (Mujer)' };
+    return { ok:true };
+  }
+
+  // RFC persona física: 4 letters + 6 digits + 3 alphanum
+  function validateRFC(v) { return /^[A-Z&Ñ]{4}\d{6}[0-9A-Z]{3}$/.test(v); }
+
+  // NSS Luhn-style (IMSS algorithm)
+  function validateNSS(v) {
+    if (!/^\d{11}$/.test(v)) return false;
+    var sum = 0;
+    for (var i = 0; i < 11; i++) {
+      var d = parseInt(v[i],10);
+      if (i % 2 === 0) { d *= 2; if (d > 9) d -= 9; }
+      sum += d;
+    }
+    return sum % 10 === 0;
+  }
+
+  // CP: 5 digits
+  function validateCP(v) { return /^\d{5}$/.test((v||'').trim()); }
+
+  function setBadge(badgeId, ok, reason) {
+    var badge = $(badgeId); if (!badge) return;
+    badge.textContent = ok ? '✅' : '❌';
+    badge.title = ok ? 'Válido' : (reason || 'Inválido');
+    var inp = badge.previousElementSibling;
+    if (inp && inp.tagName === 'INPUT') {
+      inp.classList.toggle('ok', ok);
+      inp.classList.toggle('err', !ok);
+    }
+  }
+
+  $('s3-clabe').addEventListener('blur', function() {
+    var v = this.value.trim();
+    if (!v) { setBadge('clabe-badge', false, 'Requerido'); return; }
+    setBadge('clabe-badge', validateCLABE(v), 'Dígito verificador incorrecto. Revisa los 18 dígitos.');
+  });
+  $('s3-curp').addEventListener('blur', function() {
+    var v = this.value.trim().toUpperCase();
+    this.value = v;
+    if (!v) { setBadge('curp-badge', false, 'Requerido'); return; }
+    var r = validateCURPFull(v);
+    setBadge('curp-badge', r.ok, r.reason);
+  });
+  $('s3-rfc').addEventListener('blur', function() {
+    var v = this.value.trim().toUpperCase();
+    this.value = v;
+    if (!v) { setBadge('rfc-badge', false, 'Requerido'); return; }
+    setBadge('rfc-badge', validateRFC(v), 'Formato RFC persona física: 4 letras + 6 dígitos + 3 alfanuméricos');
+  });
+  $('s3-nss').addEventListener('blur', function() {
+    var v = this.value.trim();
+    if (!v) { setBadge('nss-badge', false, 'Requerido'); return; }
+    setBadge('nss-badge', validateNSS(v), 'Dígito verificador incorrecto (IMSS Luhn).');
+  });
+  $('s2-cp-fiscal').addEventListener('blur', function() {
+    var v = this.value.trim();
+    if (!v) { setBadge('cp-badge', false, 'Requerido'); return; }
+    setBadge('cp-badge', validateCP(v), 'Debe ser 5 dígitos');
+  });
+  // Re-check CURP when birthdate or sex changes (cross-validation)
+  $('s1-nacimiento') && $('s1-nacimiento').addEventListener('change', function() {
+    var c = $('s3-curp'); if (c && c.value.trim().length === 18) c.dispatchEvent(new Event('blur'));
+  });
+  document.querySelectorAll('input[name="s1-sexo"]').forEach(function(r) {
+    r.addEventListener('change', function() {
+      var c = $('s3-curp'); if (c && c.value.trim().length === 18) c.dispatchEvent(new Event('blur'));
+    });
+  });
+
+  // ---- Boot: check existing session ----
+  (async function boot() {
+    var { data: { session } } = await supabase.auth.getSession();
+    if (session && session.user) {
+      currentUser = session.user;
+      await initAfterAuth();
+    } else {
+      showScreen('screen-auth');
+    }
+  })();
+
+  // Handle magic-link redirect auth state change
+  supabase.auth.onAuthStateChange(async function(event, session) {
+    if (event === 'SIGNED_IN' && session && session.user && !currentUser) {
+      currentUser = session.user;
+      await initAfterAuth();
+    }
+  });
+
+}());
+</script>
+</body>
+</html>

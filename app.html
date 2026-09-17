@@ -103,6 +103,9 @@
     color: var(--ink);
     line-height: 1.5;
     min-height: 100vh;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
   header {
     background: var(--card);
@@ -116,9 +119,13 @@
   }
   header h1 { font-size: 1.15rem; font-weight: 700; }
   header h1 a { color: var(--accent); text-decoration: none; }
+  :root[data-theme="dark"] header h1 a { color: var(--accent2); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) header h1 a { color: var(--accent2); }
+  }
   header h1 a:active { opacity: 0.85; }
   header p { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
-  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 40px; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 16px 16px 40px; }
   .section-title {
     font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.6px; color: var(--muted); margin: 20px 0 8px;
@@ -236,7 +243,7 @@
   .notif-toggle:active { opacity: 0.85; }
   /* Push toggle status toast (v0.90) — visible under the userbar when logged in */
   .push-toast {
-    position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+    position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
     z-index: 70; max-width: calc(100% - 40px); width: auto;
     background: var(--card); border: 1px solid var(--border);
     border-radius: 12px; box-shadow: 0 8px 30px var(--shadow);
@@ -250,7 +257,7 @@
   @keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   #home-view { animation: pageIn 0.22s ease; padding: 16px; }
   .back {
-    position: sticky; top: 0; z-index: 20;
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
     display: flex; align-items: center; gap: 8px;
     width: 100%; box-sizing: border-box;
     padding: 14px 16px; margin: 0 0 30px 0;
@@ -357,7 +364,7 @@
   .plan-grid { overflow-x: auto; }
   .plan-table { border-collapse: collapse; width: 100%; min-width: 640px; }
   .plan-table th, .plan-table td { border: 1px solid var(--border); padding: 6px; text-align: center; font-size: 0.8rem; }
-  .plan-table th { background: var(--frame-bg); position: sticky; top: 0; }
+  .plan-table th { background: var(--frame-bg); position: sticky; top: env(safe-area-inset-top, 0px); }
   .plan-table th.day { min-width: 74px; }
   .plan-table td.name { text-align: left; white-space: nowrap; font-weight: 600; }
   .plan-table td.role { color: var(--muted); font-size: 0.72rem; }
@@ -589,6 +596,10 @@
              with one tap. Never visible to staff on prod. -->
         <div class="login-links hidden" id="login-live-link" style="display:flex;justify-content:center;margin-top:6px;">
           <a class="btn" href="https://asian-food-concepts.github.io/Nudo-hub/app.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.85rem;padding:10px 18px;min-height:44px;">🏠 Ir a la página en vivo</a>
+        </div>
+        <!-- v0.138+: Link to onboarding page for new hires who have no account yet -->
+        <div style="text-align:center;margin-top:14px;">
+          <a href="/Nudo-hub/onboarding.html" class="link-btn" style="font-size:0.85rem;">¿Nuevo empleado? Regístrate aquí →</a>
         </div>
       </div>
     </div>
@@ -897,7 +908,7 @@
             <input type="file" id="b-photo" accept="image/*" style="width:100%">
           </div>
           <div class="checkbox-row"><input type="checkbox" id="b-confirm"><label>Confirmo el cierre de la unidad</label></div>
-          <div class="sticky-submit"><div class="ss-ready" id="b-ready"></div><button class="btn ss-btn" id="b-submit">Enviar bitácora</button></div>
+          <div class="sticky-submit"><div class="ss-ready" id="b-ready"></div><button class="btn ss-btn" id="b-submit">Revisar antes de enviar</button></div>
           <div class="msg hidden" id="b-msg"></div>
       </div>
     </div>
@@ -927,7 +938,7 @@
           <div class="field"><label>📷 Foto (opcional)</label>
             <input type="file" id="m-photo" accept="image/*">
           </div>
-          <button class="btn" id="m-submit">Enviar solicitud</button>
+          <button class="btn" id="m-submit">Revisar antes de enviar</button>
           <div class="msg hidden" id="m-msg"></div>
         </div>
       </div>
@@ -957,7 +968,7 @@
             <input type="file" id="c-photo" accept="image/*">
           </div>
           <div class="field"><label>Notas</label><textarea id="c-notes" placeholder="Cantidad, marca, urgencia…"></textarea></div>
-          <button class="btn" id="c-submit">Enviar solicitud</button>
+          <button class="btn" id="c-submit">Revisar antes de enviar</button>
           <div class="msg hidden" id="c-msg"></div>
         </div>
       </div>
@@ -1100,7 +1111,7 @@
           <div class="field"><label>Disponibilidad / inicio</label><input type="text" id="i-availability" placeholder="Cuándo puede empezar, horario"></div>
           <div class="field"><label>Notas / comentarios</label><textarea id="i-notas" placeholder="Impresiones, seguimiento, red flags…"></textarea></div>
           <div id="i-msg" class="msg hidden"></div>
-          <button class="btn" id="i-submit" style="width:100%;">Registrar entrevista</button>
+          <button class="btn" id="i-submit" style="width:100%;">Revisar antes de enviar</button>
         </div>
         <div class="form-card" style="margin-top:16px;">
           <h2>📋 Candidatos registrados</h2>
@@ -1226,7 +1237,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.138";
+  const APP_VERSION = "v0.139";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -3861,6 +3872,15 @@
   // ---- CHANGELOG / NOVEDADES MODAL (v0.138) ----
   const CHANGELOG_ENTRIES = [
     {
+      ver: 'v0.139', date: '17 Sep 2026',
+      badge: 'Formularios y UI',
+      items: [
+        'Ajuste de área segura (safe-area-inset-top) en iOS PWA para evitar que el encabezado quede oscurecido bajo la barra de estado y Dynamic Island.',
+        'Botones de formularios actualizados a "Revisar antes de enviar" en Bitácora, Mantenimiento, Compras y Entrevistas para reflejar con claridad el paso de confirmación previo al envío.',
+        'Indicador de Bitácora actualizado a "✅ Listo para revisar".'
+      ]
+    },
+    {
       ver: 'v0.138', date: '17 Sep 2026',
       badge: 'Notificaciones',
       items: [
@@ -4066,7 +4086,7 @@
     const el = $('b-ready');
     if (!el) return;
     const left = missingBitacoraCount();
-    if (left === 0) { el.textContent = '✅ Listo para enviar'; el.classList.add('ok'); }
+    if (left === 0) { el.textContent = '✅ Listo para revisar'; el.classList.add('ok'); }
     else { el.textContent = `Faltan ${left} campos`; el.classList.remove('ok'); }
   }
   document.addEventListener('change', e => { if (e.target.closest && e.target.closest('#form-bitacora')) bitacoraReadiness(); });
