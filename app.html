@@ -1200,7 +1200,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.136";
+  const APP_VERSION = "v0.137";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1333,6 +1333,10 @@
     $('verify-code').classList.remove('hidden');
     $('login-links').classList.remove('hidden');
     $('send-code').classList.add('hidden');
+    // v0.137 (Ben): put the cursor in the code box so the captain can type the
+    // 6 digits and press Enter — no tap required. try/catch because focus()
+    // can throw on some mobile browsers mid-transition.
+    try { $('code').focus(); } catch (e) {}
   }
   function backToEmailState() {
     $('code-field').classList.add('hidden');
@@ -1341,6 +1345,25 @@
     $('send-code').classList.remove('hidden');
     $('send-code').disabled = false;
   }
+
+  // v0.137 (Ben): "can you allow for us to hit the enter button to submit rather
+  // than only clicking". The login inputs are NOT inside a <form>, so Enter did
+  // nothing. Bind it on BOTH steps — the email field fires "Enviar código", the
+  // 6-digit field fires "Entrar". It delegates to the existing buttons' click
+  // handlers, so OTP validation, the magic-word bypass and every error path run
+  // completely unchanged (no duplicated login logic to drift out of sync).
+  function submitOnEnter(input, btn) {
+    if (!input || !btn) return;
+    input.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.keyCode !== 13) return;
+      e.preventDefault();
+      // Guard on state: the step that is not currently shown must not fire
+      // (e.g. Enter in the email box while the OTP step is open).
+      if (!btn.classList.contains('hidden') && !btn.disabled) btn.click();
+    });
+  }
+  submitOnEnter($('email'), $('send-code'));
+  submitOnEnter($('code'), $('verify-code'));
 
   // ---- LOGIN ----
   // TEST ACCOUNT bypass: typing a magic word (e.g. Ben's 123456 for Dueño
