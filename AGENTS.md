@@ -60,6 +60,11 @@ NOT `top: 50%`. Ben prefers compact 3-row wheels.
   Cortesías (Comida de empleados nested below) → Notas → Foto → Confirmación.
   Corte = 2-state category (✅ / ⚠️ + nota).
   Comida de empleados = Sunday-only, required Sundays.
+- Bitácora AREA SUB-HEADERS (v0.136, Ben) — `.form-subhead` dividers, in document
+  order: Turno / Equipo y servicio / Producto / Instalaciones / Operación y caja /
+  Cierre. They are pure insertions; do NOT move a field to "fix" a group. If you
+  move a divider, re-dump `header → fields` in document order — a per-header grep
+  passes even when a field ends up in the wrong group.
 - Producción is its OWN role group in the planner (not merged with Cocina).
 - shifts table unique index (branch, slot, shift_date) — save paths UPSERT
   with onConflict 'branch,slot,shift_date'.
