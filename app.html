@@ -1253,7 +1253,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.144";
+  const APP_VERSION = "v0.145";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1605,17 +1605,24 @@
     const planDisSection = document.getElementById('plan-disabled-section');
     const planDisList = document.getElementById('plan-disabled-list');
     const planDisCard = document.getElementById('plan-disabled-card');
+    const horarioTitle = document.getElementById('horario-title');
+    const horarioList = document.getElementById('horario-list');
 
     if (isLeader) {
       if (planDisSection) planDisSection.style.display = '';
       if (planDisList) planDisList.style.display = '';
       if (planCard) planCard.style.display = '';
       if (planDisCard) planDisCard.style.display = 'none';
+      // Fix duplicate Horario heading: hide placeholder section for leaders
+      if (horarioTitle) horarioTitle.style.display = 'none';
+      if (horarioList) horarioList.style.display = 'none';
     } else {
       if (planDisSection) planDisSection.style.display = 'none';
       if (planDisList) planDisList.style.display = 'none';
       if (planCard) planCard.style.display = 'none';
       if (planDisCard) planDisCard.style.display = 'none';
+      if (horarioTitle) horarioTitle.style.display = '';
+      if (horarioList) horarioList.style.display = '';
     }
     // Role-gate Mantenimiento preventivo placeholder: Dueño, Capitán, Gerente (v0.117)
     const mantprevSection = document.getElementById('mantprev-section');
