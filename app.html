@@ -585,11 +585,14 @@
               <div class="title">Códigos de acceso</div>
               <!-- Hidden by default: tap reveals the actual codes -->
               <div class="flip-hint">👆 Toca para mostrar los códigos</div>
-              <div class="flip-code">
-                <div class="code-row"><span class="code-lbl">Del Valle Entrada</span><span class="code-val">178936#</span></div>
-                <div class="code-row"><span class="code-lbl">Bodega chica (Del Valle)</span><span class="code-val">229013#</span></div>
-                <div class="code-row"><span class="code-lbl">Roma Norte</span><span class="code-val">5626</span></div>
-                <div class="code-row"><span class="code-lbl">Alarma (ADT)</span><span class="code-val">5252</span></div>
+              <!-- v0.134 (Ben): "it should only be visible or extractable after auth".
+                   The codes are NO LONGER in this file. app.html is PUBLIC — hardcoding
+                   them leaked every door and alarm code to view-source. They are now
+                   fetched after login from Supabase `access_codes`, which is RLS-gated
+                   to a caller that has a `profiles` row (a real staffer). NEVER hardcode
+                   a code here again. -->
+              <div class="flip-code" id="flip-code">
+                <div class="code-row"><span class="code-lbl">🔒 Inicia sesión para ver los códigos</span></div>
               </div>
             </div>
           </div>
@@ -1182,7 +1185,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.133";
+  const APP_VERSION = "v0.134";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1260,6 +1263,11 @@
     views.login.classList.remove('hidden'); views.app.classList.add('hidden'); showBottomTabs(false);
     const ub = $('userbar'); if (ub) ub.classList.add('hidden'); // header card back to pre-login shape
     const hs = $('header-sub'); if (hs) hs.textContent = 'Acceso del equipo';
+    // v0.134: scrub the access codes out of the DOM on logout — these are shared
+    // phones, and the previous staffer must not leave the door codes on screen.
+    const cf = $('codes-flip'); if (cf) cf.classList.remove('revealed');
+    const fc = $('flip-code');
+    if (fc) fc.innerHTML = '<div class="code-row"><span class="code-lbl">🔒 Inicia sesión para ver los códigos</span></div>';
     // v0.124: on the testing page (anything other than the production GitHub
     // Pages origin), reveal the "Ir a la página en vivo" button. On prod it
     // stays hidden — staff never see a link back to a test page or vice versa.
@@ -1489,6 +1497,8 @@
     }
     // Owner follow-up badge on Estatus de solicitudes (Dueño only)
     if (role === 'Dueño') updateEstatusBadge();
+    // v0.134: access codes are fetched AFTER auth (never shipped in this file)
+    loadAccessCodes();
     // v0.126: dock is role-independent now (Inicio + Seguimiento only), but the
     // end-of-loadUser showBottomTabs(true) call stays — it guarantees the dock
     // is visible after the login view hands over to the app view.
@@ -1845,11 +1855,50 @@
     });
   });
 
-  // ---- CÓDIGOS FLIP CARD (v0.86) ----
+  // ---- CÓDIGOS FLIP CARD (v0.86; codes moved server-side in v0.134) ----
   // Codes are hidden by default; tap the card to reveal them (and tap again to hide).
   const codesFlip = $('codes-flip');
   if (codesFlip) {
     codesFlip.addEventListener('click', () => codesFlip.classList.toggle('revealed'));
+  }
+
+  // v0.134 (Ben): "it should only be visible or extractable after auth."
+  // The four codes USED to be hardcoded in this file. app.html is a PUBLIC
+  // GitHub Pages asset, so view-source handed out the Del Valle door code and
+  // the ADT alarm code to anyone. They now live in Supabase table
+  // `access_codes` behind RLS: the SELECT policy requires a caller who has a
+  // row in `profiles` — i.e. a real, provisioned staffer — NOT merely a valid
+  // JWT. That distinction matters because the onboarding project will let a
+  // new hire self-sign-up before Ben approves them; such a session has a JWT
+  // but no profiles row, so it reads nothing here.
+  // Verified 2026-09-16: anon key -> 42501 permission denied; staff login ->
+  // all 4 rows; staff INSERT -> 42501; staff INSERT into profiles -> RLS denial.
+  function codeEsc(t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, function(c) {
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+  const CODES_LOCKED_HTML = '<div class="code-row"><span class="code-lbl">🔒 Inicia sesión para ver los códigos</span></div>';
+  async function loadAccessCodes() {
+    const box = $('flip-code');
+    if (!box) return;
+    try {
+      const { data, error } = await supabase
+        .from('access_codes')
+        .select('label,code,sort_order')
+        .eq('active', true)
+        .order('sort_order', { ascending: true });
+      if (error) throw error;
+      if (!data || !data.length) throw new Error('empty');
+      box.innerHTML = data.map(function(r) {
+        return '<div class="code-row"><span class="code-lbl">' + codeEsc(r.label) +
+               '</span><span class="code-val">' + codeEsc(r.code) + '</span></div>';
+      }).join('');
+    } catch (e) {
+      // Not a staff account, offline, or the row is missing — show the locked
+      // notice rather than a blank card (a blank card reads as a broken app).
+      box.innerHTML = CODES_LOCKED_HTML;
+    }
   }
 
   // ---- INSTALL / ADD TO HOME SCREEN (v0.131, Ben) ----
