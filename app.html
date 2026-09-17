@@ -118,6 +118,15 @@
     font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.6px; color: var(--muted); margin: 20px 0 8px;
   }
+  /* v0.136 (Ben): Bitácora has 16 fields — sub-headers group them into areas so
+     a captain can scan the form instead of reading a wall of fields. Purely
+     visual: no field name, required-list, or review-modal change. */
+  .form-subhead {
+    font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--accent);
+    margin: 26px 0 12px; padding-bottom: 7px;
+    border-bottom: 2px solid var(--border);
+  }
   .card-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
   a.card, .card {
     display: flex; align-items: center; gap: 16px;
@@ -756,6 +765,7 @@
         <div class="form-card" id="card-bitacora">
           <h2>📓 Bitácora de Cierre</h2>
           <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">La registra el capitán de turno al cierre.</p>
+          <div class="form-subhead" style="margin-top:2px;">Turno</div>
           <div class="field"><label>Sucursal</label>
             <div class="radio-group">
               <label><input type="radio" name="b-sucursal" value="Roma Norte"><span>Roma Norte</span></label>
@@ -776,6 +786,7 @@
               <label><input type="radio" name="b-corte" value="Mal"><span>🔴 Mal</span></label>
             </div>
           </div>
+          <div class="form-subhead">Equipo y servicio</div>
           <div class="field"><label>Personal <span style="color:var(--muted);font-size:0.8rem;">(faltas, tardanzas, horas extra)</span></label>
             <div class="radio-group">
               <label><input type="radio" name="t-personal" value="ok"><span>✅</span></label>
@@ -792,6 +803,7 @@
             </div>
             <textarea class="t-detail hidden" data-for="t-servicio" data-ph-ok="Servicio, atención, tiempos de mesa — nota (opcional)" data-ph-problema="Problema de servicio — qué pasó, quién, cómo se resolvió" placeholder="Servicio, atención, tiempos de mesa"></textarea>
           </div>
+          <div class="form-subhead">Producto</div>
           <div class="field"><label>Comida <span style="color:var(--muted);font-size:0.8rem;">(calidad, faltantes, cocina)</span></label>
             <div class="radio-group">
               <label><input type="radio" name="t-comida" value="ok"><span>✅</span></label>
@@ -808,6 +820,7 @@
             </div>
             <textarea class="t-detail hidden" data-for="t-bebidas" data-ph-ok="Tiempos de barra, disponibilidad, calidad — nota (opcional)" data-ph-problema="Problema de bebidas — qué bebida, qué pasó, cómo se resolvió" placeholder="Tiempos de barra, disponibilidad, calidad"></textarea>
           </div>
+          <div class="form-subhead">Instalaciones</div>
           <div class="field"><label>Mantenimiento <span style="color:var(--muted);font-size:0.8rem;">(instalaciones, equipos, averías)</span></label>
             <div class="radio-group">
               <label><input type="radio" name="t-instalacion" value="ok"><span>✅</span></label>
@@ -832,6 +845,7 @@
             </div>
             <textarea class="t-detail hidden" data-for="t-seguridad" data-ph-ok="Riesgo menor o pendiente — nota (opcional)" data-ph-problema="Problema / incidente de seguridad — qué, quién, cómo se manejó" placeholder="Problema / incidente de seguridad — qué, quién"></textarea>
           </div>
+          <div class="form-subhead">Operación y caja</div>
           <div class="field"><label>Reservaciones <span style="color:var(--muted);font-size:0.8rem;">(mesas, esperas, cancelaciones)</span></label>
             <div class="radio-group">
               <label><input type="radio" name="t-reservaciones" value="ok"><span>✅</span></label>
@@ -865,6 +879,7 @@
               <div class="stepper" id="b-empleados-stepper"><button type="button" data-step="-10">−</button><input type="number" id="b-empleados-monto" inputmode="decimal" min="0" step="10" placeholder="0"><button type="button" data-step="10">+</button></div>
             </div>
           </div>
+          <div class="form-subhead">Cierre</div>
           <div class="field"><label>Notas / incidentes <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label><textarea id="b-notas"></textarea></div>
           <div class="field"><label>📷 Foto <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label>
             <input type="file" id="b-photo" accept="image/*" style="width:100%">
@@ -1185,7 +1200,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.135";
+  const APP_VERSION = "v0.136";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
