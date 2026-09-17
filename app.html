@@ -577,7 +577,7 @@
         <p>Entra con tu correo. Te mandamos un código de 6 dígitos.</p>
         <div class="field">
           <label>Tu correo</label>
-          <input type="email" id="email" inputmode="email" placeholder="tu@correo.com">
+          <input type="email" id="email" inputmode="email" placeholder="tu@correo.com" autocapitalize="none" autocorrect="off" autocomplete="email">
         </div>
         <button class="btn" id="send-code">Enviar código</button>
         <div class="field hidden" id="code-field" style="margin-top:14px;">
@@ -1032,6 +1032,12 @@
           <div class="row"><label>Persona</label><select id="plan-day-staff" class="panelist-select"></select></div>
           <div class="row"><label>Entra</label><input type="time" id="plan-day-start"></div>
           <div class="row"><label>Sale</label><input type="time" id="plan-day-end"></div>
+          <div class="plan-quick-times" style="display:flex;gap:6px;justify-content:center;margin:12px 0;">
+            <button class="btn btn-secondary plan-qt-btn" data-s="09:00" data-e="18:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">9 a 6</button>
+            <button class="btn btn-secondary plan-qt-btn" data-s="11:00" data-e="20:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">11 a 8</button>
+            <button class="btn btn-secondary plan-qt-btn" data-s="12:00" data-e="22:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">12 a 10</button>
+            <button class="btn btn-secondary plan-qt-btn" data-s="13:00" data-e="23:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">1 a 11</button>
+          </div>
           <div class="actions">
             <button class="btn btn-secondary" id="plan-day-delete">Quitar</button>
             <button class="btn" id="plan-day-save">Guardar</button>
@@ -1046,6 +1052,12 @@
           <div class="row"><label>Persona</label><select id="plan-staff" class="panelist-select"></select></div>
           <div class="row"><label>Entra</label><input type="time" id="plan-start"></div>
           <div class="row"><label>Sale</label><input type="time" id="plan-end"></div>
+          <div class="plan-quick-times" style="display:flex;gap:6px;justify-content:center;margin:12px 0;">
+            <button class="btn btn-secondary plan-qt-btn" data-s="09:00" data-e="18:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">9 a 6</button>
+            <button class="btn btn-secondary plan-qt-btn" data-s="11:00" data-e="20:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">11 a 8</button>
+            <button class="btn btn-secondary plan-qt-btn" data-s="12:00" data-e="22:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">12 a 10</button>
+            <button class="btn btn-secondary plan-qt-btn" data-s="13:00" data-e="23:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">1 a 11</button>
+          </div>
           <div class="actions">
             <button class="btn btn-secondary" id="plan-descanso">Descanso</button>
             <button class="btn btn-secondary" id="plan-clear">Quitar</button>
@@ -1237,7 +1249,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.140";
+  const APP_VERSION = "v0.142";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1315,6 +1327,8 @@
     views.login.classList.remove('hidden'); views.app.classList.add('hidden'); showBottomTabs(false);
     const ub = $('userbar'); if (ub) ub.classList.add('hidden'); // header card back to pre-login shape
     const hs = $('header-sub'); if (hs) hs.textContent = 'Acceso del equipo';
+    currentProfile = null;
+    const un = $('user-name'); if (un) un.textContent = 'Equipo';
     // v0.134: scrub the access codes out of the DOM on logout — these are shared
     // phones, and the previous staffer must not leave the door codes on screen.
     const cf = $('codes-flip'); if (cf) cf.classList.remove('revealed');
@@ -1402,14 +1416,25 @@
   submitOnEnter($('email'), $('send-code'));
   submitOnEnter($('code'), $('verify-code'));
 
+  function normalizeMagicWord(str) {
+    return (str || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '');
+  }
+
   // ---- LOGIN ----
   // TEST ACCOUNT bypass: typing a magic word (e.g. Ben's 123456 for Dueño
   // access) signs in directly without email OTP. Kept after v0.123 removed
   // the visible test-account buttons — staff never see this list.
   const TEST_ACCOUNTS = {
     // Ben's own accounts
-    '123456':    { email: 'test-pin@nudo.hub', password: 'NudoPin#123456' },
-    '112233':    { email: 'ben.captain@nudo.hub', password: 'NudoUg1J6g70GV!B' },
+    '123456':          { email: 'test-pin@nudo.hub', password: 'NudoPin#123456' },
+    '112233':          { email: 'ben.captain@nudo.hub', password: 'NudoUg1J6g70GV!B' },
+    'bencapitan':      { email: 'ben.captain@nudo.hub', password: 'NudoUg1J6g70GV!B' },
+    'bencaptain':      { email: 'ben.captain@nudo.hub', password: 'NudoUg1J6g70GV!B' },
     // v0.128 — PREVIEW accounts: one dedicated account per rank, created
     // 2026-09-16. Each is a BRAND-NEW auth user + profiles row named
     // "Vista previa - <Rank>" (branch 'Ambos'). They do NOT overlap with any
@@ -1419,10 +1444,12 @@
     // exist in the DB but are no longer mapped to any magic word.
     'capitan':         { email: 'vista.capitan@nudo.hub',         password: 'Vista#OcFSm0T0rdSQuRInDALC' },
     'capitanpiso':     { email: 'vista.capitanpiso@nudo.hub',     password: 'Vista#1jptMqKjAZ84Bo7yBmbI' },
+    'capitandepiso':   { email: 'vista.capitanpiso@nudo.hub',     password: 'Vista#1jptMqKjAZ84Bo7yBmbI' },
     'mesero':          { email: 'vista.mesero@nudo.hub',          password: 'Vista#MbEpGom21pn1Zf0YKDi3' },
     'cocina':          { email: 'vista.cocina@nudo.hub',          password: 'Vista#E0fqr384ctcd1R6ZQhjh' },
     'barra':           { email: 'vista.barra@nudo.hub',           password: 'Vista#dQcmh4k1ZYGPndsW3h4v' },
     'encargado':       { email: 'vista.encargado@nudo.hub',       password: 'Vista#CuNTdUjOzePx2jYsI0Hr' },
+    'encargadodebarra':{ email: 'vista.encargado@nudo.hub',       password: 'Vista#CuNTdUjOzePx2jYsI0Hr' },
     'gerente':         { email: 'vista.gerente@nudo.hub',         password: 'Vista#RSNFw5qoksDahcmWnyJN' },
     'gerenteregional': { email: 'vista.gerenteregional@nudo.hub', password: 'Vista#uC75q9Dx6QUVWO3gMgHu' },
     'dueno':           { email: 'vista.dueno@nudo.hub',           password: 'Vista#zErAIQn50h1BnrGRJgRV' },
@@ -1434,7 +1461,8 @@
   $('send-code').addEventListener('click', async () => {
     const raw = $('email').value.trim();
     if (!raw) { showMsg($('login-msg'), 'Escribe tu correo', 'err'); return; }
-    const testAcct = TEST_ACCOUNTS[raw];
+    const norm = normalizeMagicWord(raw);
+    const testAcct = TEST_ACCOUNTS[norm] || TEST_ACCOUNTS[raw];
     if (testAcct) {
       $('send-code').disabled = true;
       showMsg($('login-msg'), 'Entrando con cuenta de prueba...', 'info');
@@ -1442,8 +1470,8 @@
         email: testAcct.email, password: testAcct.password
       });
       if (error) { showMsg($('login-msg'), 'Error: ' + error.message, 'err'); $('send-code').disabled = false; return; }
+      await loadUser();
       showApp();
-      loadUser();
       return;
     }
     const email = toEmail(raw);
@@ -1550,16 +1578,23 @@
     if (reclDisSection) reclDisSection.style.display = showBottomRecl;
     if (reclDisList) reclDisList.style.display = showBottomRecl;
     if (reclDisCard) reclDisCard.style.display = showBottomRecl;
-    // Planner: real card (bottom zone) for Dueño/Gerente; greyed placeholder for captains
+    // Planner: real card (bottom zone) available for all leaders (Dueño/Gerente/Capitán)
     const planCard = document.getElementById('plan-card');
-    if (planCard) { planCard.style.display = isRecl ? '' : 'none'; }
     const planDisSection = document.getElementById('plan-disabled-section');
     const planDisList = document.getElementById('plan-disabled-list');
     const planDisCard = document.getElementById('plan-disabled-card');
-    const showBottomPlan = isCaptainOnly ? '' : 'none';
-    if (planDisSection) planDisSection.style.display = showBottomPlan;
-    if (planDisList) planDisList.style.display = showBottomPlan;
-    if (planDisCard) planDisCard.style.display = showBottomPlan;
+
+    if (isLeader) {
+      if (planDisSection) planDisSection.style.display = '';
+      if (planDisList) planDisList.style.display = '';
+      if (planCard) planCard.style.display = '';
+      if (planDisCard) planDisCard.style.display = 'none';
+    } else {
+      if (planDisSection) planDisSection.style.display = 'none';
+      if (planDisList) planDisList.style.display = 'none';
+      if (planCard) planCard.style.display = 'none';
+      if (planDisCard) planDisCard.style.display = 'none';
+    }
     // Role-gate Mantenimiento preventivo placeholder: Dueño, Capitán, Gerente (v0.117)
     const mantprevSection = document.getElementById('mantprev-section');
     const mantprevList = document.getElementById('mantprev-list');
@@ -2248,11 +2283,10 @@
     });
     $('plan-week-label').textContent = planWeekLabel();
     try { await requireUser(); } catch(e) { return; }
-    // v0.125: planner is Dueño/Gerente only — captains get the greyed card.
-    // Defense in depth: even if a captain reaches the form via a stale dock
-    // tab, the grid renders nothing and every save path is unreachable.
     const _planGateRole = (currentProfile && currentProfile.role) || '';
-    if (!(_planGateRole === 'Dueño' || _planGateRole.toLowerCase().includes('gerente'))) {
+    const _planGateGroup = planRoleGroup(_planGateRole);
+    const _isLeader = ['Dueño', 'Capitán', 'Gerente'].includes(_planGateRole) || _planGateGroup === 'Capitán';
+    if (!_isLeader) {
       $('plan-grid').innerHTML = '<div class="empty-state"><div class="es-ico">🔒</div><div class="es-title">Deshabilitado temporalmente</div><div class="es-sub">El planeador de horarios pronto estará disponible.</div></div>';
       return;
     }
@@ -2651,8 +2685,31 @@
         else if (count > min + 1) warns.push({ type:'yellow', text:`🟡 ${d}: ${role} tiene ${count} (mínimo ${min})` });
       });
     });
+
+    // 48 hours validation
+    const staffHours = {};
+    planState.shifts.forEach(sh => {
+      if (sh.status === 'descanso' || !sh.staff_id || !sh.start_time || !sh.end_time) return;
+      const [sh_h, sh_m] = sh.start_time.split(':').map(Number);
+      const [eh_h, eh_m] = sh.end_time.split(':').map(Number);
+      let s_min = sh_h * 60 + sh_m;
+      let e_min = eh_h * 60 + eh_m;
+      if (e_min < s_min) e_min += 24 * 60; // crosses midnight
+      const hours = (e_min - s_min) / 60;
+      staffHours[sh.staff_id] = (staffHours[sh.staff_id] || 0) + hours;
+    });
+
+    Object.keys(staffHours).forEach(sid => {
+      const hrs = staffHours[sid];
+      if (hrs !== 48) {
+        const sname = planStaffName(sid);
+        if (hrs < 48) warns.push({ type:'yellow', text:`🟡 ${sname} tiene ${hrs}h (esperado 48h)` });
+        else warns.push({ type:'red', text:`🔴 ${sname} tiene ${hrs}h (excede 48h)` });
+      }
+    });
+
     if (!warns.length) {
-      box.innerHTML = '<div class="plan-warn ok">✅ Todo cubierto según los mínimos.</div>';
+      box.innerHTML = '<div class="plan-warn ok">✅ Todo cubierto según mínimos y horarios de 48h.</div>';
     } else {
       box.innerHTML = warns.map(w => `<div class="plan-warn ${w.type}">${w.text}</div>`).join('');
     }
@@ -2667,6 +2724,15 @@
   $('plan-day-save').addEventListener('click', planSaveDayShift);
   $('plan-day-delete').addEventListener('click', planDeleteDayShift);
   $('plan-day-modal').addEventListener('click', e => { if (e.target === $('plan-day-modal')) planCloseDayModal(); });
+  document.querySelectorAll('.plan-qt-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const p = e.target.closest('.plan-modal');
+      const startInp = p.querySelector('input[type="time"][id$="start"]');
+      const endInp = p.querySelector('input[type="time"][id$="end"]');
+      if(startInp) startInp.value = e.target.getAttribute('data-s');
+      if(endInp) endInp.value = e.target.getAttribute('data-e');
+    });
+  });
   $('plan-audit-toggle').addEventListener('click', planToggleAudit);
   document.querySelectorAll('#plan-view-seg button').forEach(b => {
     b.addEventListener('click', () => {
