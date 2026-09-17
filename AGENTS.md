@@ -47,6 +47,13 @@ NOT `top: 50%`. Ben prefers compact 3-row wheels.
 
 ## STRUCTURAL CONVENTIONS (do not regress)
 
+- **NO SECRETS IN THIS REPO — it is PUBLIC.** Never put a door/alarm code,
+  password, API key, or staff credential in `app.html`, `sw.js`, in a code
+  comment, or in a commit message. The access codes live in Supabase table
+  `access_codes` (RLS: the caller must have a `profiles` row, not merely a
+  valid JWT) and are fetched after login by `loadAccessCodes()`.
+  Before declaring ANY secrets fix done, grep the WHOLE TREE — a fix scoped to
+  `app.html` alone once left `sw.js` leaking the identical codes (v0.134).
 - userbar lives INSIDE `<header>` as bottom row with hairline separator
   (v0.116 — Ben explicitly wants ONE unified card, no standalone strips).
 - Bitácora field order: Reservaciones → Corte → Propinas → Descuentos y
