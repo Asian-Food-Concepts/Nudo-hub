@@ -599,7 +599,7 @@
         </div>
         <!-- v0.138+: Link to onboarding page for new hires who have no account yet -->
         <div style="text-align:center;margin-top:14px;">
-          <a href="/Nudo-hub/onboarding.html" class="link-btn" style="font-size:0.85rem;">¿Nuevo empleado? Regístrate aquí →</a>
+          <a href="/Nudo-hub/onboarding.html" class="link-btn" style="font-size:0.85rem;">¿Eres nuevo al equipo? Regístrate aquí →</a>
         </div>
       </div>
     </div>
@@ -1237,7 +1237,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.139";
+  const APP_VERSION = "v0.140";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -3871,6 +3871,14 @@
 
   // ---- CHANGELOG / NOVEDADES MODAL (v0.138) ----
   const CHANGELOG_ENTRIES = [
+    {
+      ver: 'v0.140', date: '17 Sep 2026',
+      badge: 'Equipo e Incorporación',
+      items: [
+        'Página de registro de nuevo ingreso al equipo adaptada al tema visual de Nudo Hub (modo claro, oscuro y automático del sistema con selector dedicado).',
+        'Texto de acceso actualizado a "¿Eres nuevo al equipo?" en el inicio de sesión y formulario.'
+      ]
+    },
     {
       ver: 'v0.139', date: '17 Sep 2026',
       badge: 'Formularios y UI',

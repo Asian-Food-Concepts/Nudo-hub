@@ -5,6 +5,20 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
+## [v0.140] - 2026-09-17
+
+### Modificado (Changed)
+- **Tema y colores en página de incorporación**:
+  - `onboarding.html` ahora adopta el tema visual completo de Nudo Hub (modo claro, modo oscuro y automático de sistema).
+  - Incluye selector de tema en la cabecera sincronizado con la preferencia guardada en `localStorage`.
+- **Copia y terminología**:
+  - Actualizado el texto de acceso en pantalla de inicio de sesión a **"¿Eres nuevo al equipo? Regístrate aquí →"**.
+  - En la página de incorporación se reemplazó la terminología de "empleado" por **"nuevo ingreso al equipo"**.
+- **Service Worker**:
+  - Añadido `/Nudo-hub/onboarding.html` a la lista de recursos precacheados (`ASSETS`) y cache actualizado a `nudo-hub-v37`.
+
+---
+
 ## [v0.139] - 2026-09-17
 
 ### Modificado (Changed)
