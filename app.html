@@ -490,7 +490,11 @@
     text-decoration: underline; text-underline-offset: 2px;
     border-radius: 6px;
   }
-  .ver-btn:hover, .ver-btn:active { color: var(--ink); background: var(--border); }
+    .ver-btn:hover, .ver-btn:active { color: var(--ink); background: var(--border); }
+    /* v0.143 — deliberately low-key manual refresh. Ben: "generally out of sight, so it is not
+       something you click while you are doing a form." Muted, small, bottom-of-page only. */
+    .upd-btn { opacity: 0.55; font-size: 0.72rem; }
+    .upd-btn:hover, .upd-btn:active { opacity: 1; }
 
   /* ---- Bottom tab bar (v0.91) — floating centered dock, sits low ---- */
   body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); } /* reserved for the dock */
@@ -1240,7 +1244,7 @@
     </div>
   </div>
 
-  <footer>Nudo — Ramen y Boba · CDMX · <button type="button" class="ver-btn" id="ver-btn" title="Ver registro de cambios y novedades"><span id="ver">v0.0</span></button></footer>
+  <footer>Nudo — Ramen y Boba · CDMX · <button type="button" class="ver-btn" id="ver-btn" title="Ver registro de cambios y novedades"><span id="ver">v0.0</span></button> · <button type="button" class="ver-btn upd-btn" id="upd-btn" title="Forzar actualización de la app">🔄 Actualizar</button></footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"></script>
   <script>
@@ -1249,7 +1253,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.142";
+  const APP_VERSION = "v0.143";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1271,12 +1275,30 @@
       .then(r => r.ok ? r.json() : null)
       .then(v => {
         if (!v || v.version === APP_VERSION) return;
-        if (sessionStorage.getItem('nudo_beacon_reloaded') === v.version) return; // loop guard
-        sessionStorage.setItem('nudo_beacon_reloaded', v.version);
+        // v0.143: never yank the page out from under a half-filled form — defer to the next
+        // return-to-foreground instead, so a captain mid-Bitácora cannot lose their work.
+        if (document.querySelector('.form-page.active')) return;
+        // v0.143: TIMESTAMPED guard. The old flag-only guard was written BEFORE the reload, so a
+        // reload that came back stale locked the client out of healing permanently. Now a failed
+        // heal simply retries after 60s.
+        const _g = sessionStorage.getItem('nudo_beacon_reloaded');
+        if (_g) {
+          const _gp = _g.split('@');
+          if (_gp[0] === v.version && (Date.now() - Number(_gp[1] || 0)) < 60000) return;
+        }
+        sessionStorage.setItem('nudo_beacon_reloaded', v.version + '@' + Date.now());
         if (navigator.serviceWorker.controller) {
           navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
         }
-        const done = () => location.reload(true);
+        // v0.143: navigate to a VERSION-STAMPED url. location.reload(true) ignored its force
+        // argument (removed from the spec), so a reload could be served the SAME cached bytes
+        // from the Pages 10-minute HTTP cache; a brand-new URL cannot be.
+        const done = () => {
+          const u = new URL(location.href);
+          u.searchParams.set('v', v.version);
+          u.searchParams.set('t', Date.now());
+          location.replace(u.toString());
+        };
         if (window.caches && caches.keys) {
           caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))).then(done);
         } else { done(); }
@@ -4124,7 +4146,13 @@
   // PWA: register service worker (v0.105: hard-reload when a new SW takes over; v0.138: readyState check)
   if ('serviceWorker' in navigator) {
     const registerSW = () => {
-      navigator.serviceWorker.register('/Nudo-hub/sw.js').then(reg => {
+      // v0.143: updateViaCache 'none' stops the browser HTTP-caching sw.js itself (GitHub Pages
+      // sends max-age=600 on it too), and the foreground update() below actively hunts for new
+      // code instead of waiting on the browser's own check, which can be up to 24h.
+      navigator.serviceWorker.register('/Nudo-hub/sw.js', { updateViaCache: 'none' }).then(reg => {
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) { try { reg.update(); } catch (_) {} }
+        });
         reg.addEventListener('updatefound', () => {
           const nw = reg.installing;
           if (!nw) return;
@@ -4146,6 +4174,30 @@
     if (document.readyState === 'complete') registerSW();
     else window.addEventListener('load', registerSW);
   }
+
+  // v0.143 — MANUAL REFRESH. Ben: "what can we build so there is a one button to refresh".
+  // Deliberately DISCREET and confirm-guarded: it sits at the bottom of the page (footer) so it
+  // can never be tapped by accident while filling a form. It does the full nuke — unregister
+  // every service worker, drop every cache, clear the session guards, then reload on a fresh URL.
+  // This is the employee-proof escape hatch: no support call, no settings menu.
+  async function forceUpdateApp() {
+    const ok = window.confirm('¿Actualizar la app? Se recargará la página y se perderá lo que no hayas enviado.');
+    if (!ok) return;
+    try {
+      const rs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(rs.map(r => r.unregister()));
+    } catch (_) {}
+    try {
+      const ks = await caches.keys();
+      await Promise.all(ks.map(k => caches.delete(k)));
+    } catch (_) {}
+    try { sessionStorage.clear(); } catch (_) {}
+    const u = new URL(location.href);
+    u.searchParams.set('t', Date.now());
+    location.replace(u.toString());
+  }
+  const _updBtn = document.getElementById('upd-btn');
+  if (_updBtn) _updBtn.addEventListener('click', forceUpdateApp);
 
 
   // ---- [sticky-submit] live readiness for Bitácora (v0.113) ----
