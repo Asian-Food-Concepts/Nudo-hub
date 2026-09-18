@@ -206,6 +206,9 @@
     border-top: 1px solid var(--border);
   }
   .userbar .who { font-size: 0.9rem; font-weight: 600; }
+  .userbar .viewas-open { font-size:0.82rem; color:var(--accent); background:var(--card);
+    border:1px solid var(--border); border-radius:8px; padding:5px 10px; cursor:pointer; }
+  .userbar .viewas-open:hover { border-color:var(--accent); }
   .userbar .logout { font-size: 0.85rem; color: var(--accent); background: none; border: none; cursor: pointer; padding: 6px 8px; }
   .userbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
   .theme-switch { display: flex; align-items: center; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 3px; }
@@ -1006,7 +1009,7 @@
         <div class="form-card">
           <h2>👥 Equipo</h2>
           <p style="color:var(--muted);font-size:0.85rem;margin:0 0 12px;">
-            Jerarquía por nivel · <b>Nivel 1 = máxima autoridad</b> · solo lectura.
+            Jerarquía por sucursal y área · <b>el nivel se muestra en cada persona</b> · solo lectura.
           </p>
           <div id="equipo-body"><div class="msg">Cargando…</div></div>
         </div>
@@ -1349,7 +1352,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.167";
+  const APP_VERSION = "v0.168";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1463,6 +1466,9 @@
   function showApp() {
     views.login.classList.add('hidden'); views.app.classList.remove('hidden'); showBottomTabs(true);
     const ub = $('userbar'); if (ub) ub.classList.remove('hidden');
+    // Only level 1 may impersonate. Same gate as the name-click, but now the control
+    // is visible instead of being a well-kept secret.
+    const vo = $('viewas-open'); if (vo) vo.classList.toggle('hidden', realLevel() !== 1);
   }
   function showBottomTabs(show) {
     const tabs = $('bottom-tabs');
@@ -4465,7 +4471,7 @@
     modal.classList.remove('hidden');
     const [lv, pr] = await Promise.all([
       supabase.from('role_levels').select('role,level,rank_label').order('level'),
-      supabase.from('profiles').select('name,role,branch,level').eq('active', true).order('name')
+      supabase.from('profiles').select('name,role,branch,level,area').eq('active', true).order('name')
     ]);
     const meta = {};
     (lv.data || []).forEach(r => { meta[r.level] = r.rank_label; });
@@ -4528,6 +4534,7 @@
       return;
     }
     // Only level 1 (Dueño) may preview — nobody else, ever.
+    if (e.target.closest('#viewas-open')) { openViewAsPicker(); return; }
     if (e.target.closest('#user-name')) { if (realLevel() === 1) openViewAsPicker(); }
   });
 
@@ -4542,36 +4549,45 @@
     if (lv.error || pr.error) { body.innerHTML = '<div class="msg err">No se pudo cargar.</div>'; return; }
     const meta = {};
     (lv.data || []).forEach(r => { meta[r.level] = r; });
-    const byLevel = {};
+    // Outlet first, then area within it (Ben). Level is still shown, but per person
+    // rather than as the top-level divider — "who works where" is the question this
+    // screen answers, and area is how a shift actually gets covered.
+    const byBranch = {};
     (pr.data || []).forEach(p => {
-      const L = (p.level == null) ? 99 : p.level;
-      (byLevel[L] = byLevel[L] || []).push(p);
+      const b = p.branch || 'Sin sucursal';
+      (byBranch[b] = byBranch[b] || []).push(p);
     });
     let html = '';
-    Object.keys(byLevel).map(Number).sort((a, b) => a - b).forEach(L => {
-      const people = byLevel[L], m = meta[L] || {};
-      const branches = {};
-      people.forEach(p => {
-        const k = p.branch || 'Sin sucursal';
-        (branches[k] = branches[k] || []).push(p);
-      });
-      html += '<div style="margin:0 0 18px;">'
-            + '<div style="font-weight:700;font-size:0.95rem;">Nivel ' + (L === 99 ? '—' : L)
-            + (m.rank_label ? ' · ' + esc(m.rank_label) : '')
+    const AREA_ORDER = { 'Dirección': 0, 'Cocina': 1, 'Barra': 2, 'Piso': 3 };
+    Object.keys(byBranch).sort().forEach(bn => {
+      const people = byBranch[bn];
+      html += '<div style="margin:0 0 22px;">'
+            + '<div style="font-weight:700;font-size:1rem;border-bottom:2px solid var(--border);'
+            + 'padding-bottom:4px;margin-bottom:10px;">' + esc(bn)
             + ' <span style="color:var(--muted);font-weight:400;">· ' + people.length
             + (people.length === 1 ? ' persona' : ' personas') + '</span></div>';
-      if (m.responsibilities) {
-        html += '<div style="color:var(--muted);font-size:0.8rem;margin:2px 0 6px;">' + esc(m.responsibilities) + '</div>';
-      }
-      Object.keys(branches).sort().forEach(bn => {
-        html += '<div style="margin:6px 0 0 10px;font-size:0.85rem;"><b>' + esc(bn) + '</b>'
-              + ' <span style="color:var(--muted);">(' + branches[bn].length + ')</span>'
-              + '<ul style="margin:4px 0 0 16px;">';
-        branches[bn].forEach(p => {
-          html += '<li>' + esc(p.name) + ' <span style="color:var(--muted);">· ' + esc(p.role) + '</span></li>';
-        });
-        html += '</ul></div>';
+      const byArea = {};
+      people.forEach(p => {
+        const a = p.area || 'Sin área';
+        (byArea[a] = byArea[a] || []).push(p);
       });
+      Object.keys(byArea)
+        .sort((a, b) => (AREA_ORDER[a] == null ? 9 : AREA_ORDER[a]) - (AREA_ORDER[b] == null ? 9 : AREA_ORDER[b])
+                        || a.localeCompare(b))
+        .forEach(an => {
+          const group = byArea[an].slice().sort((a, b) => (a.level == null ? 99 : a.level) - (b.level == null ? 99 : b.level)
+                                                          || String(a.name).localeCompare(String(b.name)));
+          html += '<div style="margin:0 0 12px 6px;font-size:0.85rem;">'
+                + '<div style="font-weight:600;color:var(--muted);">' + esc(an)
+                + ' <span style="font-weight:400;">(' + group.length + ')</span></div>'
+                + '<ul style="margin:4px 0 0 16px;">';
+          group.forEach(p => {
+            html += '<li>' + esc(p.name)
+                  + ' <span style="color:var(--muted);">· ' + esc(p.role || '')
+                  + (p.level == null ? '' : ' · Nivel ' + p.level) + '</span></li>';
+          });
+          html += '</ul></div>';
+        });
       html += '</div>';
     });
     body.innerHTML = html || '<div class="msg">Sin datos.</div>';

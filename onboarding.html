@@ -14,6 +14,24 @@
       if (m !== 'system') document.documentElement.setAttribute('data-theme', m);
     } catch (e) {}
   })();
+
+  // ---- Salir: an explicit way out. Without it, leaving means closing the tab, which
+  // looks like a crash and gives no way to hand the device to the next person. ----
+  (function () {
+    var b = document.getElementById('onb-exit');
+    if (!b) return;
+    b.addEventListener('click', async function () {
+      if (!confirm('¿Salir? Tu avance queda guardado y puedes volver con tu correo.')) return;
+      b.textContent = 'Saliendo…';
+      b.disabled = true;
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {
+        reportFailure('salida_fallida', (e && e.message) || String(e), {});
+      }
+      location.reload();
+    });
+  })();
 </script>
 <style>
   :root {
@@ -64,11 +82,15 @@
   .theme-switch button[aria-pressed="true"] { opacity: 1; background: var(--accent); }
   select option { background: var(--card); color: var(--ink); }
   .steps-bar { display:flex; align-items:center; justify-content:center; gap:0; margin-bottom:20px; }
-  .step-dot { width:32px; height:32px; border-radius:50%; border:2px solid var(--border);
-              display:flex; align-items:center; justify-content:center;
-              font-size:0.8rem; font-weight:700; color:var(--muted); background:var(--card);
-              flex-shrink:0; transition:all 0.2s; }
+  .step-dot { flex:1; height:42px; border-radius:10px; border:1px solid var(--border);
+             background:var(--card); display:flex; align-items:center; justify-content:center;
+             gap:6px; cursor:pointer; padding:0 8px; transition:background .15s, border-color .15s; }
   .step-dot.active { border-color:var(--accent); background:var(--accent); color:#fff; }
+  .step-dot.done   { border-color:var(--green);  background:var(--green);  color:#fff; }
+  .step-line { display:none; }
+  .steps-bar { display:flex; gap:8px; align-items:stretch; margin:0 0 12px; }
+  #onb-exit { position:fixed; top:10px; right:10px; z-index:60; font-size:0.8rem;
+              color:var(-ot.active { border-color:var(--accent); background:var(--accent); color:#fff; }
   .step-dot.done   { border-color:var(--green);  background:var(--green);  color:#fff; }
   .step-line { flex:1; height:2px; background:var(--border); max-width:40px; }
   .step-line.done { background:var(--green); }
@@ -76,10 +98,9 @@
   /* Step indicator: names on wider screens, numbers always. */
   .step-dot { width:auto; min-width:34px; padding:0 10px; gap:6px; cursor:pointer;
               grid-auto-flow:column; display:inline-flex; align-items:center; justify-content:center; }
-  .step-dot .step-num { font-weight:700; }
   /* Labels are meaningful, so show them for every step and collapse to numbers
      only on narrow screens (mobile guidance: keep icons, drop labels). */
-  .step-dot .step-name { font-size:0.72rem; font-weight:600; display:inline; }
+  .step-dot .step-name { font-size:0.72rem; font-weight:600; }
   @media (max-width:520px) { .step-dot .step-name { display:none !important; } }
   .step-hint { text-align:center; font-size:0.8rem; color:var(--muted); margin:-10px 0 18px; }
 
@@ -224,6 +245,7 @@
   </div>
 
   <!-- STEP PROGRESS BAR -->
+  <button type="button" id="onb-exit" title="Cerrar sesión">Salir</button>
   <div id="steps-bar-wrap" class="hidden">
     <div class="progress-wrap">
       <div class="progress-fill" id="progress-fill" style="width:25%;"></div>
