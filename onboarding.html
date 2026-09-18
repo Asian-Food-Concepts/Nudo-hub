@@ -1012,6 +1012,29 @@
     return error;
   }
 
+  // ---- Guardia anti-escritura-inútil (v0.172) ----
+  // Un UPDATE que no cambia nada no informa de nada y sí cuesta: cada pausa al teclear
+  // dejaba una tupla muerta para autovacuum. La firma se calcula SIN updated_at (que
+  // cambia siempre, por eso nunca coincidiría) y SÓLO se fija cuando el guardado
+  // confirma, de modo que un fallo nunca se convierta en un falso "ya está guardado".
+  var lastSavedSignature = null;
+  function payloadSignature(p) {
+    try {
+      if (!p) return null;
+      var copy = {};
+      for (var k in p) { if (Object.prototype.hasOwnProperty.call(p, k) && k !== 'updated_at') copy[k] = p[k]; }
+      return JSON.stringify(copy);
+    } catch (e) { return null; }
+  }
+  function isNoopPayload(p) {
+    var sig = payloadSignature(p);
+    return (sig !== null && sig === lastSavedSignature);
+  }
+  function commitSignature(p) {
+    var sig = payloadSignature(p);
+    if (sig !== null) lastSavedSignature = sig;
+  }
+
   // ---- Auto-save every 30 s ----
   var autoSaveTimer = null;
   function scheduleAutoSave() {
@@ -1023,6 +1046,8 @@
       if (currentStep === 2) payload = buildP2();
       if (currentStep === 3) payload = buildP3();
       if (!payload) return;
+      // v0.172: nada cambió desde el último guardado confirmado -> NO se escribe.
+      if (isNoopPayload(payload)) return;
       payload.updated_at = new Date().toISOString();
         markSaving();
       // This used to ignore its error entirely: an auto-save could fail forever with no
@@ -1033,6 +1058,7 @@
         reportFailure('autoguardado_fallido', autosave.error.message, { code: autosave.error.code || '', paso: currentStep });
         return;
       }
+      commitSignature(payload);
       showAutosave();
     }, 1500);
   }
@@ -1304,6 +1330,9 @@
       if (!onboardingId || typeof currentStep !== 'number') return;
       var payload = buildPayloadFor(currentStep);
       if (!payload) return;
+      // v0.172: mismo corte que el autoguardado — salir de un campo sin cambiar nada
+      // (o volver a entrar y salir) no escribe.
+      if (isNoopPayload(payload)) return;
       markSaving();
       payload.updated_at = new Date().toISOString();
       var res = await supabase.from('onboarding').update(payload).eq('id', onboardingId);
@@ -1312,6 +1341,7 @@
         reportFailure('autoguardado_fallido', res.error.message, { code: res.error.code || '', paso: currentStep });
         return;
       }
+      commitSignature(payload);
       markSaved();
     }, 250);
   }

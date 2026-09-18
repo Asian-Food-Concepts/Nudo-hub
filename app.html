@@ -550,6 +550,13 @@
   .rv-dots { display: flex; justify-content: center; gap: 6px; padding: 12px 0 14px; }
   .rv-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dot); transition: background 0.2s; cursor: pointer; }
   .rv-dot.active { background: var(--accent); }
+  /* Borrador con autoguardado (v0.172) — indicador visible + reinicio. Aditivo:
+     sin esta barra el formulario funciona exactamente igual que antes. */
+  .draft-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--checked-bg); font-size: 0.82rem; line-height: 1.3; }
+  .draft-bar .draft-state { font-weight: 700; color: var(--ink); }
+  .draft-bar .draft-note { color: var(--muted); flex: 1 1 140px; }
+  .draft-bar .draft-clear { margin-left: auto; background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 5px 12px; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+  .draft-bar .draft-clear:active { opacity: 0.7; }
   .hidden { display: none !important; }
 </style>
 </head>
@@ -811,6 +818,13 @@
         <div class="form-card" id="card-bitacora">
           <h2>📓 Bitácora de Cierre</h2>
           <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">La registra el capitán de turno al cierre.</p>
+          <!-- Borrador (v0.172): autoguardado + reanudación. Aditivo — no toca ningún
+               campo, ningún id existente ni el envío; sólo informa y ofrece reiniciar. -->
+          <div id="b-draft-bar" class="draft-bar hidden">
+            <span class="draft-state" id="b-draft-state"></span>
+            <span class="draft-note" id="b-draft-note"></span>
+            <button type="button" class="draft-clear" id="b-draft-clear">Empezar de nuevo</button>
+          </div>
           <div class="form-subhead" style="margin-top:2px;">Turno</div>
           <div class="field"><label>Sucursal</label>
             <div class="radio-group">
@@ -1354,7 +1368,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.171";
+  const APP_VERSION = "v0.172";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1495,6 +1509,210 @@
   }
 
   function clearMsg(el) { el.classList.add('hidden'); el.textContent = ''; }
+
+  // ================= BORRADOR: AUTOGUARDADO + REANUDACIÓN (v0.172) =================
+  // Helper REUTILIZABLE — no conoce ningún formulario en particular. El formulario le
+  // pasa cómo construir su carga útil, cómo repintarla y dónde persistirla. Sirve igual
+  // para un borrador local (Bitácora, hoy) que para uno en Supabase: basta darle otro
+  // `store`, y con él hereda el punto 5, que es el que evita el UPDATE idéntico y la
+  // basura que deja en Postgres (tuplas muertas / autovacuum).
+  //
+  //   createDraftHelper({
+  //     key        id corto del formulario (registro de depuración)
+  //     namespace  llave de almacenamiento local (string o función) — por defecto key
+  //     pageSel    selector de la página: SÓLO guarda si está abierta
+  //     build()    -> objeto serializable con lo que hay que guardar
+  //     restore(d) -> repinta los campos desde lo guardado
+  //     onReset()  -> deja el formulario como recién abierto (botón de reinicio)
+  //     store      { save(json, meta), load(), remove() } — por defecto localStorage
+  //     stateEl / noteEl / barEl / clearEl — indicador y control de reinicio
+  //     delay      ms tras la última tecla (por defecto 1500)
+  //   })
+  //
+  //  1. Guarda 1500 ms después de la última tecla y EN SEGUIDA al salir del campo
+  //     (blur): salir de un campo es un acto explícito, no se apuesta al reloj. Una
+  //     ráfaga de teclas produce UNA escritura, no una por tecla.
+  //  2. Bandera "sucio": se activa con cualquier cambio, se limpia al guardar.
+  //  3. Indicador visible: "Guardando…" mientras se escribe, "Guardado HH:MM" después.
+  //     Un indicador que sólo dice "Guardado" no se distingue de un cuelgue.
+  //  4. Aviso antes de cerrar la pestaña mientras haya cambios sin guardar.
+  //  5. NO escribe si la carga útil es idéntica a la última guardada (JSON serializado).
+  //  6. Al abrir reanuda el borrador guardado, y siempre hay un control visible para
+  //     empezar de nuevo: nadie queda atrapado en lo restaurado.
+  const DRAFT_DELAY = 1500;
+
+  function draftLocalStore(namespace) {
+    function keyOf() { return 'nudo_borrador_' + (typeof namespace === 'function' ? namespace() : namespace); }
+    return {
+      async save(json, meta) {
+        try {
+          localStorage.setItem(keyOf(), JSON.stringify({
+            v: 1, json: json, at: (meta && meta.at) || new Date().toISOString()
+          }));
+          return {};
+        } catch (e) { return { error: e }; }
+      },
+      async load() {
+        try {
+          const raw = localStorage.getItem(keyOf());
+          if (!raw) return null;
+          const box = JSON.parse(raw);
+          if (!box || typeof box.json !== 'string') return null;
+          return { json: box.json, at: box.at || null };
+        } catch (e) { return null; }
+      },
+      async remove() { try { localStorage.removeItem(keyOf()); } catch (e) {} }
+    };
+  }
+
+  function createDraftHelper(opts) {
+    const store = opts.store || draftLocalStore(opts.namespace || opts.key);
+    const delay = opts.delay || DRAFT_DELAY;
+    const stats = { saves: 0, skips: 0, errors: 0, states: [] };
+    let lastSavedJSON = null;   // último JSON confirmado como persistido
+    let dirty = false;          // bandera "sucio"
+    let hasDraft = false;       // hay borrador guardado (para el control de reinicio)
+    let timer = null, inFlight = false, queued = false, restoring = false, open = false, bound = false;
+
+    function elt(sel) {
+      if (!sel) return null;
+      if (typeof sel === 'function') return sel();
+      if (typeof sel === 'string') return document.querySelector(sel);
+      return sel;
+    }
+    function render() {
+      const bar = elt(opts.barEl), btn = elt(opts.clearEl);
+      if (bar) bar.classList.toggle('hidden', !(open && (hasDraft || dirty)));
+      if (btn) btn.classList.toggle('hidden', !(hasDraft || dirty));
+    }
+    function say(text) {
+      const box = elt(opts.stateEl);
+      if (box) box.textContent = text || '';
+      stats.states.push(text || '');
+      if (stats.states.length > 20) stats.states.shift();
+      render();
+    }
+    function hhmm(d) {
+      const x = d ? new Date(d) : new Date();
+      return String(x.getHours()).padStart(2, '0') + ':' + String(x.getMinutes()).padStart(2, '0');
+    }
+    function jsonNow() {
+      try { return JSON.stringify(opts.build() || {}); } catch (e) { return null; }
+    }
+    function pageOpen() {
+      if (!opts.pageSel) return open;
+      const p = document.querySelector(opts.pageSel);
+      return !!(p && p.classList.contains('active'));
+    }
+    async function flush(why) {
+      timer = null;
+      if (!open || !pageOpen()) return;
+      if (inFlight) { queued = true; return; }
+      const json = jsonNow();
+      if (json === null) return;
+      if (json === lastSavedJSON) { stats.skips++; return; }   // (5) nada cambió -> no se escribe
+      inFlight = true;
+      say('Guardando…');
+      let res;
+      try { res = await store.save(json, { at: new Date().toISOString(), why: why || '' }); }
+      catch (e) { res = { error: e }; }
+      inFlight = false;
+      if (res && res.error) {
+        stats.errors++;
+        say('Sin guardar — revisa tu conexión');
+        if (typeof toast === 'function') toast('No se pudo guardar el borrador. Tus datos siguen en pantalla.');
+      } else {
+        stats.saves++;
+        lastSavedJSON = json; dirty = false; hasDraft = true;
+        say('Guardado ' + hhmm());
+      }
+      if (queued) { queued = false; flush('queue'); }
+    }
+    function schedule() {
+      if (restoring || !open || !pageOpen()) return;
+      dirty = true; render();
+      clearTimeout(timer);
+      timer = setTimeout(function () { flush('debounce'); }, delay);
+    }
+    function saveNow() {
+      if (restoring || !open || !pageOpen()) return;
+      dirty = true; render();
+      clearTimeout(timer);
+      flush('blur');
+    }
+    function onInput() { schedule(); }
+    function onBlur() { saveNow(); }
+    function onBeforeUnload(e) {
+      if (!dirty) return;
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    }
+    function bind() {
+      if (bound) return;
+      bound = true;
+      const root = opts.pageSel ? document.querySelector(opts.pageSel) : null;
+      if (root) {
+        root.addEventListener('input', onInput, true);
+        root.addEventListener('change', onInput, true);
+        root.addEventListener('blur', onBlur, true);
+      }
+      window.addEventListener('beforeunload', onBeforeUnload);
+      const btn = elt(opts.clearEl);
+      if (btn) btn.addEventListener('click', function () { reset(false); });
+    }
+    async function openDraft() {
+      open = true;
+      bind();
+      if (dirty) { render(); return true; }   // lo que hay en pantalla es más nuevo
+      let saved = null;
+      try { saved = await store.load(); } catch (e) { saved = null; }
+      const note = elt(opts.noteEl);
+      if (!saved || !saved.json) {
+        lastSavedJSON = null; hasDraft = false;
+        if (note) note.textContent = '';
+        say('');
+        return false;
+      }
+      let data = null;
+      try { data = JSON.parse(saved.json); } catch (e) { data = null; }
+      if (!data) { lastSavedJSON = null; hasDraft = false; say(''); return false; }
+      restoring = true;
+      try { if (opts.restore) opts.restore(data); }
+      finally { restoring = false; }
+      lastSavedJSON = saved.json;
+      hasDraft = true; dirty = false;
+      if (note) note.textContent = 'Borrador guardado a las ' + hhmm(saved.at) + '.';
+      say('Guardado ' + hhmm(saved.at));
+      return true;
+    }
+    // reset(false) = limpiar el borrador Y el formulario (botón "Empezar de nuevo").
+    // reset(true)  = sólo olvidar el borrador (tras un envío exitoso, el formulario ya
+    //                lo reinició el flujo existente: no se toca ningún campo).
+    async function reset(keepFields) {
+      clearTimeout(timer);
+      queued = false;
+      try { await store.remove(); } catch (e) {}
+      lastSavedJSON = null; hasDraft = false; dirty = false;
+      const note = elt(opts.noteEl);
+      if (note) note.textContent = '';
+      if (!keepFields && typeof opts.onReset === 'function') { try { opts.onReset(); } catch (e) {} }
+      say('');
+      return true;
+    }
+    const api = {
+      open: openDraft,
+      schedule: schedule,
+      saveNow: saveNow,
+      flush: flush,
+      reset: reset,
+      stats: stats,
+      isDirty: function () { return dirty; },
+      isOpen: function () { return open; }
+    };
+    try { (window.__nudoDrafts = window.__nudoDrafts || {})[opts.key] = api; } catch (e) {}
+    return api;
+  }
 
   // Normalize an email input (trim + lowercase)
   function toEmail(raw) {
@@ -1829,6 +2047,122 @@
     if (propinasNormal) propinasNormal.checked = true;
   })();
 
+  // ---- Bitácora: borrador con autoguardado, aviso de salida y reanudación (v0.172) ----
+  // La llave incluye el id del usuario: en un teléfono COMPARTIDO el borrador de un
+  // capitán no debe aparecerle a otro. Se resuelve al abrir el formulario, no al cargar
+  // la página (todavía no hay sesión entonces).
+  const BITACORA_THEMES = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','corte','promos'];
+  let __draftUserId = null;
+  async function draftUserId() {
+    if (__draftUserId) return __draftUserId;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      __draftUserId = (session && session.user) ? session.user.id : null;
+    } catch (e) { __draftUserId = null; }
+    return __draftUserId;
+  }
+
+  // Mismas claves que el envío (branch / afluencia / corte / notas / temas / propinas /
+  // propinas_detalle) para que este borrador sirva tal cual el día que se persista en
+  // Supabase. No incluye la foto (un File no es serializable) ni la confirmación de
+  // cierre (confirmar es un acto fresco, no algo que se reanude solo).
+  function bitacoraDraftBuild() {
+    const pick = nm => { const s = document.querySelector('#form-bitacora input[name="' + nm + '"]:checked'); return s ? s.value : null; };
+    const temas = {};
+    BITACORA_THEMES.forEach(t => {
+      const sel = document.querySelector('#form-bitacora input[name="t-' + t + '"]:checked');
+      const det = document.querySelector('#form-bitacora textarea[data-for="t-' + t + '"]');
+      temas[t] = { ok: sel ? (sel.value === 'ok' || sel.value === 'ok_nota') : null, detalle: (det && det.value.trim()) || '' };
+    });
+    const montoEl = $('b-empleados-monto');
+    const monto = (montoEl && montoEl.value !== '') ? parseFloat(montoEl.value) : null;
+    if (monto !== null && !isNaN(monto)) temas.promos.comida_empleados = monto;
+    const pdet = document.querySelector('#form-bitacora textarea[data-for="b-propinas"]');
+    return {
+      v: 1,
+      branch: pick('b-sucursal'),
+      afluencia: pick('b-afluencia'),
+      corte: pick('b-corte'),
+      propinas: pick('b-propinas'),
+      propinas_detalle: (pdet && pdet.value) || '',
+      temas: temas,
+      notas: (($('b-notas') || {}).value) || ''
+    };
+  }
+
+  function bitacoraDraftRestore(d) {
+    if (!d) return;
+    const setRadio = (nm, val) => {
+      if (val == null || val === '') return;
+      const r = document.querySelector('#form-bitacora input[name="' + nm + '"][value="' + String(val).replace(/"/g, '\\"') + '"]');
+      if (!r) return;
+      r.checked = true;
+      // Reutiliza el manejador que YA existe (muestra/oculta la nota y ajusta el
+      // placeholder) en lugar de duplicar esa lógica aquí.
+      r.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    setRadio('b-sucursal', d.branch);
+    setRadio('b-afluencia', d.afluencia);
+    setRadio('b-corte', d.corte);
+    setRadio('b-propinas', d.propinas);
+    const temas = d.temas || {};
+    BITACORA_THEMES.forEach(t => {
+      const v = temas[t];
+      if (!v) return;
+      const wanted = (v.ok === false) ? 'problema' : (v.detalle ? 'ok_nota' : 'ok');
+      let r = document.querySelector('#form-bitacora input[name="t-' + t + '"][value="' + wanted + '"]');
+      if (!r && v.ok) r = document.querySelector('#form-bitacora input[name="t-' + t + '"][value="ok"]');
+      if (r) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); }
+      const box = document.querySelector('#form-bitacora textarea[data-for="t-' + t + '"]');
+      if (box) {
+        box.value = v.detalle || '';
+        if (v.detalle) box.classList.remove('hidden');   // una nota guardada no se esconde
+      }
+    });
+    const pbox = document.querySelector('#form-bitacora textarea[data-for="b-propinas"]');
+    if (pbox) {
+      pbox.value = d.propinas_detalle || '';
+      if (d.propinas_detalle) pbox.classList.remove('hidden');
+    }
+    const notas = $('b-notas'); if (notas) notas.value = d.notas || '';
+    const montoEl = $('b-empleados-monto');
+    const monto = (temas.promos && temas.promos.comida_empleados != null) ? temas.promos.comida_empleados : null;
+    if (montoEl && monto !== null && !isNaN(monto)) montoEl.value = monto;
+    if (typeof bitacoraReadiness === 'function') bitacoraReadiness();
+  }
+
+  // "Empezar de nuevo": deja el formulario igual que recién cargado (v0.85: todo en
+  // "ok"), sin tocar ningún id ni ningún manejador existente.
+  function bitacoraDraftStartOver() {
+    document.querySelectorAll('#form-bitacora textarea').forEach(t => { t.value = ''; t.classList.add('hidden'); });
+    const monto = $('b-empleados-monto'); if (monto) monto.value = '';
+    ['b-sucursal','b-afluencia','b-corte'].forEach(nm => {
+      document.querySelectorAll('#form-bitacora input[name="' + nm + '"]').forEach(r => { r.checked = false; });
+    });
+    document.querySelectorAll('#form-bitacora input[name^="t-"]').forEach(r => { r.checked = (r.value === 'ok'); });
+    const pn = document.querySelector('#form-bitacora input[name="b-propinas"][value="normal"]');
+    if (pn) pn.checked = true;
+    const conf = $('b-confirm'); if (conf) conf.checked = false;
+    if (typeof bitacoraReadiness === 'function') bitacoraReadiness();
+  }
+
+  const bitacoraDraft = createDraftHelper({
+    key: 'bitacora',
+    namespace: function () { return 'bitacora_' + (__draftUserId || 'sin_sesion'); },
+    pageSel: '#form-bitacora',
+    build: bitacoraDraftBuild,
+    restore: bitacoraDraftRestore,
+    onReset: bitacoraDraftStartOver,
+    stateEl: '#b-draft-state',
+    noteEl: '#b-draft-note',
+    barEl: '#b-draft-bar',
+    clearEl: '#b-draft-clear'
+  });
+  async function bitacoraDraftOpen() {
+    await draftUserId();          // fija la llave por usuario ANTES de leer el borrador
+    return bitacoraDraft.open();
+  }
+
   // Entrevistas: Puesto — Apple-style vertical wheel picker (v0.102, Ben 2026-09-12)
   (function(){
     var OPTIONS = ['Capitán', 'Cocinero', 'Barista de Boba', 'Mesero', 'Otro'];
@@ -2028,6 +2362,8 @@
         const isSun = new Date().getDay() === 0;
         $('b-empleados-comida').classList.toggle('hidden', !isSun);
         $('b-empleados-monto').required = isSun;
+        // v0.172: reanuda el borrador guardado (si lo hay) en cuanto se abre el formulario
+        bitacoraDraftOpen().catch(function () {});
       }
       document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
       $('home-view').style.display = 'none';
@@ -3299,6 +3635,9 @@
       setTimeout(() => {
         resetForm('bitacora');
         clearMsg($('b-msg'));
+        // v0.172: el envío consume el borrador — no queda nada que reanudar (y el
+        // formulario ya lo reinició resetForm, así que no se toca ningún campo).
+        bitacoraDraft.reset(true);
         goHome();
       }, 1200);
     });
