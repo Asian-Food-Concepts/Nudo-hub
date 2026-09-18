@@ -556,6 +556,10 @@
     <h1><a href="/Nudo-hub/">Nudo Hub</a></h1>
     <p id="header-sub">Acceso del equipo</p>
     <!-- User row now lives INSIDE the header card (v0.116: unified shape) -->
+    <div id="viewas-banner" class="hidden" style="position:sticky;top:0;z-index:70;background:#fff3cd;border-bottom:2px solid #e0a800;padding:8px 12px;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <span id="viewas-label">👁 Visto como</span>
+      <button id="viewas-exit" style="font-weight:700;background:none;border:1px solid #e0a800;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:0.8rem;">Salir</button>
+    </div>
     <div class="userbar hidden" id="userbar">
       <span class="who" id="user-name">Equipo</span>
       <div class="userbar-right">
@@ -669,6 +673,11 @@
           <a class="card" href="#" data-form="descansos">
             <div class="icon icon-form">🗓️</div>
             <div class="text"><div class="title">Preferencia de Descansos</div><div class="sub">Llenar antes de las 10pm cada martes</div></div>
+            <div class="arrow">›</div>
+          </a>
+          <a class="card" href="#" id="equipo-card" data-form="equipo" style="display:none;">
+            <div class="icon icon-form">👥</div>
+            <div class="text"><div class="title">Equipo</div><div class="sub">Niveles, roles y quién es quién</div></div>
             <div class="arrow">›</div>
           </a>
         </div>
@@ -992,6 +1001,17 @@
         </div>
       </div>
 
+      <div id="form-equipo" class="form-page">
+        <button class="back" data-back><span class="chev">‹</span> Volver</button>
+        <div class="form-card">
+          <h2>👥 Equipo</h2>
+          <p style="color:var(--muted);font-size:0.85rem;margin:0 0 12px;">
+            Jerarquía por nivel · <b>Nivel 1 = máxima autoridad</b> · solo lectura.
+          </p>
+          <div id="equipo-body"><div class="msg">Cargando…</div></div>
+        </div>
+      </div>
+
       <div id="form-descansos" class="form-page">
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card" id="card-descansos">
@@ -1262,6 +1282,20 @@
         <button class="tab-btn" data-tab="estatus"><span class="tab-ico">📋</span>Seguimiento</button>
       </nav>
 
+      <!-- VISTO COMO — owner-only, read-only profile preview (v0.149) -->
+      <div class="review-modal hidden" id="viewas-modal">
+        <div class="review-box">
+          <h3>👁 Visto como</h3>
+          <p style="color:var(--muted);font-size:0.85rem;margin:0 0 10px;">
+            Mira la app como otro perfil. <b>Solo lectura</b> — no se puede enviar ni guardar nada mientras estás dentro.
+          </p>
+          <div class="review-body" id="viewas-list"></div>
+          <div class="review-actions" style="margin-top:8px;">
+            <button class="btn btn-outline" id="viewas-cancel" style="margin:0;">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ESTATUS DETAIL MODAL -->
       <div class="review-modal hidden" id="estatus-detail">
         <div class="review-box">
@@ -1315,7 +1349,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.148";
+  const APP_VERSION = "v0.149";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1612,14 +1646,24 @@
   });
 
   let currentProfile = null; // {name, role}
+  // v0.149 — "Visto como" state. Declared HERE, not down beside the feature,
+  // because loadUser() below reads VIEW_AS and a `let` declared later in the same
+  // scope throws a temporal-dead-zone ReferenceError on EVERY app start.
+  let VIEW_AS = null;            // the impersonated profile, or null
+  let __realProfile = null;      // the real logged-in profile, stashed
+  let __writeGuardOn = false;
 
   async function loadUser() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     currentProfile = null;
     // Look up the profile (name + role) for this user
-    const { data } = await supabase.from('profiles').select('id,name,role,active').eq('id', user.id).maybeSingle();
+    const { data } = await supabase.from('profiles').select('id,name,role,active,level,branch').eq('id', user.id).maybeSingle();
     if (data && data.name) currentProfile = data;
+    // v0.149 — "Visto como": the REAL identity is stashed in __realProfile and the
+    // UI deliberately renders with the impersonated profile instead, so every
+    // existing role gate applies unchanged. Writes are refused by installWriteGuard().
+    if (VIEW_AS) currentProfile = VIEW_AS;
     // If this staffer has been deactivated, force them out immediately
     if (data && data.active === false) {
       await forceLogout('Tu acceso fue desactivado. Contacta al dueño.');
@@ -1655,6 +1699,9 @@
     if (entrevistasCard) entrevistasCard.style.display = showTop;
     if (entrevistadosCard) entrevistadosCard.style.display = showTop;
     if (usuariosCard) usuariosCard.style.display = (role === 'Dueño') ? '' : 'none';
+    // v0.149 — the org chart is readable by any leader (captains and up).
+    const equipoCard = document.getElementById('equipo-card');
+    if (equipoCard) equipoCard.style.display = isLeader ? '' : 'none';
     const reclDisSection = document.getElementById('recl-disabled-section');
     const reclDisList = document.getElementById('recl-disabled-list');
     const reclDisCard = document.getElementById('recl-disabled-card');
@@ -2028,6 +2075,7 @@
       if (f === 'entrevistas') { loadEntrevistas(); loadPanelistRoster(); if (window.__slidePuestoReposition) window.__slidePuestoReposition(); }
       if (f === 'entrevistados') { loadEntrevistados(); }
       if (f === 'usuarios') { loadUsuarios(); loadRoleOptions(); }
+      if (f === 'equipo') { loadEquipo(); }
       if (f === 'plan') loadPlanner();
       setActiveTab(null);
     });
@@ -4394,6 +4442,160 @@
     sel.innerHTML = '<option value="">— Elegir rol —</option>';
     sel.appendChild(frag);
     _roleOptionsLoaded = true;
+  }
+
+  // ============ VISTO COMO — owner-only, READ-ONLY preview (v0.149) ============
+  // Replaces the plaintext magic-word accounts. Ben logs in normally, taps his own
+  // name, picks a profile, and the app renders as that profile.
+  //
+  // READ-ONLY BY DESIGN: being able to SEE every screen is the point. being able to
+  // ACT as someone else would attribute their writes to them — shift_audit,
+  // bitacora.submitted_by, descanso_requests.staff_id would all record the wrong
+  // person, which is falsified HR data.
+
+  // ONE choke point for read-only. Every write goes through supabase.from(), so
+  // refusing there covers all 20+ handlers at once — no per-handler checks to
+  // forget. Returns the SAME shape supabase returns, so existing `if (error)`
+  // paths report it cleanly instead of throwing an unhandled rejection.
+  function installWriteGuard() {
+    if (__writeGuardOn) return;
+    const origFrom = supabase.from.bind(supabase);
+    supabase.from = function (table) {
+      const q = origFrom(table);
+      if (!VIEW_AS) return q;
+      ['insert', 'update', 'upsert', 'delete'].forEach(m => {
+        q[m] = () => Promise.resolve({
+          data: null,
+          error: { message: 'Modo "Visto como" es de solo lectura. Toca "Salir" para poder editar.' }
+        });
+      });
+      return q;
+    };
+    __writeGuardOn = true;
+  }
+
+  function realLevel() {
+    const p = VIEW_AS ? __realProfile : currentProfile;
+    return p ? Number(p.level) : null;
+  }
+
+  async function openViewAsPicker() {
+    const modal = $('viewas-modal'), list = $('viewas-list');
+    if (!modal || !list) return;
+    list.innerHTML = '<div class="msg">Cargando…</div>';
+    modal.classList.remove('hidden');
+    const [lv, pr] = await Promise.all([
+      supabase.from('role_levels').select('role,level,rank_label').order('level'),
+      supabase.from('profiles').select('name,role,branch,level').eq('active', true).order('name')
+    ]);
+    const meta = {};
+    (lv.data || []).forEach(r => { meta[r.level] = r.rank_label; });
+    const byLevel = {};
+    (pr.data || []).forEach(p => {
+      const L = (p.level == null) ? 99 : p.level;
+      (byLevel[L] = byLevel[L] || []).push(p);
+    });
+    let html = '';
+    Object.keys(byLevel).map(Number).sort((a, b) => a - b).forEach(L => {
+      html += '<div style="font-weight:700;font-size:0.8rem;color:var(--muted);margin:10px 0 4px;">Nivel '
+            + (L === 99 ? '—' : L) + (meta[L] ? ' · ' + esc(meta[L]) : '') + '</div>';
+      byLevel[L].forEach(p => {
+        html += '<button class="btn btn-outline viewas-pick"'
+              + ' data-name="' + escAttr(p.name) + '"'
+              + ' data-role="' + escAttr(p.role || '') + '"'
+              + ' data-branch="' + escAttr(p.branch || '') + '"'
+              + ' data-level="' + (p.level == null ? '' : p.level) + '"'
+              + ' style="width:100%;text-align:left;margin:4px 0;font-size:0.85rem;">'
+              + esc(p.name) + ' <span style="color:var(--muted);">· '
+              + esc(p.role || '') + ' · ' + esc(p.branch || '') + '</span></button>';
+      });
+    });
+    list.innerHTML = html || '<div class="msg">Sin perfiles.</div>';
+  }
+
+  function viewAsProfile(name, role, branch, level) {
+    if (!VIEW_AS) __realProfile = currentProfile;
+    VIEW_AS = { name: name, role: role, branch: branch, level: (level === '' ? null : Number(level)) };
+    installWriteGuard();
+    currentProfile = VIEW_AS;
+    const b = $('viewas-banner'), l = $('viewas-label');
+    if (l) l.textContent = '👁 Visto como: ' + name + ' · ' + (role || '');
+    if (b) b.classList.remove('hidden');
+    const m = $('viewas-modal'); if (m) m.classList.add('hidden');
+    goHome();
+    loadUser();                      // re-run every role gate with the new role
+  }
+
+  function exitViewAs() {
+    VIEW_AS = null;
+    currentProfile = __realProfile || currentProfile;
+    __realProfile = null;
+    const b = $('viewas-banner'); if (b) b.classList.add('hidden');
+    goHome();
+    loadUser();
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target || !e.target.closest) return;
+    if (e.target.closest('#viewas-exit')) { exitViewAs(); return; }
+    if (e.target.closest('#viewas-cancel')) {
+      const m = $('viewas-modal'); if (m) m.classList.add('hidden');
+      return;
+    }
+    const pick = e.target.closest('.viewas-pick');
+    if (pick) {
+      viewAsProfile(pick.getAttribute('data-name'), pick.getAttribute('data-role'),
+                    pick.getAttribute('data-branch'), pick.getAttribute('data-level'));
+      return;
+    }
+    // Only level 1 (Dueño) may preview — nobody else, ever.
+    if (e.target.closest('#user-name')) { if (realLevel() === 1) openViewAsPicker(); }
+  });
+
+  // ============ EQUIPO — org chart, read-only (v0.149) =========================
+  async function loadEquipo() {
+    const body = $('equipo-body');
+    if (!body) return;
+    const [lv, pr] = await Promise.all([
+      supabase.from('role_levels').select('role,level,rank_label,responsibilities').order('level'),
+      supabase.from('profiles').select('name,role,branch,level').eq('active', true).order('name')
+    ]);
+    if (lv.error || pr.error) { body.innerHTML = '<div class="msg err">No se pudo cargar.</div>'; return; }
+    const meta = {};
+    (lv.data || []).forEach(r => { meta[r.level] = r; });
+    const byLevel = {};
+    (pr.data || []).forEach(p => {
+      const L = (p.level == null) ? 99 : p.level;
+      (byLevel[L] = byLevel[L] || []).push(p);
+    });
+    let html = '';
+    Object.keys(byLevel).map(Number).sort((a, b) => a - b).forEach(L => {
+      const people = byLevel[L], m = meta[L] || {};
+      const branches = {};
+      people.forEach(p => {
+        const k = p.branch || 'Sin sucursal';
+        (branches[k] = branches[k] || []).push(p);
+      });
+      html += '<div style="margin:0 0 18px;">'
+            + '<div style="font-weight:700;font-size:0.95rem;">Nivel ' + (L === 99 ? '—' : L)
+            + (m.rank_label ? ' · ' + esc(m.rank_label) : '')
+            + ' <span style="color:var(--muted);font-weight:400;">· ' + people.length
+            + (people.length === 1 ? ' persona' : ' personas') + '</span></div>';
+      if (m.responsibilities) {
+        html += '<div style="color:var(--muted);font-size:0.8rem;margin:2px 0 6px;">' + esc(m.responsibilities) + '</div>';
+      }
+      Object.keys(branches).sort().forEach(bn => {
+        html += '<div style="margin:6px 0 0 10px;font-size:0.85rem;"><b>' + esc(bn) + '</b>'
+              + ' <span style="color:var(--muted);">(' + branches[bn].length + ')</span>'
+              + '<ul style="margin:4px 0 0 16px;">';
+        branches[bn].forEach(p => {
+          html += '<li>' + esc(p.name) + ' <span style="color:var(--muted);">· ' + esc(p.role) + '</span></li>';
+        });
+        html += '</ul></div>';
+      });
+      html += '</div>';
+    });
+    body.innerHTML = html || '<div class="msg">Sin datos.</div>';
   }
 
   // ---- [stepper] ± buttons (v0.113) ----
