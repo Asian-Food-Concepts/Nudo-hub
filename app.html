@@ -1232,12 +1232,13 @@
               <div class="field"><label>Nombre completo *</label><input type="text" id="u-name" placeholder="Nombre"></div>
               <div class="field"><label>Correo (login) *</label><input type="email" id="u-email" placeholder="correo@ejemplo.com"></div>
               <div class="field"><label>Rol *</label>
+                <!-- v0.147: options come from role_levels, NOT a hardcoded list.
+                     A hardcoded list is a second source of truth — pick a role that
+                     isn't in role_levels and that profile gets level = NULL, which
+                     matches NO access check and silently disappears from every
+                     leader query. The hierarchy table is the source of truth. -->
                 <select id="u-role" class="panelist-select" style="width:100%;">
-                  <option value="">— Elegir rol —</option>
-                  <option>Dueño</option><option>Gerente</option><option>Gerente Regional</option>
-                  <option>Capitán</option><option>Capitán de Piso</option><option>Capitána de Piso</option>
-                  <option>Encargado de Barra</option><option>Encargada de Barra</option>
-                  <option>Cocina</option><option>Barra</option><option>Mesero</option>
+                  <option value="">— Cargando roles… —</option>
                 </select>
               </div>
               <div class="field"><label>Sucursal</label>
@@ -1314,7 +1315,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.146";
+  const APP_VERSION = "v0.147";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -2026,7 +2027,7 @@
       if (f === 'estatus') loadEstatus();
       if (f === 'entrevistas') { loadEntrevistas(); loadPanelistRoster(); if (window.__slidePuestoReposition) window.__slidePuestoReposition(); }
       if (f === 'entrevistados') { loadEntrevistados(); }
-      if (f === 'usuarios') { loadUsuarios(); }
+      if (f === 'usuarios') { loadUsuarios(); loadRoleOptions(); }
       if (f === 'plan') loadPlanner();
       setActiveTab(null);
     });
@@ -4353,6 +4354,36 @@
       setTimeout(() => { resetForm('descansos'); clearMsg($('d-msg')); goHome(); }, 1400);
     });
   });
+
+  // v0.147 — role dropdown driven by role_levels, grouped by level.
+  // The Hub must never offer a role that has no level, or that person lands
+  // with level = NULL and matches no access rule.
+  let _roleOptionsLoaded = false;
+  async function loadRoleOptions() {
+    if (_roleOptionsLoaded) return;
+    const sel = $('u-role');
+    if (!sel) return;
+    const { data, error } = await supabase.from('role_levels')
+      .select('role,level,rank_label').order('level').order('role');
+    if (error || !data || !data.length) return;   // leave the select as-is
+    const frag = document.createDocumentFragment();
+    let cur = null, lastLevel = null;
+    data.forEach(r => {
+      if (r.level !== lastLevel) {
+        cur = document.createElement('optgroup');
+        cur.label = 'Nivel ' + r.level + (r.rank_label ? ' · ' + r.rank_label : '');
+        frag.appendChild(cur);
+        lastLevel = r.level;
+      }
+      const o = document.createElement('option');
+      o.value = r.role;
+      o.textContent = r.role;
+      cur.appendChild(o);
+    });
+    sel.innerHTML = '<option value="">— Elegir rol —</option>';
+    sel.appendChild(frag);
+    _roleOptionsLoaded = true;
+  }
 
   // ---- [stepper] ± buttons (v0.113) ----
   document.querySelectorAll('.stepper button').forEach(b => {
