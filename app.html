@@ -666,6 +666,11 @@
             <div class="text"><div class="title">Buzón de Sugerencias</div><div class="sub">Anónimo y opcional</div></div>
             <div class="arrow">›</div>
           </a>
+          <a class="card" href="#" data-form="descansos">
+            <div class="icon icon-form">🗓️</div>
+            <div class="text"><div class="title">Preferencia de Descansos</div><div class="sub">Llenar antes de las 10pm cada martes</div></div>
+            <div class="arrow">›</div>
+          </a>
         </div>
 
         <div class="section-title">Seguimiento</div>
@@ -987,6 +992,62 @@
         </div>
       </div>
 
+      <div id="form-descansos" class="form-page">
+        <button class="back" data-back><span class="chev">‹</span> Volver</button>
+        <div class="form-card" id="card-descansos">
+          <h2>🗓️ Preferencia de Descansos</h2>
+          <p style="color:var(--muted);font-size:0.9rem;margin:0 0 4px;">
+            Para la <strong>semana que viene</strong>. Límite: <strong>martes 10pm</strong>.
+          </p>
+          <p style="color:var(--muted);font-size:0.82rem;margin:0 0 14px;">
+            Prioridad del negocio · Primer llegado, primer servido · Rotación.
+            Lo que llegue después del martes 10pm no se considera para la semana siguiente.
+          </p>
+
+          <div class="field"><label>¿Cuántos días quieres trabajar?</label>
+            <div class="radio-group">
+              <label><input type="radio" name="d-dias" value="7"><span>7 días (sin descanso)</span></label>
+              <label><input type="radio" name="d-dias" value="6"><span>6 días (1 descanso)</span></label>
+              <label><input type="radio" name="d-dias" value="5"><span>5 días (normal)</span></label>
+            </div>
+          </div>
+
+          <!-- shown for 6 and 5 days -->
+          <div class="field hidden" id="d-rest1-wrap"><label>Primer día de descanso</label>
+            <div class="radio-group" id="d-rest1-group">
+              <label><input type="radio" name="d-rest1" value="Lunes"><span>Lunes</span></label>
+              <label><input type="radio" name="d-rest1" value="Martes"><span>Martes</span></label>
+              <label><input type="radio" name="d-rest1" value="Miércoles"><span>Miércoles</span></label>
+              <label><input type="radio" name="d-rest1" value="Jueves"><span>Jueves</span></label>
+              <label><input type="radio" name="d-rest1" value="Viernes"><span>Viernes</span></label>
+              <label><input type="radio" name="d-rest1" value="Sábado"><span>Sábado (con permiso)</span></label>
+              <label><input type="radio" name="d-rest1" value="Domingo"><span>Domingo (con permiso)</span></label>
+            </div>
+          </div>
+
+          <!-- shown only for 5 days -->
+          <div class="field hidden" id="d-rest2-wrap"><label>Segundo día de descanso</label>
+            <div class="radio-group" id="d-rest2-group">
+              <label><input type="radio" name="d-rest2" value="Lunes"><span>Lunes</span></label>
+              <label><input type="radio" name="d-rest2" value="Martes"><span>Martes</span></label>
+              <label><input type="radio" name="d-rest2" value="Miércoles"><span>Miércoles</span></label>
+              <label><input type="radio" name="d-rest2" value="Jueves"><span>Jueves</span></label>
+              <label><input type="radio" name="d-rest2" value="Viernes"><span>Viernes</span></label>
+              <label><input type="radio" name="d-rest2" value="Sábado"><span>Sábado (con permiso)</span></label>
+              <label><input type="radio" name="d-rest2" value="Domingo"><span>Domingo (con permiso)</span></label>
+            </div>
+            <div class="msg hidden" id="d-same">El primer y segundo día deben ser distintos.</div>
+          </div>
+
+          <div class="field"><label>Petición especial <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label>
+            <textarea id="d-special" rows="3" placeholder="Permisos futuros (fechas específicas) o cambios permanentes (ej. escuela: lunes y martes libres cada semana). Para fines de semana, avisa con 2 semanas de anticipación."></textarea>
+          </div>
+
+          <button class="btn" id="d-submit">Revisar antes de enviar</button>
+          <div class="msg hidden" id="d-msg"></div>
+        </div>
+      </div>
+
       <div id="form-horario" class="form-page">
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card">
@@ -1253,7 +1314,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.145";
+  const APP_VERSION = "v0.146";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -4223,6 +4284,75 @@
     else { el.textContent = `Faltan ${left} campos`; el.classList.remove('ok'); }
   }
   document.addEventListener('change', e => { if (e.target.closest && e.target.closest('#form-bitacora')) bitacoraReadiness(); });
+  
+  // ================= DESCANSOS — preferencias (v0.146) =================
+  // Conditional by design: how many days you work decides which rest-day questions
+  // EXIST. 7 días -> they have no rest days, so neither question is shown. 6 -> first
+  // only. 5 -> both. This is the fix for the Google Form, where everyone was asked
+  // for a second rest day they didn't have and leaned on "No aplicable".
+  function descansoSync() {
+    const sel = document.querySelector('input[name="d-dias"]:checked');
+    const n = sel ? Number(sel.value) : null;
+    if (!n) return;
+    const w1 = $('d-rest1-wrap'), w2 = $('d-rest2-wrap'), same = $('d-same');
+    if (w1) w1.classList.toggle('hidden', n === 7);
+    if (w2) w2.classList.toggle('hidden', n !== 5);
+    if (n === 7) {
+      document.querySelectorAll('input[name="d-rest1"],input[name="d-rest2"]').forEach(r => { r.checked = false; });
+      if (same) same.classList.add('hidden');
+    }
+    if (n === 6) {
+      document.querySelectorAll('input[name="d-rest2"]').forEach(r => { r.checked = false; });
+      if (same) same.classList.add('hidden');
+    }
+  }
+  document.addEventListener('change', e => {
+    if (!e.target || !e.target.closest) return;
+    if (e.target.closest('#form-descansos')) descansoSync();
+  });
+
+  document.addEventListener('click', async (e) => {
+    if (!e.target || !e.target.closest || !e.target.closest('#d-submit')) return;
+    e.preventDefault();
+    const sel = document.querySelector('input[name="d-dias"]:checked');
+    if (!sel) { showMsg($('d-msg'), 'Elige cuántos días quieres trabajar.', 'err'); return; }
+    const n = Number(sel.value);
+    const r1 = document.querySelector('input[name="d-rest1"]:checked');
+    const r2 = document.querySelector('input[name="d-rest2"]:checked');
+    if (n !== 7 && !r1) { showMsg($('d-msg'), 'Elige tu primer día de descanso.', 'err'); return; }
+    if (n === 5 && !r2) { showMsg($('d-msg'), 'Elige tu segundo día de descanso.', 'err'); return; }
+    if (n === 5 && r1 && r2 && r1.value === r2.value) {
+      showMsg($('d-msg'), 'El primer y segundo día deben ser distintos.', 'err'); return;
+    }
+    let user; try { user = await requireUser(); } catch (err) { return; }
+    // "la semana que viene" -> next Monday, local-date safe (no UTC shift)
+    const m = new Date(planMonday().getTime() + 7 * 86400000);
+    const ws = m.getFullYear() + '-' + String(m.getMonth() + 1).padStart(2, '0') + '-' + String(m.getDate()).padStart(2, '0');
+    const rows = [
+      ['Nombre', esc((currentProfile && currentProfile.name) || '—')],
+      ['Semana', ws],
+      ['Días a trabajar', n === 7 ? '7 (sin descanso)' : String(n)],
+      ['Primer descanso', n === 7 ? '—' : (r1 ? r1.value : '—')],
+      ['Segundo descanso', (n === 5 && r2) ? r2.value : '—'],
+      ['Petición especial', $('d-special').value.trim() || '—']
+    ];
+    openReview('🗓️ Revisa tu preferencia', rows, async () => {
+      $('d-submit').disabled = true;
+      const { error } = await supabase.from('descanso_requests').upsert({
+        week_start: ws,
+        staff_id: user.id,
+        staff_name: (currentProfile && currentProfile.name) || null,
+        days_requested: n,
+        rest_day_1: n === 7 ? null : (r1 ? r1.value : null),
+        rest_day_2: (n === 5 && r2) ? r2.value : null,
+        special_request: $('d-special').value.trim() || null
+      }, { onConflict: 'week_start,staff_id' });
+      if (error) { showMsg($('d-msg'), 'Error: ' + error.message, 'err'); $('d-submit').disabled = false; return; }
+      $('d-msg').textContent = '✅ Preferencia enviada — ' + ws;
+      $('d-msg').className = 'msg ok'; $('d-msg').classList.remove('hidden');
+      setTimeout(() => { resetForm('descansos'); clearMsg($('d-msg')); goHome(); }, 1400);
+    });
+  });
 
   // ---- [stepper] ± buttons (v0.113) ----
   document.querySelectorAll('.stepper button').forEach(b => {
