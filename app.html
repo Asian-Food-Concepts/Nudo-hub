@@ -1349,7 +1349,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.149";
+  const APP_VERSION = "v0.150";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1534,64 +1534,14 @@
   submitOnEnter($('email'), $('send-code'));
   submitOnEnter($('code'), $('verify-code'));
 
-  function normalizeMagicWord(str) {
-    return (str || '')
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\s+/g, '');
-  }
-
-  // ---- LOGIN ----
-  // TEST ACCOUNT bypass: typing a magic word (e.g. Ben's 123456 for Dueño
-  // access) signs in directly without email OTP. Kept after v0.123 removed
-  // the visible test-account buttons — staff never see this list.
-  const TEST_ACCOUNTS = {
-    // Ben's own accounts
-    '123456':          { email: 'test-pin@nudo.hub', password: 'NudoPin#123456' },
-    '112233':          { email: 'ben.captain@nudo.hub', password: 'NudoUg1J6g70GV!B' },
-    'bencapitan':      { email: 'ben.captain@nudo.hub', password: 'NudoUg1J6g70GV!B' },
-    'bencaptain':      { email: 'ben.captain@nudo.hub', password: 'NudoUg1J6g70GV!B' },
-    // v0.128 — PREVIEW accounts: one dedicated account per rank, created
-    // 2026-09-16. Each is a BRAND-NEW auth user + profiles row named
-    // "Vista previa - <Rank>" (branch 'Ambos'). They do NOT overlap with any
-    // live staff account, so previewing a rank can never touch real data or
-    // impersonate a real person (Ben: "a totally new profile that doesn't
-    // overlap with live accounts"). The legacy *.test@nudo.hub accounts still
-    // exist in the DB but are no longer mapped to any magic word.
-    'capitan':         { email: 'vista.capitan@nudo.hub',         password: 'Vista#OcFSm0T0rdSQuRInDALC' },
-    'capitanpiso':     { email: 'vista.capitanpiso@nudo.hub',     password: 'Vista#1jptMqKjAZ84Bo7yBmbI' },
-    'capitandepiso':   { email: 'vista.capitanpiso@nudo.hub',     password: 'Vista#1jptMqKjAZ84Bo7yBmbI' },
-    'mesero':          { email: 'vista.mesero@nudo.hub',          password: 'Vista#MbEpGom21pn1Zf0YKDi3' },
-    'cocina':          { email: 'vista.cocina@nudo.hub',          password: 'Vista#E0fqr384ctcd1R6ZQhjh' },
-    'barra':           { email: 'vista.barra@nudo.hub',           password: 'Vista#dQcmh4k1ZYGPndsW3h4v' },
-    'encargado':       { email: 'vista.encargado@nudo.hub',       password: 'Vista#CuNTdUjOzePx2jYsI0Hr' },
-    'encargadodebarra':{ email: 'vista.encargado@nudo.hub',       password: 'Vista#CuNTdUjOzePx2jYsI0Hr' },
-    'gerente':         { email: 'vista.gerente@nudo.hub',         password: 'Vista#RSNFw5qoksDahcmWnyJN' },
-    'gerenteregional': { email: 'vista.gerenteregional@nudo.hub', password: 'Vista#uC75q9Dx6QUVWO3gMgHu' },
-    'dueno':           { email: 'vista.dueno@nudo.hub',           password: 'Vista#zErAIQn50h1BnrGRJgRV' },
-  };
-  // v0.123: quick-login buttons removed from the login page (Ben: staff must
-  // not see test accounts). v0.132: the visible preview-page link was removed
-  // too (Ben) — the dev-preview URL is now unlisted, shared with Ben only.
-  // This magic-word path stays for Ben.
+  // ---- LOGIN — email OTP only ----
+  // v0.150 — the plaintext magic-word accounts are GONE. They sat in PUBLIC HTML,
+  // readable by anyone who viewed source, and each one signed you straight in as
+  // that rank. Ben logs in normally (email OTP) and previews other profiles with
+  // "Visto como" — read-only, level 1 only, no shared secret involved.
   $('send-code').addEventListener('click', async () => {
     const raw = $('email').value.trim();
     if (!raw) { showMsg($('login-msg'), 'Escribe tu correo', 'err'); return; }
-    const norm = normalizeMagicWord(raw);
-    const testAcct = TEST_ACCOUNTS[norm] || TEST_ACCOUNTS[raw];
-    if (testAcct) {
-      $('send-code').disabled = true;
-      showMsg($('login-msg'), 'Entrando con cuenta de prueba...', 'info');
-      const { error } = await supabase.auth.signInWithPassword({
-        email: testAcct.email, password: testAcct.password
-      });
-      if (error) { showMsg($('login-msg'), 'Error: ' + error.message, 'err'); $('send-code').disabled = false; return; }
-      await loadUser();
-      showApp();
-      return;
-    }
     const email = toEmail(raw);
     $('send-code').disabled = true;
     showMsg($('login-msg'), 'Enviando código...', 'info');
@@ -1669,7 +1619,7 @@
       await forceLogout('Tu acceso fue desactivado. Contacta al dueño.');
       return;
     }
-    const displayName = (currentProfile && currentProfile.name) || (user.email === 'test-pin@nudo.hub' ? 'Modo prueba' : (user.email || 'Equipo'));
+    const displayName = (currentProfile && currentProfile.name) || (user.email || 'Equipo');
     const role = (currentProfile && currentProfile.role) || '';
     $('user-name').textContent = displayName + (role ? ' · ' + role : '');
     $('header-sub').textContent = 'Bienvenido';
