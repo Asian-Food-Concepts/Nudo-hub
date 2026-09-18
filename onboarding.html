@@ -627,9 +627,9 @@
   function gv(id) { var e = $(id); return e ? (e.value || '').trim() : ''; }
   function setVal(id, val) { var e = $(id); if (!e || val == null) return; e.value = val; }
   function showAutosave() {
-    var t = $('autosave-toast');
-    t.classList.add('show');
-    setTimeout(function() { t.classList.remove('show'); }, 2000);
+    // Was 'Borrador guardado ✓' — an emoji tick, which Ben asked to remove, and a second
+    // style competing with markSaved(). Both paths now report the same thing.
+    markSaved();
   }
 
   var currentUser   = null;
