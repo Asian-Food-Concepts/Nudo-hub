@@ -1349,7 +1349,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.150";
+  const APP_VERSION = "v0.151";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -4289,17 +4289,13 @@
   // EXIST. 7 días -> they have no rest days, so neither question is shown. 6 -> first
   // only. 5 -> both. This is the fix for the Google Form, where everyone was asked
   // for a second rest day they didn't have and leaned on "No aplicable".
-  // The target week is "the Monday after the NEXT Tuesday 10pm deadline" — NOT a
-  // flat +7 from today. With a flat +7, a request made Wed-Sun resolves to a
-  // DIFFERENT week than the same request made Mon-Tue, and the Tuesday email and
-  // the form disagree about which week is being planned.
-  //   Mon or Tue -> the deadline is this week's Tuesday      -> Monday +7
-  //   Wed..Sun   -> the deadline is next week's Tuesday      -> Monday +14
+  // "Next week starts the COMING Monday" (Ben, verbatim). planMonday() is the Monday
+  // of the CURRENT week, so +7 is always the coming Monday — there are no weekday
+  // cases. Do not "fix" this into a deadline-relative +7/+14: that was tried and it
+  // wrote a week late for Wed-Sun submissions.
+  // Built from LOCAL date parts — toISOString() shifts the day for late-evening CDMX.
   function descansoWeekStart() {
-    const mon = planMonday();
-    const dow = new Date().getDay();                  // 0=Sun .. 6=Sat
-    const plus = (dow === 1 || dow === 2) ? 7 : 14;
-    const d = new Date(mon.getTime() + plus * 86400000);
+    const d = new Date(planMonday().getTime() + 7 * 86400000);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   function descansoSync() {
