@@ -1021,7 +1021,9 @@
    's3-rfc','s3-curp','s3-nss','s3-regimen','s3-banco','s3-clabe','s3-cuenta'
   ].forEach(function(id) {
     var el = $(id); if (!el) return;
-    el.addEventListener('blur',  scheduleAutoSave);
+    // blur saves immediately: leaving a field is an explicit act, so do not gamble on
+    // the debounce. Typing still debounces, so a burst is one write, not twenty.
+    el.addEventListener('blur',  saveNowSoon);
     el.addEventListener('input', scheduleAutoSave);
   });
 
