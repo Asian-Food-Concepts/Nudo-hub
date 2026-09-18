@@ -1350,7 +1350,9 @@
       var dob = nac.value;
       var expected = dob.slice(2,4) + dob.slice(5,7) + dob.slice(8,10);
       if (v.slice(4,10) !== expected) {
-        var curpDob = v.slice(8,10) + '/' + v.slice(6,8) + '/' + v.slice(4,6);
+        var yy = parseInt(v.slice(4,6), 10);
+        var yyyy = (yy <= (new Date().getFullYear() % 100)) ? (2000 + yy) : (1900 + yy);
+        var curpDob = v.slice(8,10) + '/' + v.slice(6,8) + '/' + yyyy;
         var typedDob = dob.slice(8,10) + '/' + dob.slice(5,7) + '/' + dob.slice(0,4);
         return { ok:false, reason:'Tu CURP dice ' + curpDob + ', pero en el paso 1 pusiste ' + typedDob + '.' };
       }
