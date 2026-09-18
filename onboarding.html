@@ -816,6 +816,10 @@
       currentStep  = qres.data.current_step || 1;
       if (qres.data.stage1_submitted_at) { currentStep = 'done'; showScreen('screen-done'); return; }
       await loadStepData(currentStep);
+        // Always load step 1 as well: the CURP is cross-checked against the birth date
+        // and sex from step 1, and if the hire resumes on a later step those fields were
+        // never populated, so the check silently skipped instead of catching a mismatch.
+      if (currentStep !== 1) await loadStepData(1);
       showScreen('screen-' + currentStep);
     } else {
       var ires = await supabase
