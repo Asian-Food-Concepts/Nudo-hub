@@ -84,6 +84,19 @@
     background:var(--input-bg); color:var(--ink);
     -webkit-appearance:none; appearance:none; }
   .field textarea { min-height:80px; resize:vertical; }
+  /* The form sets appearance:none on every select, so no select shows an arrow. That is
+     tolerable for a lone select but not for a three-box date picker: without an arrow the
+     boxes read as plain text. Scoped to the date fields so the rest of the form's look is
+     unchanged. (The other selects have the same issue — see the note in the report.) */
+  #s1-dia, #s1-mes, #s1-ano {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 11px 8px;
+    padding-right: 26px;
+    cursor: pointer;
+  }
+  #s1-dia:focus, #s1-mes:focus, #s1-ano:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
   .field input:focus, .field select:focus, .field textarea:focus {
     outline:2px solid var(--accent); outline-offset:-1px; }
   .field-hint { font-size:0.78rem; color:var(--muted); margin-top:4px; }
