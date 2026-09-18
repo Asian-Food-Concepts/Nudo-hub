@@ -101,8 +101,8 @@
     outline:2px solid var(--accent); outline-offset:-1px; }
   .field-hint { font-size:0.78rem; color:var(--muted); margin-top:4px; }
   .field-valid { position:relative; }
-  .field-valid .val-badge { position:absolute; right:14px; top:50%; transform:translateY(-50%);
-                             font-size:1rem; line-height:1; }
+  .field-valid .val-badge { display:none; font-size:0.78rem; font-weight:600; margin-top:5px;
+               line-height:1.35; color:var(--red); }
   .field-valid input { padding-right:44px; }
   .field input.ok  { border-color:var(--green); }
   .field input.err { border-color:var(--red); }
@@ -312,10 +312,45 @@
       <div class="section-sep">Domicilio fiscal (para timbrar nómina)</div>
       <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;">El domicilio que tienes registrado ante el SAT. Puede ser diferente a donde vives.</p>
       <div class="field">
-        <label for="s2-ciudad-fiscal">Ciudad del domicilio fiscal *</label>
-        <input type="text" id="s2-ciudad-fiscal" placeholder="Ej. Ciudad de México">
+        <label for="s2-ciudad-fiscal">Estado de domicilio fiscal *</label>
+        <select id="s2-ciudad-fiscal">
+          <option value="">— Seleccionar —</option>
+          <option value="Aguascalientes">Aguascalientes</option>
+          <option value="Baja California">Baja California</option>
+          <option value="Baja California Sur">Baja California Sur</option>
+          <option value="Campeche">Campeche</option>
+          <option value="Chiapas">Chiapas</option>
+          <option value="Chihuahua">Chihuahua</option>
+          <option value="Ciudad de México">Ciudad de México</option>
+          <option value="Coahuila">Coahuila</option>
+          <option value="Colima">Colima</option>
+          <option value="Durango">Durango</option>
+          <option value="Estado de México">Estado de México</option>
+          <option value="Guanajuato">Guanajuato</option>
+          <option value="Guerrero">Guerrero</option>
+          <option value="Hidalgo">Hidalgo</option>
+          <option value="Jalisco">Jalisco</option>
+          <option value="Michoacán">Michoacán</option>
+          <option value="Morelos">Morelos</option>
+          <option value="Nayarit">Nayarit</option>
+          <option value="Nuevo León">Nuevo León</option>
+          <option value="Oaxaca">Oaxaca</option>
+          <option value="Puebla">Puebla</option>
+          <option value="Querétaro">Querétaro</option>
+          <option value="Quintana Roo">Quintana Roo</option>
+          <option value="San Luis Potosí">San Luis Potosí</option>
+          <option value="Sinaloa">Sinaloa</option>
+          <option value="Sonora">Sonora</option>
+          <option value="Tabasco">Tabasco</option>
+          <option value="Tamaulipas">Tamaulipas</option>
+          <option value="Tlaxcala">Tlaxcala</option>
+          <option value="Veracruz">Veracruz</option>
+          <option value="Yucatán">Yucatán</option>
+          <option value="Zacatecas">Zacatecas</option>
+        </select>
+        <div class="field-hint">Las 32 entidades. Así los registros quedan alineados.</div>
       </div>
-      <div class="field field-valid">
+      <div class="field">
         <label for="s2-cp-fiscal">Código postal fiscal * (5 dígitos)</label>
         <input type="text" id="s2-cp-fiscal" inputmode="numeric" maxlength="5" placeholder="12345">
         <span class="val-badge" id="cp-badge"></span>
@@ -323,6 +358,8 @@
       <div class="field">
         <label for="s2-dir-fiscal">Dirección fiscal completa *</label>
         <input type="text" id="s2-dir-fiscal" placeholder="Calle, número, colonia, alcaldía">
+        <button type="button" class="btn btn-outline btn-sm" id="s2-copy-dir"
+                style="margin-top:8px;">&#10697; Copiar de «dirección donde vives»</button>
         <div class="field-hint">Ej. Av. Insurgentes 100, Col. Roma Norte, Cuauhtémoc</div>
       </div>
       <div class="msg hidden" id="s2-msg"></div>
@@ -357,18 +394,48 @@
       </div>
       <div class="field">
         <label for="s3-regimen">Régimen fiscal (opcional)</label>
-        <select id="s3-regimen">
+        <select id="s3-regimen-sel">
           <option value="">— Seleccionar —</option>
           <option value="605">605 · Sueldos y Salarios e Ingresos Asimilados</option>
-          <option value="621">621 · Actividades Empresariales y Profesionales</option>
-          <option value="626">626 · RESICO (Régimen Simplificado de Confianza)</option>
-          <option value="Otro">Otro</option>
+          <option value="__otro__">Otros</option>
         </select>
+        <input type="text" id="s3-regimen-otro" placeholder="Escribe tu régimen fiscal"
+               maxlength="60" style="display:none;margin-top:8px;">
+        <input type="hidden" id="s3-regimen">
       </div>
       <div class="section-sep">Datos bancarios</div>
       <div class="field">
         <label for="s3-banco">Nombre del banco *</label>
-        <input type="text" id="s3-banco" placeholder="Ej. BBVA, Santander, Banamex">
+        <select id="s3-banco-sel">
+          <option value="">— Seleccionar —</option>
+          <option value="Banamex">Banamex</option>
+          <option value="BBVA">BBVA</option>
+          <option value="Santander">Santander</option>
+          <option value="Banorte">Banorte</option>
+          <option value="HSBC">HSBC</option>
+          <option value="Scotiabank">Scotiabank</option>
+          <option value="Inbursa">Inbursa</option>
+          <option value="Bajío">Bajío</option>
+          <option value="Banregio">Banregio</option>
+          <option value="Afirme">Afirme</option>
+          <option value="BanCoppel">BanCoppel</option>
+          <option value="Azteca">Banco Azteca</option>
+          <option value="Mifel">Mifel</option>
+          <option value="CI Banco">CI Banco</option>
+          <option value="Bineo">Bineo</option>
+          <option value="Nu">Nu</option>
+          <option value="Klar">Klar</option>
+          <option value="Albo">Albo (STP)</option>
+          <option value="STP">STP</option>
+          <option value="Caja Popular Mexicana">Caja Popular Mexicana</option>
+          <option value="Banjercito">Banjercito</option>
+          <option value="Bancomext">Bancomext</option>
+          <option value="Banobras">Banobras</option>
+          <option value="Otro">Otros</option>
+        </select>
+        <input type="text" id="s3-banco-otro" placeholder="Escribe el nombre del banco"
+               maxlength="40" style="display:none;margin-top:8px;">
+        <input type="hidden" id="s3-banco">
       </div>
       <div class="field field-valid">
         <label for="s3-clabe">CLABE interbancaria * (18 dígitos)</label>
@@ -811,6 +878,8 @@
       setVal('s3-nss',     data.nss);
       setVal('s3-regimen', data.regimen_fiscal);
       setVal('s3-banco',   data.banco);
+        if (regimenPair) regimenPair.syncFromHidden();
+        if (bancoPair) bancoPair.syncFromHidden();
       setVal('s3-clabe',   data.clabe);
       setVal('s3-cuenta',  data.numero_cuenta);
     }
@@ -855,6 +924,7 @@
   }
   ['s1-nombres','s1-paterno','s1-materno','s1-apodo','s1-nacimiento','s1-estado-civil','s1-nacionalidad',
      's1-dia','s1-mes','s1-ano','s1-nac-otra',
+     's3-banco-sel','s3-banco-otro','s3-regimen-sel','s3-regimen-otro',
    's2-movil','s2-direccion','s2-ciudad-fiscal','s2-cp-fiscal','s2-dir-fiscal',
    's3-rfc','s3-curp','s3-nss','s3-regimen','s3-banco','s3-clabe','s3-cuenta'
   ].forEach(function(id) {
@@ -981,6 +1051,65 @@
       if (otra) { otra.style.display = ''; otra.value = v; }
     }
   }
+
+
+  // ============================================================
+  // s3: régimen fiscal y banco usan un <select> + "Otros" con texto libre.
+  // Como en los demás controles nuevos, el valor final vive en un input OCULTO que
+  // conserva el id original, así que buildP3() y setVal() no cambian.
+  // ============================================================
+  function pickerPair(selId, otherId, hiddenId) {
+    var sel = $(selId), other = $(otherId), hid = $(hiddenId);
+    if (!sel || !hid) return null;
+    function apply() {
+      var isOtra = (sel.value === '__otro__') || (sel.value === 'Otro');
+      if (other) {
+        other.style.display = isOtra ? '' : 'none';
+        if (!isOtra) other.value = '';
+      }
+      hid.value = isOtra ? (other ? other.value.trim() : '') : sel.value;
+    }
+    sel.addEventListener('change', apply);
+    if (other) other.addEventListener('input', apply);
+    apply();
+    return {
+      apply: apply,
+      syncFromHidden: function () {
+        var v = String(hid.value || '').trim();
+        var opt = sel.querySelector('option[value="' + v.replace(/"/g, '') + '"]');
+        if (v && opt) {
+          sel.value = v;
+          if (other) { other.style.display = 'none'; other.value = ''; }
+        } else if (v) {
+          sel.value = sel.querySelector('option[value="Otro"], option[value="__otro__"]') ? 'Otro' : '';
+          if (sel.querySelector('option[value="__otro__"]')) sel.value = '__otro__';
+          if (other) { other.style.display = ''; other.value = v; }
+        }
+        apply();
+      }
+    };
+  }
+  var regimenPair = pickerPair('s3-regimen-sel', 's3-regimen-otro', 's3-regimen');
+  var bancoPair   = pickerPair('s3-banco-sel', 's3-banco-otro', 's3-banco');
+
+  // ---- "copiar dirección donde vives" ----
+  (function () {
+    var btn = $('s2-copy-dir');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var from = $('s2-direccion'), to = $('s2-dir-fiscal');
+      if (!from || !to) return;
+      if (!from.value.trim()) {
+        showMsg($('s2-msg'), 'Primero escribe tu dirección donde vives.', 'err');
+        return;
+      }
+      to.value = from.value.trim();
+      to.classList.remove('err');
+      to.dispatchEvent(new Event('input', { bubbles: true }));
+      clearMsg($('s2-msg'));
+      showToast('Dirección fiscal copiada. Ajústala si tu situación fiscal es distinta.', 'ok');
+    });
+  })();
 
   buildDatePicker();
   ['s1-dia', 's1-mes', 's1-ano'].forEach(function (id) {
@@ -1220,13 +1349,18 @@
     if (nac && nac.value) {
       var dob = nac.value;
       var expected = dob.slice(2,4) + dob.slice(5,7) + dob.slice(8,10);
-      if (v.slice(4,10) !== expected)
-        return { ok:false, reason:'La fecha del CURP no coincide con la fecha de nacimiento' };
+      if (v.slice(4,10) !== expected) {
+        var curpDob = v.slice(8,10) + '/' + v.slice(6,8) + '/' + v.slice(4,6);
+        var typedDob = dob.slice(8,10) + '/' + dob.slice(5,7) + '/' + dob.slice(0,4);
+        return { ok:false, reason:'Tu CURP dice ' + curpDob + ', pero en el paso 1 pusiste ' + typedDob + '.' };
+      }
     }
     var sexo = getSexo();
     var cs = v[10];
-    if (sexo === 'Hombre' && cs !== 'H') return { ok:false, reason:'El sexo en el CURP debe ser H (Hombre)' };
-    if (sexo === 'Mujer'  && cs !== 'M') return { ok:false, reason:'El sexo en el CURP debe ser M (Mujer)' };
+    if (sexo === 'Hombre' && cs !== 'H')
+        return { ok:false, reason:'Tu CURP indica sexo M (mujer), pero en el paso 1 elegiste Hombre.' };
+      if (sexo === 'Mujer' && cs !== 'M')
+        return { ok:false, reason:'Tu CURP indica sexo H (hombre), pero en el paso 1 elegiste Mujer.' };
     return { ok:true };
   }
 
@@ -1234,15 +1368,29 @@
   function validateRFC(v) { return /^[A-Z&Ñ]{4}\d{6}[0-9A-Z]{3}$/.test(v); }
 
   // NSS Luhn-style (IMSS algorithm)
-  function validateNSS(v) {
-    if (!/^\d{11}$/.test(v)) return false;
+  // IMSS check digit: weights 1,2,1,2,... over the FIRST TEN digits (even positions
+  // doubled; a two-digit product has its digits summed). The old version doubled the
+  // ODD positions, so every genuine NSS was rejected. Verified against the worked
+  // examples 9298808449 -> 4 and 3090682493 -> 0.
+  function nssCheckDigit(firstTen) {
     var sum = 0;
-    for (var i = 0; i < 11; i++) {
-      var d = parseInt(v[i],10);
-      if (i % 2 === 0) { d *= 2; if (d > 9) d -= 9; }
-      sum += d;
+    for (var i = 0; i < 10; i++) {
+      var factor = (i % 2 === 1) ? 2 : 1;
+      var v = parseInt(firstTen[i], 10) * factor;
+      sum += (v > 9) ? (1 + (v % 10)) : v;
     }
-    return sum % 10 === 0;
+    return (sum * 9) % 10;
+  }
+  function validateNSS(v) {
+    v = String(v || '').trim();
+    if (!/^\d{11}$/.test(v)) return false;
+    return parseInt(v[10], 10) === nssCheckDigit(v.slice(0, 10));
+  }
+  function nssReason(v) {
+    v = String(v || '').trim();
+    if (!/^\d{11}$/.test(v)) return 'El NSS debe tener 11 dígitos.';
+    var exp = nssCheckDigit(v.slice(0, 10));
+    return 'El último dígito no cuadra: debería ser ' + exp + '. Revisa el número.';
   }
 
   // CP: 5 digits
@@ -1250,12 +1398,19 @@
 
   function setBadge(badgeId, ok, reason) {
     var badge = $(badgeId); if (!badge) return;
-    badge.textContent = ok ? '✅' : '❌';
-    badge.title = ok ? 'Válido' : (reason || 'Inválido');
+    // Walk back to the control this note belongs to (input or select).
     var inp = badge.previousElementSibling;
-    if (inp && inp.tagName === 'INPUT') {
-      inp.classList.toggle('ok', ok);
+    while (inp && inp.tagName !== 'INPUT' && inp.tagName !== 'SELECT') inp = inp.previousElementSibling;
+    if (inp) {
+      inp.classList.toggle('ok', !!ok);
       inp.classList.toggle('err', !ok);
+    }
+    if (ok) {
+      badge.textContent = '';
+      badge.style.display = 'none';
+    } else {
+      badge.textContent = reason || 'Revisa este dato.';
+      badge.style.display = 'block';
     }
   }
 
