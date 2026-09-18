@@ -637,6 +637,73 @@
     $('ob-code').value = ''; $('ob-email').focus();
   });
 
+
+  // ============================================================
+  // FAILURE REPORTING (Ben 2026-09-18)
+  // Every failure is announced to the person filling the form, and structural
+  // failures (the ones they cannot fix themselves) are emailed to the operator
+  // with the owner cc'd, so a broken form is never discovered days later.
+  // ============================================================
+
+  // ---- Toast: a visible, self-dismissing banner. Nothing fails silently. ----
+  function showToast(msg, kind) {
+    try {
+      var wrap = document.getElementById('toast-wrap');
+      if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.id = 'toast-wrap';
+        wrap.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:18px;' +
+          'z-index:99999;display:flex;flex-direction:column;gap:8px;max-width:92vw;width:max-content;';
+        document.body.appendChild(wrap);
+      }
+      var C = { err:  { bg:'#fde8e8', bd:'#cc3333', fg:'#7a1c1c' },
+                warn: { bg:'#fff4e5', bd:'#e0a800', fg:'#6b4a00' },
+                ok:   { bg:'#e8f7ee', bd:'#1f7a4d', fg:'#14512f' },
+                info: { bg:'#eef4fb', bd:'#2f6fb5', fg:'#1c4470' } };
+      var c = C[kind] || C.info;
+      var el = document.createElement('div');
+      el.textContent = msg;
+      el.style.cssText = 'background:' + c.bg + ';border-left:5px solid ' + c.bd + ';color:' + c.fg +
+        ';padding:11px 14px;border-radius:8px;font:14px/1.35 system-ui,-apple-system,sans-serif;' +
+        'box-shadow:0 4px 16px rgba(0,0,0,.18);opacity:0;transition:opacity .18s;';
+      wrap.appendChild(el);
+      requestAnimationFrame(function () { el.style.opacity = '1'; });
+      setTimeout(function () {
+        el.style.opacity = '0';
+        setTimeout(function () { el.remove(); }, 250);
+      }, kind === 'err' ? 10000 : 6000);
+    } catch (_) { /* never let the toast itself break the form */ }
+  }
+
+  // ---- Structural failure -> email the operator (katto), owner cc'd ----
+  // Deduped per session per kind: a retry loop must not send 50 emails.
+  var REPORTED = {};
+  function reportFailure(kind, detail, ctx) {
+    if (REPORTED[kind]) return;
+    REPORTED[kind] = true;
+    try {
+      var payload = { mode: 'report', kind: String(kind).slice(0, 80),
+                      detail: String(detail || '').slice(0, 900),
+                      context: ctx || {} };
+      supabase.auth.getSession().then(function (s) {
+        var sess = s && s.data && s.data.session;
+        var headers = { 'Content-Type': 'application/json' };
+        if (sess) headers['Authorization'] = 'Bearer ' + sess.access_token;
+        return fetch(VERIFY_FN_URL, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
+      }).catch(function () { /* best effort: the toast already told the user */ });
+    } catch (_) {}
+  }
+
+  // ---- Anything uncaught is also a structural failure ----
+  window.addEventListener('error', function (e) {
+    showToast('Ocurrió un error inesperado. Puedes intentar de nuevo.', 'err');
+    reportFailure('js_error', (e && e.message) || 'error', { archivo: (e && e.filename) || '', linea: (e && e.lineno) || '' });
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e && e.reason;
+    reportFailure('promise_rejection', (r && (r.message || r)) || 'rejection', {});
+  });
+
   // ---- POST-AUTH: resume or create row ----
   async function initAfterAuth() {
     var qres = await supabase
@@ -645,7 +712,10 @@
       .eq('auth_user_id', currentUser.id)
       .maybeSingle();
     if (qres.error && qres.error.code !== 'PGRST116') {
-      showMsg($('auth-msg'), 'Error al recuperar tu registro: ' + qres.error.message, 'err'); return;
+      showMsg($('auth-msg'), 'Error al recuperar tu registro: ' + qres.error.message, 'err');
+      showToast('No pudimos abrir tu expediente. Avisa a tu contacto de Nudo.', 'err');
+      reportFailure('no_se_pudo_leer_expediente', qres.error.message, { code: qres.error.code || '' });
+      return;
     }
     if (qres.data) {
       onboardingId = qres.data.id;
@@ -659,7 +729,13 @@
         .insert({ auth_user_id: currentUser.id, email: currentUser.email, current_step: 1 })
         .select('id')
         .single();
-      if (ires.error) { showMsg($('auth-msg'), 'Error al crear registro: ' + ires.error.message, 'err'); return; }
+      if (ires.error) {
+        showMsg($('auth-msg'), 'Error al crear registro: ' + ires.error.message, 'err');
+        showToast('No pudimos crear tu expediente. Avisa a tu contacto de Nudo.', 'err');
+        reportFailure('no_se_pudo_crear_expediente', ires.error.message,
+                      { code: ires.error.code || '', details: ires.error.details || '', hint: ires.error.hint || '' });
+        return;
+      }
       onboardingId = ires.data.id;
       currentStep  = 1;
       showScreen('screen-1');
@@ -716,6 +792,10 @@
     payload.current_step = nextStep;
     payload.updated_at   = new Date().toISOString();
     var { error } = await supabase.from('onboarding').update(payload).eq('id', onboardingId);
+    if (error) {
+      showToast('No se pudieron guardar tus datos. Revisa tu conexión e intenta de nuevo.', 'err');
+      reportFailure('no_se_pudo_guardar_paso', error.message, { code: error.code || '', paso: nextStep });
+    }
     if (!error) { currentStep = nextStep; updateStepsBar(); }
     return error;
   }
@@ -732,7 +812,14 @@
       if (currentStep === 3) payload = buildP3();
       if (!payload) return;
       payload.updated_at = new Date().toISOString();
-      await supabase.from('onboarding').update(payload).eq('id', onboardingId);
+      // This used to ignore its error entirely: an auto-save could fail forever with no
+      // sign to anyone. Now a failure is visible and reported.
+      var autosave = await supabase.from('onboarding').update(payload).eq('id', onboardingId);
+      if (autosave && autosave.error) {
+        showToast('No se pudo guardar automáticamente. Tus datos siguen en pantalla; intenta continuar.', 'warn');
+        reportFailure('autoguardado_fallido', autosave.error.message, { code: autosave.error.code || '', paso: currentStep });
+        return;
+      }
       showAutosave();
     }, 30000);
   }
@@ -898,7 +985,10 @@
         var { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
         if (upErr) {
           statusEl.className = 'doc-status error';
-          statusEl.textContent = '❌ Error al subir: ' + upErr.message; return;
+          statusEl.textContent = '❌ Error al subir: ' + upErr.message;
+          showToast('No se pudo subir el archivo. Intenta de nuevo.', 'err');
+          reportFailure('carga_fallida', upErr.message, { tipo: cfg.docType });
+          return;
         }
         var { data: docRow, error: docErr } = await supabase.from('onboarding_documents')
           .insert({ onboarding_id:onboardingId, doc_type:cfg.docType,
@@ -906,7 +996,10 @@
           .select('id').single();
         if (docErr) {
           statusEl.className = 'doc-status error';
-          statusEl.textContent = '❌ Error al registrar: ' + docErr.message; return;
+          statusEl.textContent = '❌ Error al registrar: ' + docErr.message;
+          showToast('No se pudo registrar el archivo. Intenta de nuevo.', 'err');
+          reportFailure('registro_documento_fallido', docErr.message, { tipo: cfg.docType });
+          return;
         }
         // Kick off server-side verification (fire-and-forget).
         // The DB trigger blocks this client from writing verdict columns.
@@ -926,12 +1019,21 @@
     try {
       var sess = (await supabase.auth.getSession()).data.session;
       if (!sess) return;
-      await fetch(VERIFY_FN_URL, {
+      var vres = await fetch(VERIFY_FN_URL, {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + sess.access_token },
         body: JSON.stringify({ doc_id:docId, onboarding_id:onboardingId }),
       });
-    } catch (_) { /* non-fatal */ }
+      if (!vres.ok) {
+        // An unverified document is exactly what nobody notices until review day.
+        showToast('No pudimos verificar este documento automáticamente. Ben lo revisará.', 'warn');
+        reportFailure('verificacion_fallida', 'HTTP ' + vres.status, { doc_id: docId });
+      }
+    } catch (e) {
+      // Non-fatal for the hire (the document IS stored) but it must not be invisible.
+      showToast('No pudimos verificar este documento automáticamente. Ben lo revisará.', 'warn');
+      reportFailure('verificacion_sin_respuesta', String((e && e.message) || e), { doc_id: docId });
+    }
   }
 
   // ============================================================
