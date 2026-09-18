@@ -72,6 +72,16 @@
   .step-dot.done   { border-color:var(--green);  background:var(--green);  color:#fff; }
   .step-line { flex:1; height:2px; background:var(--border); max-width:40px; }
   .step-line.done { background:var(--green); }
+
+  /* Step indicator: names on wider screens, numbers always. */
+  .step-dot { width:auto; min-width:34px; padding:0 10px; gap:6px; cursor:pointer;
+              grid-auto-flow:column; display:inline-flex; align-items:center; justify-content:center; }
+  .step-dot .step-num { font-weight:700; }
+  .step-dot .step-name { font-size:0.72rem; font-weight:600; display:none; }
+  .step-dot.active .step-name, .step-dot.done .step-name { display:inline; }
+  @media (max-width:520px) { .step-dot .step-name { display:none !important; } }
+  .step-hint { text-align:center; font-size:0.8rem; color:var(--muted); margin:-10px 0 18px; }
+
   .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
           padding:22px; box-shadow:0 1px 3px var(--shadow); margin-bottom:14px; }
   .card h2 { font-size:1.15rem; font-weight:700; margin-bottom:6px; }
@@ -217,15 +227,16 @@
     <div class="progress-wrap">
       <div class="progress-fill" id="progress-fill" style="width:25%;"></div>
     </div>
-    <div class="steps-bar">
-      <div class="step-dot active" id="sd-1">1</div>
+    <div class="steps-bar" role="navigation" aria-label="Pasos del registro">
+      <button type="button" class="step-dot" id="sd-1" data-step="1"><span class="step-num">1</span><span class="step-name">Tus datos</span></button>
       <div class="step-line" id="sl-1"></div>
-      <div class="step-dot" id="sd-2">2</div>
+      <button type="button" class="step-dot" id="sd-2" data-step="2"><span class="step-num">2</span><span class="step-name">Contacto</span></button>
       <div class="step-line" id="sl-2"></div>
-      <div class="step-dot" id="sd-3">3</div>
+      <button type="button" class="step-dot" id="sd-3" data-step="3"><span class="step-num">3</span><span class="step-name">Fiscal y banco</span></button>
       <div class="step-line" id="sl-3"></div>
-      <div class="step-dot" id="sd-4">4</div>
+      <button type="button" class="step-dot" id="sd-4" data-step="4"><span class="step-num">4</span><span class="step-name">Documentos</span></button>
     </div>
+    <p class="step-hint" id="step-hint"></p>
   </div>
 
   <!-- SCREEN 1: DATOS PERSONALES -->
@@ -633,8 +644,15 @@
     window.scrollTo(0, 0);
   }
 
+  var STEP_INFO = {
+    1: "Datos personales: nombre completo, sexo, fecha de nacimiento y estado civil.",
+    2: "Cómo te contactamos y dónde vives, más tu domicilio fiscal (32 entidades).",
+    3: "Ten a la mano tu RFC, CURP, NSS y tu CLABE interbancaria.",
+    4: "Sube tu INE, CSF, NSS y comprobante de domicilio, y envía tu solicitud."
+  };
+
   function updateStepsBar() {
-    var step = (typeof currentStep === 'number') ? currentStep : 5;
+    var step = (typeof currentStep === 'number') ? currentStep : 4;
     var fill = $('progress-fill');
     if (fill) fill.style.width = Math.min((step / 4) * 100, 100) + '%';
     for (var i = 1; i <= 4; i++) {
@@ -643,10 +661,69 @@
       if (dot) {
         dot.classList.toggle('active', i === step);
         dot.classList.toggle('done',   i < step);
+        // aria-current is what tells a screen reader which step is active; a purely
+        // visual "active" class leaves those users without orientation.
+        if (i === step) dot.setAttribute('aria-current', 'step');
+        else dot.removeAttribute('aria-current');
       }
       if (line) line.classList.toggle('done', i < step);
     }
+    var hint = $('step-hint');
+    if (hint) hint.textContent = STEP_INFO[step] || '';
   }
+
+  // Clickable steps. Ben chose FREE navigation, so any step can be opened in any
+  // order. Data is never lost: leaving a step writes a draft first, and every step
+  // re-loads from the saved row. The pre-submit gate below is what makes free
+  // navigation safe — without it, jumping to step 4 could submit an empty form.
+  async function goToStep(n) {
+    n = parseInt(n, 10);
+    if (!n || n < 1 || n > 4) return;
+    if (typeof currentStep === 'number' && currentStep !== n && onboardingId) {
+      await saveDraftNow();
+    }
+    currentStep = n;
+    await loadStepData(n);
+    updateStepsBar();
+    showScreen('screen-' + n);
+  }
+
+  (function wireStepButtons() {
+    for (var i = 1; i <= 4; i++) {
+      var dot = $('sd-' + i);
+      if (!dot) continue;
+      dot.addEventListener('click', function () {
+        goToStep(this.getAttribute('data-step'));
+      });
+    }
+  })();
+
+  // ---- Pre-submit gate: name the incomplete step and take them there ----
+  async function firstIncompleteStep() {
+    var res = await supabase.from('onboarding').select('*').eq('id', onboardingId).maybeSingle();
+    var r = (res && res.data) || {};
+    var miss = function (arr, step, label) { return arr.some(function (v) { return !v || !String(v).trim(); }) ? { step: step, what: label } : null; };
+    if (miss([r.nombres], 1, 'tu nombre')) return { step: 1, what: 'tu nombre' };
+    if (!r.apellido_paterno) return { step: 1, what: 'tu apellido paterno' };
+    if (!r.sexo) return { step: 1, what: 'tu sexo' };
+    if (!r.fecha_nacimiento) return { step: 1, what: 'tu fecha de nacimiento' };
+    if (!r.estado_civil) return { step: 1, what: 'tu estado civil' };
+    if (!r.nacionalidad) return { step: 1, what: 'tu nacionalidad' };
+    if (!r.movil) return { step: 2, what: 'tu número móvil' };
+    if (!r.direccion) return { step: 2, what: 'tu dirección' };
+    if (!r.ciudad_fiscal) return { step: 2, what: 'tu estado de domicilio fiscal' };
+    if (!/^\d{5}$/.test(String(r.cp_fiscal || '').trim())) return { step: 2, what: 'tu código postal (5 dígitos)' };
+    if (!r.direccion_fiscal_completa) return { step: 2, what: 'tu dirección fiscal completa' };
+    if (!r.rfc || String(r.rfc).length !== 13) return { step: 3, what: 'tu RFC (13 caracteres)' };
+    if (!r.curp || String(r.curp).length !== 18) return { step: 3, what: 'tu CURP (18 caracteres)' };
+    if (!/^\d{11}$/.test(String(r.nss || ''))) return { step: 3, what: 'tu NSS (11 dígitos)' };
+    if (!r.banco) return { step: 3, what: 'tu banco' };
+    if (!validateCLABE(r.clabe)) return { step: 3, what: 'tu CLABE (18 dígitos, dígito verificador)' };
+    if (!r.numero_cuenta || String(r.numero_cuenta).length < 10) return { step: 3, what: 'tu número de cuenta' };
+    if (!r.lfpdppp_consent) return { step: 4, what: 'tu consentimiento de privacidad' };
+    return null;
+  }
+
 
   // ---- AUTH ----
   function enterOtpState() {
@@ -1313,6 +1390,16 @@
     await goBackTo(3);
   });
   $('s4-submit').addEventListener('click', async function() {
+    // Free step navigation means this gate is the ONLY thing standing between a hire
+    // and submitting an empty form. Block, say which step, go there.
+    await saveDraftNow();
+    var gap = await firstIncompleteStep();
+    if (gap) {
+      showMsg($('s4-msg'), 'Falta ' + gap.what + '. Te llevamos al paso ' + gap.step + '.', 'err');
+      showToast('Falta ' + gap.what + ' — revisa el paso ' + gap.step + '.', 'err');
+      await goToStep(gap.step);
+      return;
+    }
     clearMsg($('s4-msg'));
     var reqDocs = ['ine','nss','csf','comprobante'];
     for (var i = 0; i < reqDocs.length; i++) {
