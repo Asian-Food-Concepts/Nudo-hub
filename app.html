@@ -1354,7 +1354,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.169";
+  const APP_VERSION = "v0.170";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1468,9 +1468,6 @@
   function showApp() {
     views.login.classList.add('hidden'); views.app.classList.remove('hidden'); showBottomTabs(true);
     const ub = $('userbar'); if (ub) ub.classList.remove('hidden');
-    // Only level 1 may impersonate. Same gate as the name-click, but now the control
-    // is visible instead of being a well-kept secret.
-    const vo = $('viewas-open'); if (vo) vo.classList.toggle('hidden', realLevel() !== 1);
   }
   function showBottomTabs(show) {
     const tabs = $('bottom-tabs');
@@ -1630,6 +1627,13 @@
     const displayName = (currentProfile && currentProfile.name) || (user.email || 'Equipo');
     const role = (currentProfile && currentProfile.role) || '';
     $('user-name').textContent = displayName + (role ? ' · ' + role : '');
+    // Show the impersonation control to the real level 1 only. This MUST run here, after
+    // currentProfile is set above: in the earlier attempt it ran before that, realLevel()
+    // read null, and the button stayed hidden for everyone including dueños.
+    {
+      const vo = $('viewas-open');
+      if (vo) vo.classList.toggle('hidden', realLevel() !== 1);
+    }
     $('header-sub').textContent = 'Bienvenido';
     // Role-gate the Bitácora card: only Dueño, Capitán, Gerente see it
     const allowed = ['Dueño', 'Capitán', 'Gerente'];
