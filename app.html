@@ -1354,7 +1354,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.170";
+  const APP_VERSION = "v0.171";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -4477,7 +4477,7 @@
     modal.classList.remove('hidden');
     const [lv, pr] = await Promise.all([
       supabase.from('role_levels').select('role,level,rank_label').order('level'),
-      supabase.from('profiles').select('name,role,branch,level,area').eq('active', true).order('name')
+      supabase.from('profiles').select('name,role,branch,level').eq('active', true).order('name')
     ]);
     const meta = {};
     (lv.data || []).forEach(r => { meta[r.level] = r.rank_label; });
@@ -4550,7 +4550,7 @@
     if (!body) return;
     const [lv, pr] = await Promise.all([
       supabase.from('role_levels').select('role,level,rank_label,responsibilities').order('level'),
-      supabase.from('profiles').select('name,role,branch,level').eq('active', true).order('name')
+      supabase.from('profiles').select('name,role,branch,level,area').eq('active', true).order('name')
     ]);
     if (lv.error || pr.error) { body.innerHTML = '<div class="msg err">No se pudo cargar.</div>'; return; }
     const meta = {};
