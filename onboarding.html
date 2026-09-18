@@ -314,6 +314,13 @@
       <h2>Paso 2 de 4 · Contacto y domicilio</h2>
       <p class="card-sub">Datos de contacto y tu domicilio fiscal para nómina.</p>
       <div class="field">
+        <label>Correo verificado</label>
+        <div id="s2-email-box" style="background:var(--bg);border:1px solid var(--border);
+             border-radius:12px;padding:12px 14px;color:var(--muted);font-size:0.92rem;">
+          —</div>
+        <div class="field-hint">Este es el correo con el que entraste; ya quedó verificado con tu código.</div>
+      </div>
+      <div class="field">
         <label for="s2-movil">Número móvil / WhatsApp *</label>
         <input type="tel" id="s2-movil" placeholder="+52 55 1234 5678" inputmode="tel" autocomplete="tel">
       </div>
@@ -948,6 +955,8 @@
       }
     }
     if (step === 2) {
+      var eb = $('s2-email-box');
+      if (eb) eb.textContent = (currentUser && currentUser.email) ? currentUser.email : '—';
       setVal('s2-movil',        data.movil);
       setVal('s2-direccion',    data.direccion);
       setVal('s2-ciudad-fiscal',data.ciudad_fiscal);
@@ -993,6 +1002,7 @@
       if (currentStep === 3) payload = buildP3();
       if (!payload) return;
       payload.updated_at = new Date().toISOString();
+        markSaving();
       // This used to ignore its error entirely: an auto-save could fail forever with no
       // sign to anyone. Now a failure is visible and reported.
       var autosave = await supabase.from('onboarding').update(payload).eq('id', onboardingId);
@@ -1002,7 +1012,7 @@
         return;
       }
       showAutosave();
-    }, 30000);
+    }, 1500);
   }
   ['s1-nombres','s1-paterno','s1-materno','s1-apodo','s1-nacimiento','s1-estado-civil','s1-nacionalidad',
      's1-dia','s1-mes','s1-ano','s1-nac-otra',
@@ -1251,6 +1261,37 @@
   //     medias. Por eso Anterior guarda sin validar, y Siguiente valida y luego guarda.
   // ============================================================
   var LAST_SAVED_AT = null;
+
+  // "Guardando…" then "Guardado HH:MM". An indicator that only ever says "Guardado"
+  // is unfalsifiable — you cannot tell a slow save from a finished one.
+  function markSaving() {
+    var el = $('autosave-toast');
+    if (!el) return;
+    el.textContent = 'Guardando…';
+    el.classList.remove('hidden');
+    el.style.opacity = '1';
+  }
+
+  // Save right away (used on blur, which is an explicit "I'm done here").
+  var saveNowTimer = null;
+  function saveNowSoon() {
+    clearTimeout(saveNowTimer);
+    saveNowTimer = setTimeout(async function () {
+      if (!onboardingId || typeof currentStep !== 'number') return;
+      var payload = buildPayloadFor(currentStep);
+      if (!payload) return;
+      markSaving();
+      payload.updated_at = new Date().toISOString();
+      var res = await supabase.from('onboarding').update(payload).eq('id', onboardingId);
+      if (res && res.error) {
+        showToast('No se pudo guardar automáticamente. Tus datos siguen en pantalla.', 'warn');
+        reportFailure('autoguardado_fallido', res.error.message, { code: res.error.code || '', paso: currentStep });
+        return;
+      }
+      markSaved();
+    }, 250);
+  }
+
 
   function buildPayloadFor(step) {
     if (step === 1) return buildP1();
