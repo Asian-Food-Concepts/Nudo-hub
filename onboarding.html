@@ -245,8 +245,15 @@
         <div class="field-hint">El nombre corto que prefieres en el trabajo.</div>
       </div>
       <div class="field">
-        <label for="s1-nacimiento">Fecha de nacimiento *</label>
-        <input type="date" id="s1-nacimiento" autocomplete="bday">
+        <label for="s1-dia">Fecha de nacimiento *</label>
+        <div style="display:grid;grid-template-columns:0.8fr 1.3fr 1.1fr;gap:8px;">
+          <select id="s1-dia" aria-label="Día"></select>
+          <select id="s1-mes" aria-label="Mes"></select>
+          <select id="s1-ano" aria-label="Año"></select>
+        </div>
+        <div class="field-hint" id="dob-hint"></div>
+        <!-- hidden: keeps the original field id so nothing downstream changes -->
+        <input type="hidden" id="s1-nacimiento" autocomplete="bday">
       </div>
       <div class="field">
         <label for="s1-estado-civil">Estado civil *</label>
@@ -261,8 +268,15 @@
         </select>
       </div>
       <div class="field">
-        <label for="s1-nacionalidad">Nacionalidad *</label>
-        <input type="text" id="s1-nacionalidad" placeholder="Mexicana" value="Mexicana">
+        <label>Nacionalidad *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="s1-nac" value="Mexicano/a" checked><span>Mexicano/a</span></label>
+          <label><input type="radio" name="s1-nac" value="__otra__"><span>Otra</span></label>
+        </div>
+        <input type="text" id="s1-nac-otra" placeholder="Escribe tu nacionalidad"
+               maxlength="40" style="display:none;margin-top:8px;">
+        <!-- hidden: keeps the original field id so nothing downstream changes -->
+        <input type="hidden" id="s1-nacionalidad" value="Mexicano/a">
       </div>
       <div class="msg hidden" id="s1-msg"></div>
       <button class="btn" id="s1-next" style="margin-top:8px;">Guardar y siguiente →</button>
@@ -766,6 +780,9 @@
         document.querySelectorAll('input[name="s1-sexo"]').forEach(function(r) {
           r.checked = (r.value === data.sexo);
         });
+        // New pickers/radios must reflect a resumed record's stored values.
+        syncPickerFromHidden();
+        syncNacionalidadFromHidden();
       }
     }
     if (step === 2) {
@@ -824,6 +841,7 @@
     }, 30000);
   }
   ['s1-nombres','s1-paterno','s1-materno','s1-apodo','s1-nacimiento','s1-estado-civil','s1-nacionalidad',
+     's1-dia','s1-mes','s1-ano','s1-nac-otra',
    's2-movil','s2-direccion','s2-ciudad-fiscal','s2-cp-fiscal','s2-dir-fiscal',
    's3-rfc','s3-curp','s3-nss','s3-regimen','s3-banco','s3-clabe','s3-cuenta'
   ].forEach(function(id) {
@@ -833,6 +851,134 @@
   });
 
   // ---- Payload builders ----
+
+  // ============================================================
+  // Fecha de nacimiento: día / mes / año
+  // The native <input type="date"> is painful for a birth date on a phone — you
+  // scroll back decades. Three selects make it two taps, and the year list is
+  // generated from the current year so it never has to be maintained.
+  //
+  // Both controls write into a HIDDEN input that keeps the original id, so every
+  // existing reader (gv, buildP1, the CURP badge, setVal on resume) is untouched.
+  // ============================================================
+  var MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio',
+               'Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  function pad2(n) { n = String(n); return n.length < 2 ? '0' + n : n; }
+  function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+
+  function buildDatePicker() {
+    var dia = $('s1-dia'), mes = $('s1-mes'), ano = $('s1-ano');
+    if (!dia || !mes || !ano || dia.dataset.built) return;
+    var y = new Date().getFullYear(), o = '';
+    for (var d = 1; d <= 31; d++) o += '<option value="' + d + '">' + d + '</option>';
+    dia.innerHTML = '<option value="">Día</option>' + o;
+    o = '';
+    for (var m = 0; m < 12; m++) o += '<option value="' + (m + 1) + '">' + MESES[m] + '</option>';
+    mes.innerHTML = '<option value="">Mes</option>' + o;
+    o = '';
+    // Matches the server-side age rule (14-80), newest year first so a young hire
+    // does not have to scroll.
+    for (var yy = y - 14; yy >= y - 80; yy--) o += '<option value="' + yy + '">' + yy + '</option>';
+    ano.innerHTML = '<option value="">Año</option>' + o;
+    dia.dataset.built = '1';
+  }
+
+  function syncDays() {
+    var dia = $('s1-dia'), mes = $('s1-mes'), ano = $('s1-ano');
+    if (!dia || !mes) return;
+    var y = parseInt(ano && ano.value, 10) || 2000;
+    var m = parseInt(mes.value, 10) || 1;
+    var max = daysInMonth(y, m), cur = parseInt(dia.value, 10), o = '<option value="">Día</option>';
+    for (var d = 1; d <= max; d++) o += '<option value="' + d + '"' + (d === cur ? ' selected' : '') + '>' + d + '</option>';
+    dia.innerHTML = o;
+  }
+
+  function syncDateHidden() {
+    var dia = $('s1-dia'), mes = $('s1-mes'), ano = $('s1-ano'), hid = $('s1-nacimiento');
+    if (!dia || !mes || !ano || !hid) return;
+    var hint = $('dob-hint');
+    var val = '';
+    if (dia.value && mes.value && ano.value) {
+      var y = parseInt(ano.value, 10), m = parseInt(mes.value, 10), d = parseInt(dia.value, 10);
+      var iso = y + '-' + pad2(m) + '-' + pad2(d);
+      var dv = new Date(y, m - 1, d);
+      var real = (dv.getFullYear() === y && dv.getMonth() === m - 1 && dv.getDate() === d);
+      if (real) { val = iso; if (hint) { hint.textContent = ''; hint.style.color = ''; } }
+      else if (hint) {
+        hint.textContent = 'Esa fecha no existe (' + d + ' de ' + MESES[m - 1] + '). Revisa el día.';
+        hint.style.color = '#c0392b';
+      }
+    } else if (hint) { hint.textContent = ''; hint.style.color = ''; }
+    // An impossible date is written as empty so the existing "requerida" gate stops
+    // it, instead of handing Postgres a value it will reject.
+    hid.value = val;
+    hid.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function syncPickerFromHidden() {
+    var hid = $('s1-nacimiento'); if (!hid) return;
+    var v = String(hid.value || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+    var p = v.split('-');
+    if ($('s1-ano')) $('s1-ano').value = String(parseInt(p[0], 10));
+    if ($('s1-mes')) $('s1-mes').value = String(parseInt(p[1], 10));
+    syncDays();
+    if ($('s1-dia')) $('s1-dia').value = String(parseInt(p[2], 10));
+    syncDateHidden();
+  }
+
+  // ============================================================
+  // Nacionalidad: radios (Mexicano/a por defecto) + texto libre en "Otra"
+  // ============================================================
+  function nacApply() {
+    var sel = document.querySelector('input[name="s1-nac"]:checked');
+    var val = sel ? sel.value : 'Mexicano/a';
+    var otra = $('s1-nac-otra'), hid = $('s1-nacionalidad');
+    var isOtra = (val === '__otra__');
+    if (otra) {
+      otra.style.display = isOtra ? '' : 'none';
+      if (!isOtra) otra.value = '';
+    }
+    if (hid) hid.value = isOtra ? (otra ? otra.value.trim() : '') : val;
+  }
+
+  function initNacionalidad() {
+    var radios = document.querySelectorAll('input[name="s1-nac"]');
+    if (!radios.length) return;
+    Array.prototype.forEach.call(radios, function (r) { r.addEventListener('change', nacApply); });
+    var otra = $('s1-nac-otra');
+    if (otra) otra.addEventListener('input', nacApply);
+    nacApply();
+  }
+
+  function syncNacionalidadFromHidden() {
+    var radios = document.querySelectorAll('input[name="s1-nac"]');
+    var hid = $('s1-nacionalidad');
+    if (!radios.length || !hid) return;
+    var v = String(hid.value || '').trim();
+    var known = ['Mexicano/a', 'Mexicana', 'Mexicano'];
+    var otra = $('s1-nac-otra');
+    if (!v || known.indexOf(v) >= 0) {
+      Array.prototype.forEach.call(radios, function (r) { r.checked = (r.value === 'Mexicano/a'); });
+      hid.value = 'Mexicano/a';
+      if (otra) { otra.style.display = 'none'; otra.value = ''; }
+    } else {
+      Array.prototype.forEach.call(radios, function (r) { r.checked = (r.value === '__otra__'); });
+      if (otra) { otra.style.display = ''; otra.value = v; }
+    }
+  }
+
+  buildDatePicker();
+  ['s1-dia', 's1-mes', 's1-ano'].forEach(function (id) {
+    var el = $(id); if (!el) return;
+    el.addEventListener('change', function () {
+      if (id !== 's1-dia') syncDays();
+      syncDateHidden();
+    });
+  });
+  initNacionalidad();
+
   function getSexo() {
     var r = document.querySelector('input[name="s1-sexo"]:checked');
     return r ? r.value : '';
