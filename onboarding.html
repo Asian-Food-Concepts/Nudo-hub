@@ -77,8 +77,9 @@
   .step-dot { width:auto; min-width:34px; padding:0 10px; gap:6px; cursor:pointer;
               grid-auto-flow:column; display:inline-flex; align-items:center; justify-content:center; }
   .step-dot .step-num { font-weight:700; }
-  .step-dot .step-name { font-size:0.72rem; font-weight:600; display:none; }
-  .step-dot.active .step-name, .step-dot.done .step-name { display:inline; }
+  /* Labels are meaningful, so show them for every step and collapse to numbers
+     only on narrow screens (mobile guidance: keep icons, drop labels). */
+  .step-dot .step-name { font-size:0.72rem; font-weight:600; display:inline; }
   @media (max-width:520px) { .step-dot .step-name { display:none !important; } }
   .step-hint { text-align:center; font-size:0.8rem; color:var(--muted); margin:-10px 0 18px; }
 
