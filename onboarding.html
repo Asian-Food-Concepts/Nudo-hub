@@ -980,6 +980,8 @@
   function syncDateHidden() {
     var dia = $('s1-dia'), mes = $('s1-mes'), ano = $('s1-ano'), hid = $('s1-nacimiento');
     if (!dia || !mes || !ano || !hid) return;
+    if (typeof clearBirthDateFlag === 'function') clearBirthDateFlag();
+    ['s1-dia', 's1-mes', 's1-ano'].forEach(function (id) { var e = $(id); if (e) e.classList.remove('err'); });
     var hint = $('dob-hint');
     var val = '';
     if (dia.value && mes.value && ano.value) {
@@ -1110,6 +1112,41 @@
       showToast('Dirección fiscal copiada. Ajústala si tu situación fiscal es distinta.', 'ok');
     });
   })();
+
+
+  // ============================================================
+  // Si el CURP no cuadra con la fecha de nacimiento, el dato equivocado casi siempre
+  // está en el PASO 1. Señalarlo solo en el campo del CURP obliga al empleado a
+  // adivinar cuál de los dos corregir, así que se marca también el paso 1.
+  // ============================================================
+  function flagBirthDate(msg) {
+    var hint = $('dob-hint');
+    if (hint) { hint.textContent = msg; hint.style.color = '#c0392b'; hint.style.fontWeight = '600'; }
+    ['s1-dia', 's1-mes', 's1-ano'].forEach(function (id) {
+      var e = $(id); if (e) e.classList.add('err');
+    });
+  }
+  function clearBirthDateFlag() {
+    var hint = $('dob-hint');
+    if (hint && hint.style.fontWeight === '600') { hint.textContent = ''; hint.style.fontWeight = ''; hint.style.color = ''; }
+    ['s1-dia', 's1-mes', 's1-ano'].forEach(function (id) {
+      var e = $(id); if (e) e.classList.remove('err');
+    });
+  }
+
+  // Revisa el CURP y, si el problema apunta al paso 1, lo marca ahí además de aquí.
+  function checkCurpAndFlag() {
+    var v = gv('s3-curp').toUpperCase();
+    if (!v) { clearBirthDateFlag(); return; }
+    var res = validateCURPFull(v);
+    if (!res.ok && /paso 1|step 1/i.test(res.reason || '')) {
+      // Step 1 is on another screen, so say it out loud too.
+      flagBirthDate(res.reason + ' Corrige tu fecha de nacimiento en el paso 1.');
+      showToast(res.reason + ' Corrige el paso 1 y vuelve aquí.', 'err');
+    } else if (res.ok) {
+      clearBirthDateFlag();
+    }
+  }
 
   buildDatePicker();
   ['s1-dia', 's1-mes', 's1-ano'].forEach(function (id) {
@@ -1424,9 +1461,10 @@
   $('s3-curp').addEventListener('blur', function() {
     var v = this.value.trim().toUpperCase();
     this.value = v;
-    if (!v) { setBadge('curp-badge', false, 'Requerido'); return; }
+    if (!v) { setBadge('curp-badge', false, 'Requerido'); clearBirthDateFlag(); return; }
     var r = validateCURPFull(v);
     setBadge('curp-badge', r.ok, r.reason);
+    checkCurpAndFlag();
   });
   $('s3-rfc').addEventListener('blur', function() {
     var v = this.value.trim().toUpperCase();
