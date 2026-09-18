@@ -292,7 +292,7 @@
         <input type="hidden" id="s1-nacionalidad" value="Mexicano/a">
       </div>
       <div class="msg hidden" id="s1-msg"></div>
-      <button class="btn" id="s1-next" style="margin-top:8px;">Guardar y siguiente →</button>
+      <button class="btn" id="s1-next" style="margin-top:8px;">Continuar a Contacto y domicilio →</button>
     </div>
   </div>
 
@@ -365,7 +365,7 @@
       <div class="msg hidden" id="s2-msg"></div>
       <div class="nav-row">
         <button class="btn btn-outline btn-sm btn-back" id="s2-back">← Anterior</button>
-        <button class="btn btn-next" id="s2-next">Guardar y siguiente →</button>
+        <button class="btn btn-next" id="s2-next">Continuar a Datos fiscales y bancarios →</button>
       </div>
     </div>
   </div>
@@ -450,7 +450,7 @@
       <div class="msg hidden" id="s3-msg"></div>
       <div class="nav-row">
         <button class="btn btn-outline btn-sm btn-back" id="s3-back">← Anterior</button>
-        <button class="btn btn-next" id="s3-next">Guardar y siguiente →</button>
+        <button class="btn btn-next" id="s3-next">Continuar a Documentos →</button>
       </div>
     </div>
   </div>
@@ -1162,6 +1162,69 @@
   });
   initNacionalidad();
 
+
+  // ============================================================
+  // Navegación que GUARDA (investigación de formularios multi-paso)
+  //   - "Guardar en cuanto se hace clic en Siguiente o Anterior, ANTES de mover la
+  //     pantalla."
+  //   - "Perder lo escrito al retroceder es una de las formas más rápidas de que un
+  //     formulario se sienta roto."
+  //   - Un borrador debe aceptar datos INCOMPLETOS: hay que poder salir de un paso a
+  //     medias. Por eso Anterior guarda sin validar, y Siguiente valida y luego guarda.
+  // ============================================================
+  var LAST_SAVED_AT = null;
+
+  function buildPayloadFor(step) {
+    if (step === 1) return buildP1();
+    if (step === 2) return buildP2();
+    if (step === 3) return buildP3();
+    return null;
+  }
+
+  // Save whatever is on screen right now, without validating it.
+  async function saveDraftNow() {
+    var step = (typeof currentStep === 'number') ? currentStep : null;
+    if (!step || !onboardingId) return null;
+    var payload = buildPayloadFor(step);
+    if (!payload) return null;
+    payload.updated_at = new Date().toISOString();
+    var res = await supabase.from('onboarding').update(payload).eq('id', onboardingId);
+    if (res && res.error) {
+      showToast('No se pudieron guardar tus datos. Revisa tu conexión.', 'err');
+      reportFailure('no_se_pudo_guardar_paso', res.error.message, { code: res.error.code || '', paso: step });
+      return res.error;
+    }
+    markSaved();
+    return null;
+  }
+
+  // A visible "Guardado 14:32" — the research is explicit that a silent autosave
+  // leaves people unsure whether their work is safe.
+  function markSaved() {
+    LAST_SAVED_AT = new Date();
+    var el = $('autosave-toast');
+    if (!el) return;
+    var hh = String(LAST_SAVED_AT.getHours()).padStart(2, '0');
+    var mm = String(LAST_SAVED_AT.getMinutes()).padStart(2, '0');
+    el.textContent = 'Guardado ' + hh + ':' + mm;
+    el.classList.remove('hidden');
+    el.style.opacity = '1';
+    clearTimeout(markSaved._t);
+    markSaved._t = setTimeout(function () { el.style.opacity = '0'; }, 2600);
+  }
+
+  // Back = save the current step as a draft (partial is fine), then move.
+  async function goBackTo(step) {
+    var btn = document.querySelector('.btn-back');
+    if (btn) btn.disabled = true;
+    await saveDraftNow();
+    if (btn) btn.disabled = false;
+    currentStep = step;
+    await loadStepData(step);
+    updateStepsBar();
+    showScreen('screen-' + step);
+  }
+
   function getSexo() {
     var r = document.querySelector('input[name="s1-sexo"]:checked');
     return r ? r.value : '';
@@ -1197,12 +1260,14 @@
     var err = await saveStep(p, 2);
     this.disabled = false;
     if (err) { showMsg($('s1-msg'), 'Error al guardar: ' + err.message, 'err'); return; }
+    markSaved();
     await loadStepData(2); showScreen('screen-2');
   });
 
   // ---- Step 2 ----
   $('s2-back').addEventListener('click', async function() {
-    await loadStepData(1); currentStep = 1; updateStepsBar(); showScreen('screen-1');
+    // Saves the current step as a draft before leaving it (partial data is OK).
+    await goBackTo(1);
   });
   $('s2-next').addEventListener('click', async function() {
     clearMsg($('s2-msg'));
@@ -1216,12 +1281,14 @@
     var err = await saveStep(p, 3);
     this.disabled = false;
     if (err) { showMsg($('s2-msg'), 'Error al guardar: ' + err.message, 'err'); return; }
+    markSaved();
     await loadStepData(3); showScreen('screen-3');
   });
 
   // ---- Step 3 ----
   $('s3-back').addEventListener('click', async function() {
-    await loadStepData(2); currentStep = 2; updateStepsBar(); showScreen('screen-2');
+    // Saves the current step as a draft before leaving it (partial data is OK).
+    await goBackTo(2);
   });
   $('s3-next').addEventListener('click', async function() {
     clearMsg($('s3-msg'));
@@ -1236,12 +1303,14 @@
     var err = await saveStep(p, 4);
     this.disabled = false;
     if (err) { showMsg($('s3-msg'), 'Error al guardar: ' + err.message, 'err'); return; }
+    markSaved();
     showScreen('screen-4');
   });
 
   // ---- Step 4 / Submit ----
   $('s4-back').addEventListener('click', async function() {
-    await loadStepData(3); currentStep = 3; updateStepsBar(); showScreen('screen-3');
+    // Saves the current step as a draft before leaving it (partial data is OK).
+    await goBackTo(3);
   });
   $('s4-submit').addEventListener('click', async function() {
     clearMsg($('s4-msg'));
