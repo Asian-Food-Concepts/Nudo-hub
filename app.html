@@ -1085,12 +1085,14 @@
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card" id="card-descansos">
           <h2>🗓️ Preferencia de Descansos</h2>
-          <p style="color:var(--muted);font-size:0.9rem;margin:0 0 4px;">
-            Para la <strong>semana que viene</strong>. Límite: <strong>martes 10pm</strong>.
-          </p>
+          <div style="background:var(--input-bg);border-radius:10px;padding:12px 14px;margin:0 0 10px;">
+            <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:2px;">Estás eligiendo descansos para</div>
+            <div style="font-size:1.05rem;font-weight:700;" id="d-range">—</div>
+            <div style="font-size:0.82rem;color:var(--muted);margin-top:4px;">Cierre de envío: <strong id="d-cutoff">—</strong>, 10pm.</div>
+          </div>
           <p style="color:var(--muted);font-size:0.82rem;margin:0 0 14px;">
             Prioridad del negocio · Primer llegado, primer servido · Rotación.
-            Lo que llegue después del martes 10pm no se considera para la semana siguiente.
+            Lo que llegue después del cierre no se considera para esa semana.
           </p>
 
           <div class="field"><label>¿Cuántos días quieres trabajar?</label>
@@ -1418,7 +1420,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.178";
+  const APP_VERSION = "v0.179";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -2449,6 +2451,10 @@
       if (f === 'usuarios') { loadUsuarios(); loadRoleOptions(); }
       if (f === 'equipo') { loadEquipo(); }
       if (f === 'plan') loadPlanner();
+      // v0.179: recompute the target week on every open. A form left open across
+      // midnight would otherwise keep showing the previous window's week while
+      // descansoWeekStart() (used at submit) has already moved on.
+      if (f === 'descansos') descansoFillRange();
       setActiveTab(null);
     });
   });
@@ -4973,7 +4979,45 @@
     const d = new Date(mon.getTime() + plus * 86400000);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
-  function descansoSync() {
+  // v0.179 — the concrete week the applicant is choosing FOR, in Spanish.
+   // Derived from the same descansoWeekStart() the submit uses, so the header and the
+   // stored week_start can never drift apart. "Semana que viene" alone is not
+   // actionable: the person needs to know it is the 28th, not the 5th.
+   const _MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+   const _DIAS  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+   function descansoRangeLabel() {
+     const ws = descansoWeekStart();
+     const p = ws.split('-').map(Number);
+     const start = new Date(p[0], p[1] - 1, p[2]);
+     const end = new Date(start.getTime() + 6 * 86400000);
+     const fmt = d => d.getDate() + ' ' + _MESES[d.getMonth()];
+     const sameMonth = start.getMonth() === end.getMonth();
+     const range = sameMonth
+       ? fmt(start) + ' – ' + end.getDate() + ' ' + _MESES[end.getMonth()]
+       : fmt(start) + ' – ' + fmt(end);
+     return range;
+   }
+
+   // The deadline that governs this range: the Tuesday 10pm before the target week.
+   // = the Monday of the target week minus 6 days.
+   function descansoCutoffLabel() {
+     const ws = descansoWeekStart();
+     const p = ws.split('-').map(Number);
+     const start = new Date(p[0], p[1] - 1, p[2]);
+     const cut = new Date(start.getTime() - 6 * 86400000);
+     return _DIAS[cut.getDay()] + ' ' + cut.getDate() + ' ' + _MESES[cut.getMonth()];
+   }
+
+   function descansoFillRange() {
+     const el = document.getElementById('d-range');
+     const el2 = document.getElementById('d-cutoff');
+     const r = descansoRangeLabel();
+     const c = descansoCutoffLabel();
+     if (el) el.textContent = r;
+     if (el2) el2.textContent = c;
+   }
+
+   function descansoSync() {
     const sel = document.querySelector('input[name="d-dias"]:checked');
     const n = sel ? Number(sel.value) : null;
     if (!n) return;
@@ -5011,7 +5055,7 @@
     const ws = descansoWeekStart();
     const rows = [
       ['Nombre', esc((currentProfile && currentProfile.name) || '—')],
-      ['Semana', ws],
+      ['Semana', ws + '  (' + descansoRangeLabel() + ')'],
       ['Días a trabajar', n === 7 ? '7 (sin descanso)' : String(n)],
       ['Primer descanso', n === 7 ? '—' : (r1 ? r1.value : '—')],
       ['Segundo descanso', (n === 5 && r2) ? r2.value : '—'],
