@@ -451,6 +451,25 @@
   .stepper button { min-width: 48px; min-height: 44px; border: none; background: transparent; color: var(--ink); font-size: 1.25rem; font-weight: 700; cursor: pointer; }
   .stepper button:active { background: rgba(125,125,125,0.12); }
   .stepper input { width: 84px; text-align: center; border: none; border-left: 1px solid var(--border); border-right: 1px solid var(--border); background: transparent; color: var(--ink); font-size: 16px; min-height: 44px; -moz-appearance: textfield; }
+
+  /* Horas ajustes/extras (v0.173) — chips set the value directly.
+     Stored value is a plain SIGNED number; chips are only an input method. */
+  .horas-rows { display: flex; flex-direction: column; gap: 10px; }
+  .horas-row { border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: var(--bg); }
+  .horas-top { display: flex; gap: 8px; align-items: center; }
+  .horas-top select { flex: 1; min-height: 44px; font-size: 16px; }
+  .horas-del { min-width: 44px; min-height: 44px; border: 1px solid var(--border); border-radius: 10px;
+               background: transparent; color: var(--muted); font-size: 1rem; cursor: pointer; }
+  .horas-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+  .horas-chip { min-height: 40px; min-width: 52px; border: 1px solid var(--border); border-radius: 9px;
+                background: transparent; color: var(--ink); font-size: 0.95rem; font-weight: 600;
+                cursor: pointer; padding: 0 10px; }
+  .horas-chip.neg { color: #b3261e; }
+  .horas-chip.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .horas-half { min-width: 40px; font-weight: 700; }
+  .horas-val { min-width: 62px; text-align: center; font-weight: 700; font-size: 1rem; }
+  .horas-add { min-height: 44px; width: 100%; margin-top: 10px; border: 1px dashed var(--border);
+               border-radius: 10px; background: transparent; color: var(--ink); cursor: pointer; font-size: 0.95rem; }
   .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   /* [icon-button] tooltip */
   .ico-btn { position: relative; }
@@ -862,6 +881,12 @@
               <label><input type="radio" name="t-servicio" value="problema"><span>⚠️ + nota</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="t-servicio" data-ph-ok="Servicio, atención, tiempos de mesa — nota (opcional)" data-ph-problema="Problema de servicio — qué pasó, quién, cómo se resolvió" placeholder="Servicio, atención, tiempos de mesa"></textarea>
+          </div>
+          <div class="form-subhead">Horas (ajustes y extras)</div>
+          <div class="field">
+            <label>Horas <span style="color:var(--muted);font-size:0.8rem;">(opcional — ajustes o extras por persona)</span></label>
+            <div class="horas-rows" id="b-horas-rows"></div>
+            <button type="button" class="horas-add" id="b-horas-add">＋ Agregar persona</button>
           </div>
           <div class="form-subhead">Producto</div>
           <div class="field"><label>Comida <span style="color:var(--muted);font-size:0.8rem;">(calidad, faltantes, cocina)</span></label>
@@ -1368,7 +1393,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.172";
+  const APP_VERSION = "v0.173";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -2086,6 +2111,7 @@
       propinas: pick('b-propinas'),
       propinas_detalle: (pdet && pdet.value) || '',
       temas: temas,
+      horas: readHoras(),        // v0.173 — sobrevive recarga como el resto del borrador
       notas: (($('b-notas') || {}).value) || ''
     };
   }
@@ -2119,6 +2145,11 @@
         if (v.detalle) box.classList.remove('hidden');   // una nota guardada no se esconde
       }
     });
+    // v0.173 — horas: se reconstruyen desde el borrador (antes de propinas, que
+    // no depende de ellas). readHoras()/addHorasRow() son las mismas que usa el form,
+    // así que no hay una segunda ruta de escritura que pueda divergir.
+    clearHoras();
+    (d.horas || []).forEach(h => { if (h && h.nombre) addHorasRow(h.nombre, h.horas); });
     const pbox = document.querySelector('#form-bitacora textarea[data-for="b-propinas"]');
     if (pbox) {
       pbox.value = d.propinas_detalle || '';
@@ -2142,6 +2173,7 @@
     document.querySelectorAll('#form-bitacora input[name^="t-"]').forEach(r => { r.checked = (r.value === 'ok'); });
     const pn = document.querySelector('#form-bitacora input[name="b-propinas"][value="normal"]');
     if (pn) pn.checked = true;
+    clearHoras();   // v0.173
     const conf = $('b-confirm'); if (conf) conf.checked = false;
     if (typeof bitacoraReadiness === 'function') bitacoraReadiness();
   }
@@ -2359,6 +2391,7 @@
       e.preventDefault();
       const f = a.getAttribute('data-form');
       if (f === 'bitacora') {
+        loadHorasRoster();   // v0.173 — sin esto el desplegable de nombres sale vacío
         const isSun = new Date().getDay() === 0;
         $('b-empleados-comida').classList.toggle('hidden', !isSun);
         $('b-empleados-monto').required = isSun;
@@ -3560,6 +3593,11 @@
       const detailEl = document.querySelector(`textarea[data-for="t-${t}"]`);
       temas[t] = { ok: (sel.value === 'ok' || sel.value === 'ok_nota'), detalle: (detailEl && detailEl.value.trim()) || '' };
     });
+    // v0.173 — horas (ajustes y extras). Only attached when something was logged,
+    // so an untouched block leaves temas.personal exactly as it was before.
+    const _horas = readHoras();
+    if (_horas.length) { temas.personal.horas = _horas; }
+
     const isSunday = new Date().getDay() === 0;
     const montoEl = $('b-empleados-monto');
     const montoVal = montoEl && montoEl.value !== '' ? parseFloat(montoEl.value) : null;
@@ -3584,12 +3622,15 @@
       const state = v.ok ? '✅ Bien' : '⚠️ Problema';
       return [themeLabels[t], v.detalle ? `${state} — ${v.detalle}` : state];
     }).filter(Boolean);
+    const _horasReview = readHoras().map(h =>
+      [h.nombre, (h.horas > 0 ? '+' : '') + h.horas + 'h']);
     const rows = [
       ['Sucursal', sucursal.value],
       ['Afluencia', afluencia.value],
       ['Cómo fue el día', corte.value],
       ...themeRows,
       ...reviewRowsExtra,
+      ..._horasReview,
       ['Propinas', propinas === 'normal' ? '✅ Normales' : (propinasDetalle ? `⚠️ Irregulares — ${propinasDetalle}` : '⚠️ Irregulares')],
       ['Notas', notas || '—'],
       ['Foto', bPhoto ? bPhoto.name : '—'],
@@ -3642,6 +3683,136 @@
       }, 1200);
     });
   });
+
+
+  // ---- HORAS (ajustes y extras) — v0.173 -------------------------------------
+  // Ben 2026-09-19: captains log faltas / horas extra per person at closing.
+  // This is a LOG that feeds payment decisions — it records, it does not pay.
+  // The stored value is a plain SIGNED number (+2 / -1.5). The chips are only an
+  // input method for the common cases; the ±0.5 chip reaches any half hour.
+  // Stored at temas.personal.horas = [{nombre, horas}] on submit.
+  let horasRoster = [];
+  const HORAS_CHIPS = [3, 2, 1, -1, -2, -3];
+
+  async function loadHorasRoster() {
+    if (horasRoster.length) return;
+    try {
+      const { data } = await supabase.from('profiles')
+        .select('name,branch').eq('active', true).order('name');
+      horasRoster = (data || []).filter(p => p.name);
+    } catch (e) { horasRoster = []; }
+  }
+
+  function horasOptions(selected, branch) {
+    // Filter to the branch the captain picked, but never leave them stuck: if that
+    // branch has nobody listed, fall back to the whole roster.
+    let list = horasRoster;
+    if (branch) {
+      const scoped = list.filter(p => p.branch === branch);
+      if (scoped.length) list = scoped;
+    }
+    let o = '<option value="">— Persona —</option>';
+    list.forEach(p => {
+      o += `<option value="${escAttr(p.name)}" ${p.name === selected ? 'selected' : ''}>${esc(p.name)}</option>`;
+    });
+    return o;
+  }
+
+  function horasRowHTML(sel, val) {
+    const v = (typeof val === 'number' && !isNaN(val)) ? val : 0;
+    return `
+      <div class="horas-row" data-horas="${v}">
+        <div class="horas-top">
+          <select class="horas-who">${horasOptions(sel, currentBitacoraSucursal())}</select>
+          <button type="button" class="horas-del" title="Quitar">✕</button>
+        </div>
+        <div class="horas-chips">
+          ${HORAS_CHIPS.map(c => `<button type="button" class="horas-chip ${c < 0 ? 'neg' : ''}" data-n="${c}">${c > 0 ? '+' + c + 'h' : c + 'h'}</button>`).join('')}
+          <button type="button" class="horas-chip horas-half neg" data-n="-0.5">−½</button>
+          <button type="button" class="horas-chip horas-half" data-n="0.5">+½</button>
+          <span class="horas-val"></span>
+        </div>
+      </div>`;
+  }
+
+  function currentBitacoraSucursal() {
+    const r = document.querySelector('input[name="b-sucursal"]:checked');
+    return r ? r.value : '';
+  }
+
+  function horasSetDisplay(row) {
+    const v = parseFloat(row.getAttribute('data-horas')) || 0;
+    row.setAttribute('data-horas', String(v));
+    const span = row.querySelector('.horas-val');
+    if (span) span.textContent = v === 0 ? '0h' : (v > 0 ? '+' + v + 'h' : v + 'h');
+    // mark the whole-hour chip that matches exactly, so the state is visible
+    row.querySelectorAll('.horas-chip').forEach(c => {
+      c.classList.toggle('sel', parseFloat(c.getAttribute('data-n')) === v && v !== 0);
+    });
+  }
+
+  function addHorasRow(sel, val) {
+    const wrap = $('b-horas-rows');
+    if (!wrap) return;
+    const div = document.createElement('div');
+    div.innerHTML = horasRowHTML(sel || '', val);
+    const row = div.firstElementChild;
+    wrap.appendChild(row);
+    wireHorasRow(row);
+    if (val != null) { row.setAttribute('data-horas', String(val)); horasSetDisplay(row); }
+    return row;
+  }
+
+  function wireHorasRow(row) {
+    row.querySelectorAll('.horas-chip').forEach(b => {
+      b.addEventListener('click', () => {
+        const n = parseFloat(b.getAttribute('data-n'));
+        if (isNaN(n)) return;
+        const isHalf = b.classList.contains('horas-half');
+        let v = parseFloat(row.getAttribute('data-horas')) || 0;
+        // A whole-hour chip sets the value outright (that is the "answer").
+        // A half chip nudges the current value, so +1h then +½ reads 1.5h.
+        v = isHalf ? v + n : n;
+        row.setAttribute('data-horas', String(v));
+        horasSetDisplay(row);
+      });
+    });
+    const del = row.querySelector('.horas-del');
+    if (del) del.addEventListener('click', () => row.remove());
+    horasSetDisplay(row);
+  }
+
+  function readHoras() {
+    const wrap = $('b-horas-rows');
+    if (!wrap) return [];
+    const out = [];
+    wrap.querySelectorAll('.horas-row').forEach(row => {
+      const name = (row.querySelector('.horas-who') || {}).value || '';
+      if (!name) return;                              // an un-named row is not an entry
+      const txt = (row.querySelector('.horas-val') || {}).textContent || '0h';
+      const num = parseFloat(txt.replace('h', ''));
+      if (!num) return;                               // 0h is "no adjustment"
+      out.push({ nombre: name, horas: num });
+    });
+    return out;
+  }
+
+  function clearHoras() {
+    const wrap = $('b-horas-rows');
+    if (wrap) wrap.innerHTML = '';
+  }
+
+  // "+ Agregar persona" — and after a name is picked, offer the next row automatically.
+  document.addEventListener('change', e => {
+    if (e.target && e.target.classList && e.target.classList.contains('horas-who')) {
+      const wrap = $('b-horas-rows');
+      if (wrap && e.target === wrap.lastElementChild.querySelector('.horas-who')) {
+        if (e.target.value) addHorasRow();            // next empty row appears
+      }
+    }
+  });
+  const _horasAdd = $('b-horas-add');
+  if (_horasAdd) _horasAdd.addEventListener('click', () => addHorasRow());
 
   // ---- ENTREVISTAS ----
   $('i-submit').addEventListener('click', async () => {
