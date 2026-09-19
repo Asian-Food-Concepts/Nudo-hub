@@ -1420,7 +1420,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.179";
+  const APP_VERSION = "v0.180";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -2714,7 +2714,8 @@
   // shift times per role come from the WIP schedule. "+ add slot" buttons add
   // extra positions. Runs alongside the Google Sheet (sheet stays source of
   // truth until Ben flips over).
-  const PLAN_ROLES = ['Capitán', 'Mesero', 'Barra', 'Cocina', 'Producción', 'Loza'];
+  // v0.180: 'Loza' merged into 'Cocina' — no separate row. See planRoleGroup().
+  const PLAN_ROLES = ['Capitán', 'Mesero', 'Barra', 'Cocina', 'Producción'];
   const PLAN_DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 
   // Default shift times per role (most common from the WIP schedule).
@@ -2723,8 +2724,7 @@
     'Mesero':    { start: '11:00', end: '20:00' },
     'Barra':     { start: '13:00', end: '23:00' },
     'Cocina':    { start: '13:00', end: '23:00' },
-    'Producción':{ start: '09:00', end: '18:00' },
-    'Loza':      { start: '13:00', end: '23:00' }
+    'Producción':{ start: '09:00', end: '18:00' }
   };
 
   // Daily minimums per branch (from the Reglas tab MÍNIMOS DIARIOS).
@@ -2739,8 +2739,7 @@
     'Mesero':    ['Piso 1', 'Piso 2'],
     'Barra':     ['Barra 1', 'Barra 2'],
     'Cocina':    ['Cocina 1', 'Cocina 2', 'Cocina 3'],
-    'Producción':['Producción 1'],
-    'Loza':      ['Loza 1']
+    'Producción':['Producción 1']
   };
 
   let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [], extraSlots: {}, view: (window.innerWidth < 700 ? 'day' : 'week'), dayIdx: 0, auditRole: false, currentProfileId: null };
@@ -2862,15 +2861,22 @@
     if (r.includes('barra') || r.includes('bar')) return 'Barra';
     if (r.includes('produccion') || r.includes('producción')) return 'Producción';
     if (r.includes('cocina')) return 'Cocina';
-    if (r.includes('loza') || r.includes('lava')) return 'Loza';
+    // v0.180: loza/lava fold into the kitchen group (was its own planner row).
+    if (r.includes('loza') || r.includes('lava')) return 'Cocina';
     if (r.includes('gerente') || r.includes('dueño') || r.includes('admin')) return 'Capitán';
     return 'Mesero';
   }
 
   // Staff eligible for a role (normalized role match + branch match).
+  // v0.180: captains are exempt from the branch scope — a captain from either
+  // outlet is offered in BOTH boards (Ben: "for now let capitans be visible from
+  // all outlets"). Keyed on the resolved role GROUP so it holds for every captain
+  // title in the data ('Capitán', 'Capitána', 'Capitán/Capitána de Piso').
+  // All other roles keep the outlet filter unchanged.
   function planStaffForRole(role) {
+    const outletAgnostic = (role === 'Capitán');
     return planState.staff.filter(s =>
-      (s.branch === planState.branch || s.branch === 'Ambos' || !s.branch) &&
+      (outletAgnostic || s.branch === planState.branch || s.branch === 'Ambos' || !s.branch) &&
       planRoleGroup(s.role) === role
     );
   }
