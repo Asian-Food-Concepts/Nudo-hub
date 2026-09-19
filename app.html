@@ -478,7 +478,7 @@
                 cursor: pointer; padding: 0 10px; }
   .horas-chip.neg { color: #b3261e; }
   .horas-chip.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .horas-half { min-width: 40px; font-weight: 700; }
+  /* v0.175 — whole hours only; the ±½ chips and .horas-half rule were removed (Ben). */
   .horas-val { min-width: 62px; text-align: center; font-weight: 700; font-size: 1rem; }
   .horas-add { min-height: 44px; width: 100%; margin-top: 10px; border: 1px dashed var(--border);
                border-radius: 10px; background: transparent; color: var(--ink); cursor: pointer; font-size: 0.95rem; }
@@ -894,7 +894,7 @@
             </div>
             <textarea class="t-detail hidden" data-for="t-servicio" data-ph-ok="Servicio, atención, tiempos de mesa — nota (opcional)" data-ph-problema="Problema de servicio — qué pasó, quién, cómo se resolvió" placeholder="Servicio, atención, tiempos de mesa"></textarea>
           </div>
-          <div class="form-subhead">Horas (ajustes y extras)</div>
+          <div class="form-subhead">Horas y faltas</div>
           <div class="field">
             <label>Horas <span style="color:var(--muted);font-size:0.8rem;">(opcional — ajustes o extras por persona)</span></label>
             <div class="horas-rows" id="b-horas-rows"></div>
@@ -1405,7 +1405,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.174";
+  const APP_VERSION = "v0.175";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -3770,8 +3770,6 @@
         </div>
         <div class="horas-chips">
           ${HORAS_CHIPS.map(c => `<button type="button" class="horas-chip ${c < 0 ? 'neg' : ''}" data-n="${c}">${c > 0 ? '+' + c + 'h' : c + 'h'}</button>`).join('')}
-          <button type="button" class="horas-chip horas-half neg" data-n="-0.5">−½</button>
-          <button type="button" class="horas-chip horas-half" data-n="0.5">+½</button>
           <span class="horas-val"></span>
         </div>
         <textarea class="horas-motivo hidden" placeholder="Motivo (obligatorio)" style="margin-top:8px;min-height:52px;"></textarea>
@@ -3801,7 +3799,9 @@
   }
 
   function horasSetDisplay(row) {
-    const v = parseFloat(row.getAttribute('data-horas')) || 0;
+    // Whole hours only (Ben). Anything fractional that arrives from an old draft is
+    // truncated to an integer here, so nothing half can be stored.
+    const v = Math.trunc(parseFloat(row.getAttribute('data-horas')) || 0);
     row.setAttribute('data-horas', String(v));
     const span = row.querySelector('.horas-val');
     if (span) span.textContent = v === 0 ? '0h' : (v > 0 ? '+' + v + 'h' : v + 'h');
@@ -3826,14 +3826,9 @@
   function wireHorasRow(row) {
     row.querySelectorAll('.horas-chip').forEach(b => {
       b.addEventListener('click', () => {
-        const n = parseFloat(b.getAttribute('data-n'));
-        if (isNaN(n)) return;
-        const isHalf = b.classList.contains('horas-half');
-        let v = parseFloat(row.getAttribute('data-horas')) || 0;
-        // A whole-hour chip sets the value outright (that is the "answer").
-        // A half chip nudges the current value, so +1h then +½ reads 1.5h.
-        v = isHalf ? v + n : n;
-        row.setAttribute('data-horas', String(v));
+        const n = parseInt(b.getAttribute('data-n'), 10);
+        if (isNaN(n)) return;                    // whole hours only — a .5 chip is inert
+        row.setAttribute('data-horas', String(n));
         horasSetDisplay(row);
       });
     });
@@ -3853,7 +3848,7 @@
       const name = (row.querySelector('.horas-who') || {}).value || '';
       if (!name) return;                              // an un-named row is not an entry
       const txt = (row.querySelector('.horas-val') || {}).textContent || '0h';
-      const num = parseFloat(txt.replace('h', ''));
+      const num = Math.trunc(parseFloat(txt.replace('h', '')) || 0);   // whole hours only
       if (!num) return;                               // 0h is "no adjustment"
       const tipo = (row.querySelector('.horas-tipo') || {}).value || '';
       const motivo = ((row.querySelector('.horas-motivo') || {}).value || '').trim();
@@ -3890,15 +3885,8 @@
     if (wrap) wrap.innerHTML = '';
   }
 
-  // "+ Agregar persona" — and after a name is picked, offer the next row automatically.
-  document.addEventListener('change', e => {
-    if (e.target && e.target.classList && e.target.classList.contains('horas-who')) {
-      const wrap = $('b-horas-rows');
-      if (wrap && e.target === wrap.lastElementChild.querySelector('.horas-who')) {
-        if (e.target.value) addHorasRow();            // next empty row appears
-      }
-    }
-  });
+  // A row appears ONLY when the captain taps "+ Agregar persona" (Ben 2026-09-19:
+  // picking a name must not spawn the next person automatically).
   const _horasAdd = $('b-horas-add');
   if (_horasAdd) _horasAdd.addEventListener('click', () => addHorasRow());
 
