@@ -402,6 +402,69 @@
                 style="margin-top:8px;">&#10697; Copiar de «dirección donde vives»</button>
         <div class="field-hint">Ej. Av. Insurgentes 100, Col. Roma Norte, Cuauhtémoc</div>
       </div>
+
+      <div class="section-sep">Contacto de emergencia</div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;">
+        Si algo te pasa en el trabajo, a quién llamamos. Es opcional, pero nos ayuda a actuar rápido.
+      </p>
+
+      <div class="field">
+        <label for="s2-tipo-sangre">Tipo de sangre</label>
+        <select id="s2-tipo-sangre">
+          <option value="">— Seleccionar —</option>
+          <option value="O+">O+</option>
+          <option value="O-">O−</option>
+          <option value="A+">A+</option>
+          <option value="A-">A−</option>
+          <option value="B+">B+</option>
+          <option value="B-">B−</option>
+          <option value="AB+">AB+</option>
+          <option value="AB-">AB−</option>
+          <option value="No sé">No sé</option>
+        </select>
+        <div class="field-hint">Si no la sabes, elige «No sé» — así lo revisamos con tu carnet.</div>
+      </div>
+
+      <div class="field">
+        <label for="s2-emergencia-nombre">Nombre del contacto</label>
+        <input type="text" id="s2-emergencia-nombre" placeholder="Ej. Laura García López" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="s2-emergencia-parentesco">Parentesco</label>
+        <select id="s2-emergencia-parentesco">
+          <option value="">— Seleccionar —</option>
+          <option value="Madre">Madre</option>
+          <option value="Padre">Padre</option>
+          <option value="Hermano(a)">Hermano(a)</option>
+          <option value="Hijo(a)">Hijo(a)</option>
+          <option value="Pareja / Cónyuge">Pareja / Cónyuge</option>
+          <option value="Abuelo(a)">Abuelo(a)</option>
+          <option value="Tío(a)">Tío(a)</option>
+          <option value="Primo(a)">Primo(a)</option>
+          <option value="Amigo(a)">Amigo(a)</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="s2-emergencia-telefono">Teléfono del contacto</label>
+        <input type="tel" id="s2-emergencia-telefono" placeholder="+52 55 1234 5678" inputmode="tel" autocomplete="off">
+      </div>
+
+      <div class="field" id="s2-sensibles-wrap">
+        <label class="check-line" style="display:flex;gap:10px;align-items:flex-start;font-weight:400;">
+          <input type="checkbox" id="s2-sensibles-consent" style="margin-top:3px;flex:0 0 auto;">
+          <span style="font-size:0.88rem;">
+            Doy mi consentimiento para que Nudo guarde mi <strong>tipo de sangre</strong> y los
+            <strong>datos de mi contacto de emergencia</strong>. Entiendo que el tipo de sangre es un
+            dato personal sensible y que este permiso es distinto al aviso de privacidad general.
+            Confirmo que puedo compartir el teléfono de mi contacto.
+          </span>
+        </label>
+        <div class="field-hint">Puedes pedir que se borren en cualquier momento escribiendo a RH.</div>
+      </div>
+
       <div class="msg hidden" id="s2-msg"></div>
       <div class="nav-row">
         <button class="btn btn-outline btn-sm btn-back" id="s2-back">← Anterior</button>
@@ -951,7 +1014,7 @@
     if (!onboardingId) return;
     var colMap = {
       1: 'nombres,apellido_paterno,apellido_materno,sexo,apodo_etiqueta,fecha_nacimiento,estado_civil,nacionalidad',
-      2: 'movil,direccion,ciudad_fiscal,cp_fiscal,direccion_fiscal_completa',
+      2: 'movil,direccion,ciudad_fiscal,cp_fiscal,direccion_fiscal_completa,tipo_sangre,emergencia_nombre,emergencia_parentesco,emergencia_telefono,sensibles_consent',
       3: 'rfc,curp,nss,regimen_fiscal,banco,clabe,numero_cuenta',
     };
     if (!colMap[step]) return;
@@ -983,6 +1046,13 @@
       setVal('s2-ciudad-fiscal',data.ciudad_fiscal);
       setVal('s2-cp-fiscal',    data.cp_fiscal);
       setVal('s2-dir-fiscal',   data.direccion_fiscal_completa);
+      // v0.181 — restore the medical / emergency block on a resumed draft.
+      setVal('s2-tipo-sangre',           data.tipo_sangre);
+      setVal('s2-emergencia-nombre',     data.emergencia_nombre);
+      setVal('s2-emergencia-parentesco', data.emergencia_parentesco);
+      setVal('s2-emergencia-telefono',   data.emergencia_telefono);
+      var sc = $('s2-sensibles-consent');
+      if (sc) sc.checked = !!data.sensibles_consent;
     }
     if (step === 3) {
       setVal('s3-rfc',     data.rfc);
@@ -1410,7 +1480,18 @@
   function buildP2() {
     return { movil:gv('s2-movil'), direccion:gv('s2-direccion'),
              ciudad_fiscal:gv('s2-ciudad-fiscal'), cp_fiscal:gv('s2-cp-fiscal'),
-             direccion_fiscal_completa:gv('s2-dir-fiscal') };
+             direccion_fiscal_completa:gv('s2-dir-fiscal'),
+             // v0.181 — blood type + emergency contact. All optional: a blank field
+             // beats a new hire stranded on onboarding because they don't know their
+             // blood type. sensibles_consent is the EXPRESS consent LFPDPPP requires
+             // for health data; it is separate from lfpdppp_consent on purpose.
+             tipo_sangre:gv('s2-tipo-sangre') || null,
+             emergencia_nombre:gv('s2-emergencia-nombre') || null,
+             emergencia_parentesco:gv('s2-emergencia-parentesco') || null,
+             emergencia_telefono:gv('s2-emergencia-telefono') || null,
+             sensibles_consent:!!($('s2-sensibles-consent') && $('s2-sensibles-consent').checked),
+             sensibles_consent_at:($('s2-sensibles-consent') && $('s2-sensibles-consent').checked)
+               ? new Date().toISOString() : null };
   }
   function buildP3() {
     return { rfc:gv('s3-rfc').toUpperCase(), curp:gv('s3-curp').toUpperCase(),
