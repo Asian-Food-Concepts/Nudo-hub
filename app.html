@@ -457,7 +457,19 @@
   .horas-rows { display: flex; flex-direction: column; gap: 10px; }
   .horas-row { border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: var(--bg); }
   .horas-top { display: flex; gap: 8px; align-items: center; }
-  .horas-top select { flex: 1; min-height: 44px; font-size: 16px; }
+  /* Same look as .panelist-select so the picker matches every other control,
+     and --input-bg so it is the SAME colour in light AND dark (it was transparent). */
+  .horas-top select, .horas-row .horas-tipo {
+    flex: 1; min-height: 48px; font-size: 16px; padding: 12px 14px;
+    border: 1px solid var(--border); border-radius: 12px;
+    background: var(--input-bg); color: var(--ink);
+    -webkit-appearance: none; appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+    background-size: 6px 6px, 6px 6px; background-repeat: no-repeat;
+  }
+  .horas-row .horas-tipo { flex: 0 1 46%; min-width: 130px; }
   .horas-del { min-width: 44px; min-height: 44px; border: 1px solid var(--border); border-radius: 10px;
                background: transparent; color: var(--muted); font-size: 1rem; cursor: pointer; }
   .horas-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
@@ -866,7 +878,7 @@
             </div>
           </div>
           <div class="form-subhead">Equipo y servicio</div>
-          <div class="field"><label>Personal <span style="color:var(--muted);font-size:0.8rem;">(faltas, tardanzas, horas extra)</span></label>
+          <div class="field"><label>Personal <span style="color:var(--muted);font-size:0.8rem;">(incidentes)</span></label>
             <div class="radio-group">
               <label><input type="radio" name="t-personal" value="ok"><span>✅</span></label>
               <label><input type="radio" name="t-personal" value="ok_nota"><span>✅ + nota</span></label>
@@ -1393,7 +1405,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.173";
+  const APP_VERSION = "v0.174";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -2149,7 +2161,18 @@
     // no depende de ellas). readHoras()/addHorasRow() son las mismas que usa el form,
     // así que no hay una segunda ruta de escritura que pueda divergir.
     clearHoras();
-    (d.horas || []).forEach(h => { if (h && h.nombre) addHorasRow(h.nombre, h.horas); });
+    (d.horas || []).forEach(h => {
+      if (!h || !h.nombre) return;
+      const row = addHorasRow(h.nombre, h.horas);
+      if (row && h.tipo) {
+        const ts = row.querySelector('.horas-tipo');
+        if (ts) { ts.value = h.tipo; horasApplyTipo(row); }
+      }
+      if (row && h.motivo) {
+        const mb = row.querySelector('.horas-motivo');
+        if (mb) mb.value = h.motivo;
+      }
+    });
     const pbox = document.querySelector('#form-bitacora textarea[data-for="b-propinas"]');
     if (pbox) {
       pbox.value = d.propinas_detalle || '';
@@ -3593,8 +3616,14 @@
       const detailEl = document.querySelector(`textarea[data-for="t-${t}"]`);
       temas[t] = { ok: (sel.value === 'ok' || sel.value === 'ok_nota'), detalle: (detailEl && detailEl.value.trim()) || '' };
     });
-    // v0.173 — horas (ajustes y extras). Only attached when something was logged,
+    // v0.173/174 — horas (ajustes y extras). Only attached when something was logged,
     // so an untouched block leaves temas.personal exactly as it was before.
+    // A Falta or Cambio de horas without a reason is refused: the reason IS the point.
+    const _faltaMotivo = horasFaltantes();
+    if (_faltaMotivo.length) {
+      showMsg($('b-msg'), 'Falta el motivo de: ' + _faltaMotivo.join(', '), 'err');
+      return;
+    }
     const _horas = readHoras();
     if (_horas.length) { temas.personal.horas = _horas; }
 
@@ -3622,8 +3651,15 @@
       const state = v.ok ? '✅ Bien' : '⚠️ Problema';
       return [themeLabels[t], v.detalle ? `${state} — ${v.detalle}` : state];
     }).filter(Boolean);
-    const _horasReview = readHoras().map(h =>
-      [h.nombre, (h.horas > 0 ? '+' : '') + h.horas + 'h']);
+    const HORAS_TIPO_LBL = { falta: 'Falta', cambio: 'Cambio de horas', extra: 'Hora extra' };
+    const _horasReview = readHoras().map(h => {
+      const hrs = (h.horas > 0 ? '+' : '') + h.horas + 'h';
+      const parts = [hrs];
+      if (h.tipo) parts.push(HORAS_TIPO_LBL[h.tipo] || h.tipo);
+      if (h.motivo) parts.push(h.motivo);
+      // Last item is the detail so a long reason wraps rather than crowding the hours.
+      return [h.nombre, parts.join(' · ')];
+    });
     const rows = [
       ['Sucursal', sucursal.value],
       ['Afluencia', afluencia.value],
@@ -3721,9 +3757,15 @@
   function horasRowHTML(sel, val) {
     const v = (typeof val === 'number' && !isNaN(val)) ? val : 0;
     return `
-      <div class="horas-row" data-horas="${v}">
+      <div class="horas-row" data-horas="${v}" data-tipo="">
         <div class="horas-top">
           <select class="horas-who">${horasOptions(sel, currentBitacoraSucursal())}</select>
+          <select class="horas-tipo">
+            <option value="">— Tipo —</option>
+            <option value="falta">Falta</option>
+            <option value="cambio">Cambio de horas</option>
+            <option value="extra">Hora extra</option>
+          </select>
           <button type="button" class="horas-del" title="Quitar">✕</button>
         </div>
         <div class="horas-chips">
@@ -3732,7 +3774,25 @@
           <button type="button" class="horas-chip horas-half" data-n="0.5">+½</button>
           <span class="horas-val"></span>
         </div>
+        <textarea class="horas-motivo hidden" placeholder="Motivo (obligatorio)" style="margin-top:8px;min-height:52px;"></textarea>
       </div>`;
+  }
+
+  // Falta and Cambio de horas exist to RECORD A REASON, so the reason is required.
+  // Hora extra shows the box too (sometimes there is context) but does not force it.
+  const HORAS_MOTIVO_REQUIRED = { falta: true, cambio: true, extra: false };
+  const HORAS_MOTIVO_SHOWN = { falta: true, cambio: true, extra: true };
+
+  function horasApplyTipo(row) {
+    const tipoSel = row.querySelector('.horas-tipo');
+    const box = row.querySelector('.horas-motivo');
+    if (!tipoSel || !box) return;
+    const t = tipoSel.value || '';
+    row.setAttribute('data-tipo', t);
+    const show = !!HORAS_MOTIVO_SHOWN[t];
+    box.classList.toggle('hidden', !show);
+    box.placeholder = HORAS_MOTIVO_REQUIRED[t] ? 'Motivo (obligatorio)' : 'Motivo (opcional)';
+    if (!show) box.value = '';
   }
 
   function currentBitacoraSucursal() {
@@ -3777,8 +3837,11 @@
         horasSetDisplay(row);
       });
     });
+    const tipoSel = row.querySelector('.horas-tipo');
+    if (tipoSel) tipoSel.addEventListener('change', () => horasApplyTipo(row));
     const del = row.querySelector('.horas-del');
     if (del) del.addEventListener('click', () => row.remove());
+    horasApplyTipo(row);
     horasSetDisplay(row);
   }
 
@@ -3792,7 +3855,32 @@
       const txt = (row.querySelector('.horas-val') || {}).textContent || '0h';
       const num = parseFloat(txt.replace('h', ''));
       if (!num) return;                               // 0h is "no adjustment"
-      out.push({ nombre: name, horas: num });
+      const tipo = (row.querySelector('.horas-tipo') || {}).value || '';
+      const motivo = ((row.querySelector('.horas-motivo') || {}).value || '').trim();
+      const e = { nombre: name, horas: num };
+      if (tipo) e.tipo = tipo;
+      if (motivo) e.motivo = motivo;
+      out.push(e);
+    });
+    return out;
+  }
+
+  // Reasons we refuse to submit: Falta / Cambio with no motivo. Returned as a
+  // readable message so the captain is told WHICH person is missing what.
+  function horasFaltantes() {
+    const wrap = $('b-horas-rows');
+    if (!wrap) return [];
+    const out = [];
+    wrap.querySelectorAll('.horas-row').forEach(row => {
+      const name = (row.querySelector('.horas-who') || {}).value || '';
+      if (!name) return;
+      const tipo = (row.querySelector('.horas-tipo') || {}).value || '';
+      if (!HORAS_MOTIVO_REQUIRED[tipo]) return;
+      const motivo = ((row.querySelector('.horas-motivo') || {}).value || '').trim();
+      if (!motivo) {
+        const lbl = tipo === 'falta' ? 'Falta' : 'Cambio de horas';
+        out.push(`${name} (${lbl})`);
+      }
     });
     return out;
   }
