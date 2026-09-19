@@ -1420,7 +1420,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.181";
+  const APP_VERSION = "v0.182";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -2454,7 +2454,11 @@
       // v0.179: recompute the target week on every open. A form left open across
       // midnight would otherwise keep showing the previous window's week while
       // descansoWeekStart() (used at submit) has already moved on.
-      if (f === 'descansos') descansoFillRange();
+      // v0.182: run the sync on open too. It only ran on 'change', so on first load
+      // the rest-day pickers stayed hidden even though "5 días" is pre-selected —
+      // the two questions the person MUST answer were invisible until they happened
+      // to tap a day count they had not changed.
+      if (f === 'descansos') { descansoFillRange(); descansoSync(); }
       setActiveTab(null);
     });
   });
@@ -5025,7 +5029,10 @@
 
    function descansoSync() {
     const sel = document.querySelector('input[name="d-dias"]:checked');
-    const n = sel ? Number(sel.value) : null;
+    // v0.182: default to 5 rather than bailing. The form ships with 5 pre-selected,
+    // so a missing selection means the radios were reset, not that the user wants
+    // nothing shown — bailing here is what left the pickers hidden.
+    const n = sel ? Number(sel.value) : 5;
     if (!n) return;
     const w1 = $('d-rest1-wrap'), w2 = $('d-rest2-wrap'), same = $('d-same');
     if (w1) w1.classList.toggle('hidden', n === 7);
@@ -5081,7 +5088,7 @@
       if (error) { showMsg($('d-msg'), 'Error: ' + error.message, 'err'); $('d-submit').disabled = false; return; }
       $('d-msg').textContent = '✅ Preferencia enviada — ' + ws;
       $('d-msg').className = 'msg ok'; $('d-msg').classList.remove('hidden');
-      setTimeout(() => { resetForm('descansos'); clearMsg($('d-msg')); goHome(); }, 1400);
+      setTimeout(() => { resetForm('descansos'); descansoSync(); clearMsg($('d-msg')); goHome(); }, 1400);
     });
   });
 

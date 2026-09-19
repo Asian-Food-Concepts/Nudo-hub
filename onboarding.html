@@ -16,22 +16,63 @@
   })();
 
   // ---- Salir: an explicit way out. Without it, leaving means closing the tab, which
-  // looks like a crash and gives no way to hand the device to the next person. ----
-  (function () {
+  // looks like a crash and gives no way to hand the device to the next person.
+  //
+  // v0.182 — this used to be broken in a way that stranded the user. The IIFE runs at
+  // parse time near the top of the document, but `supabase` is not defined until the
+  // CDN script far below loads, and `reportFailure` is not defined until later still.
+  // Clicking Salir therefore threw ReferenceError on signOut, then threw AGAIN inside
+  // the catch when it called reportFailure, leaving the button disabled on "Saliendo…"
+  // with location.reload() never reached. Everything here is resolved at CLICK time,
+  // and the reload lives in a finally so the control can never strand anyone.
+  //
+  // v0.182 — THE ACTUAL BUG. This IIFE ran at parse time, but #onb-exit is declared
+  // ~240 lines further down the document. getElementById returned null, the
+  // `if (!b) return;` guard fired, and NO CLICK LISTENER WAS EVER ATTACHED. The button
+  // was not throwing or hanging — it was completely inert. (My first two theories here
+  // were wrong: neither the supabase timing nor the catch path was the cause.)
+  // Wire it once the DOM is ready instead of at parse time.
+  function wireOnbExit() {
     var b = document.getElementById('onb-exit');
     if (!b) return;
+    function report(msg, detail) {
+      try {
+        if (typeof reportFailure === 'function') reportFailure(msg, detail, {});
+        else console.warn('[onboarding]', msg, detail || '');
+      } catch (_) { /* a reporter failing must never block the exit */ }
+    }
+    // supabase arrives with the CDN script; wait briefly for it rather than assuming.
+    async function waitForSupabase(ms) {
+      var waited = 0;
+      while (typeof supabase === 'undefined' && waited < ms) {
+        await new Promise(function (r) { setTimeout(r, 100); });
+        waited += 100;
+      }
+      return (typeof supabase !== 'undefined') ? supabase : null;
+    }
     b.addEventListener('click', async function () {
       if (!confirm('¿Salir? Tu avance queda guardado y puedes volver con tu correo.')) return;
+      var original = b.textContent;
       b.textContent = 'Saliendo…';
       b.disabled = true;
       try {
-        await supabase.auth.signOut();
+        var sb = await waitForSupabase(5000);
+        if (!sb) { report('salida_sin_supabase', 'supabase no cargó'); return; }
+        await sb.auth.signOut();
       } catch (e) {
-        reportFailure('salida_fallida', (e && e.message) || String(e), {});
+        // Sign-out failing is not a reason to trap the person on this screen.
+        report('salida_fallida', (e && e.message) || String(e));
+      } finally {
+        // ALWAYS leave. A disabled button is a dead end with no way back.
+        if (b.disabled) { location.reload(); }
       }
-      location.reload();
     });
-  })();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wireOnbExit);
+  } else {
+    wireOnbExit();
+  }
 </script>
 <style>
   :root {
@@ -89,8 +130,19 @@
   .step-dot.done   { border-color:var(--green);  background:var(--green);  color:#fff; }
   .step-line { display:none; }
   .steps-bar { display:flex; gap:8px; align-items:stretch; margin:0 0 12px; }
-  #onb-exit { position:fixed; top:10px; right:10px; z-index:60; font-size:0.8rem;
-              color:var(--muted); }
+  /* v0.182 — this rule used to set only font-size and colour, so #onb-exit rendered
+     as a raw OS default button: dark background, 2px OUTSET bevel, zero padding,
+     30x20px, matching nothing on the page. Styled properly with the page's tokens. */
+  #onb-exit { position:fixed; top:10px; right:10px; z-index:60;
+              font-size:0.8rem; font-family:inherit; line-height:1;
+              color:var(--muted); background:var(--card);
+              border:1px solid var(--border); border-radius:999px;
+              padding:8px 14px; min-height:36px; cursor:pointer;
+              -webkit-appearance:none; appearance:none;
+              transition:background .15s, color .15s, border-color .15s; }
+  #onb-exit:hover { color:var(--text); border-color:var(--muted); }
+  #onb-exit:active { background:var(--bg); }
+  #onb-exit:disabled { opacity:.6; cursor:default; }
   .step-line { flex:1; height:2px; background:var(--border); max-width:40px; }
   .step-line.done { background:var(--green); }
 
