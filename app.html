@@ -1418,7 +1418,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.177";
+  const APP_VERSION = "v0.178";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1928,7 +1928,9 @@
     if (reclList) reclList.style.display = showTop;
     if (entrevistasCard) entrevistasCard.style.display = showTop;
     if (entrevistadosCard) entrevistadosCard.style.display = showTop;
-    if (usuariosCard) usuariosCard.style.display = (role === 'Dueño') ? '' : 'none';
+    // v0.178 (Ben) — Dueño + Gerente, matching the server's own gate on
+    // manage-user. isRecl is the file's single definition of "management".
+    if (usuariosCard) usuariosCard.style.display = isRecl ? '' : 'none';
     // v0.149 — the org chart is readable by any leader (captains and up).
     // v0.176 (Ben) — the Equipo page is management-only: Gerente + Dueño.
     // isRecl is exactly that set (Dueño OR role contains 'gerente'), reused so the
@@ -5045,6 +5047,7 @@
       .select('role,level,rank_label').order('level').order('role');
     if (error || !data || !data.length) return;   // leave the select as-is
     const frag = document.createDocumentFragment();
+    const roleList = [];
     let cur = null, lastLevel = null;
     data.forEach(r => {
       if (r.level !== lastLevel) {
@@ -5057,9 +5060,14 @@
       o.value = r.role;
       o.textContent = r.role;
       cur.appendChild(o);
+      roleList.push(r.role);
     });
     sel.innerHTML = '<option value="">— Elegir rol —</option>';
     sel.appendChild(frag);
+    // Expose the same list to the inline user editor, so its Rol dropdown offers
+    // exactly the roles that exist in role_levels. (Was never exposed before, so
+    // the editor would have rendered an empty Rol select.)
+    window.__roleOptions = roleList;
     _roleOptionsLoaded = true;
   }
 
@@ -5312,28 +5320,41 @@
       ? users.filter(u => (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q))
       : users;
     if (!rows.length) { listEl.innerHTML = '<p style="color:var(--muted);">Sin resultados.</p>'; return; }
+    // Who may this caller edit? A Dueño: everyone. A Gerente: only strictly
+    // junior rows, never themselves. Mirrors the server's guard so no button is
+    // offered that would come back 403.
+    const canMgmtAll = window.__usu_canMgmt === true;
+    const myLevel = window.__usu_myLevel;
+    const mayActOn = (u) => {
+      if (canMgmtAll) return true;
+      if (myLevel == null || u.level == null) return false;
+      return u.level > myLevel;
+    };
     listEl.innerHTML = rows.map(u => {
       const isDueño = u.role === 'Dueño';
       const activeBadge = u.active !== false
         ? '<span style="background:#e6f4ea;color:#1f7a4d;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;">Activo</span>'
         : '<span style="background:#fdecea;color:#c62828;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;">Inactivo</span>';
       const confirmed = u.confirmed ? '' : '<span style="color:#e65100;font-size:12px;margin-left:6px;">(sin confirmar)</span>';
+      const editable = mayActOn(u);
+      // role · branch · area · nivel — area and level drive the Equipo screen and
+      // the permission boundary, so they belong on the row, not hidden in an editor.
+      const meta = [u.role || 'sin rol', u.branch, u.area, (u.level == null ? null : 'Nivel ' + u.level)]
+        .filter(Boolean).map(esc).join(' · ');
       return (
-        '<div class="card" style="display:block;padding:12px;margin-bottom:10px;cursor:default;">' +
+        '<div class="card" data-user-row="' + esc(u.id) + '" style="display:block;padding:12px;margin-bottom:10px;cursor:default;">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
             '<div style="font-weight:600;">' + esc(u.name || '—') + ' ' + activeBadge + confirmed + '</div>' +
             (isDueño ? '<span style="font-size:11px;color:var(--muted);white-space:nowrap;">Dueño</span>' : '') +
           '</div>' +
-          '<div style="color:var(--muted);font-size:13px;margin-top:2px;">' + esc(u.role || 'sin rol') +
-            (u.branch ? ' · ' + esc(u.branch) : '') + '</div>' +
+          '<div style="color:var(--muted);font-size:13px;margin-top:2px;">' + meta + '</div>' +
           '<div style="color:var(--muted);font-size:13px;">' + esc(u.email || '—') +
             '<span style="margin-left:8px;">· últ. ' + lastLoginStr(u.last_sign_in_at) + '</span></div>' +
-          '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
-            '<button class="btn btn-outline" data-mgmt="edit" data-id="' + u.id + '" style="font-size:0.85rem;padding:10px 14px;min-height:44px;margin:0;flex:1;">✏️ Editar</button>' +
+          (editable ? '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
             (u.active !== false && !isDueño
               ? '<button class="btn btn-outline" data-mgmt="deactivate" data-id="' + u.id + '" style="font-size:0.85rem;padding:10px 14px;min-height:44px;margin:0;flex:1;">⛔ Desactivar</button>'
               : (!isDueño ? '<button class="btn btn-outline" data-mgmt="activate" data-id="' + u.id + '" style="font-size:0.85rem;padding:10px 14px;min-height:44px;margin:0;flex:1;">✅ Activar</button>' : '')) +
-          '</div>' +
+          '</div>' : '<div class="field-hint" style="margin-top:6px;">Sin permiso para editar</div>') +
         '</div>'
       );
     }).join('');
@@ -5346,6 +5367,16 @@
     try {
       const j = await mgmtCall('list', {});
       window.__usu_cache = j.users || [];
+      // The server tells us what this caller may hand out and the closed area set,
+      // so the UI never offers an option the server would refuse.
+      window.__usu_canMgmt = j.can_manage_mgmt === true;
+      window.__usu_areas  = j.areas || ['Dirección', 'Cocina', 'Barra', 'Piso'];
+      // the caller's own level, to mirror the server's "strictly junior only" rule
+      try {
+        const me = await requireUser();
+        const mp = await supabase.from('profiles').select('level').eq('id', me.id).maybeSingle();
+        window.__usu_myLevel = (mp && mp.data) ? mp.data.level : null;
+      } catch (_) { window.__usu_myLevel = null; }
       renderUsuarios(window.__usu_cache);
     } catch (e) {
       showMsg(msgEl, 'Sin permiso para administrar usuarios: ' + e.message, 'err');
@@ -5377,6 +5408,52 @@
     $('u-submit').disabled = false;
   });
 
+  // ---- Inline user editor -------------------------------------------------
+  // Replaces the old four-prompt() flow. Dropdowns come from the live data:
+  // roles from role_levels (loaded by loadRoleOptions on this screen), areas and
+  // the mgmt-role permission from the server's own list response.
+  function openUsuarioEditor(u) {
+    closeUsuarioEditor();
+    const canMgmt = window.__usu_canMgmt === true;
+    const areas = window.__usu_areas || ['Dirección', 'Cocina', 'Barra', 'Piso'];
+    const branches = ['Roma Norte', 'Del Valle'];
+    const roles = (window.__roleOptions || [])
+      .filter(r => canMgmt || !/due|gerente/i.test(r));
+    const opt = (list, sel) => list.map(x =>
+      `<option value="${esc(x)}"${String(sel||'') === String(x) ? ' selected' : ''}>${esc(x)}</option>`).join('');
+
+    const row = document.createElement('div');
+    row.id = 'usu-editor';
+    row.className = 'card';
+    row.style.cssText = 'padding:14px;margin:10px 0;border:2px solid var(--accent);border-radius:12px;background:var(--input-bg);';
+    row.innerHTML =
+      `<div style="font-weight:700;margin-bottom:10px;">✏️ Editar: ${esc(u.name || '')}</div>`
+      + `<div class="field"><label>Nombre completo</label><input type="text" id="ue-name" value="${esc(u.name||'')}"></div>`
+      + `<div class="field"><label>Correo (login)</label><input type="email" id="ue-email" value="${esc(u.email||'')}"></div>`
+      + `<div class="field"><label>Rol</label><select id="ue-role" class="panelist-select" style="width:100%;">`
+      +   `<option value="">— Sin cambio —</option>` + opt(roles, u.role) + `</select></div>`
+      + `<div class="field"><label>Sucursal</label><select id="ue-branch" class="panelist-select" style="width:100%;">`
+      +   `<option value="">— Sin sucursal —</option>` + opt(branches, u.branch) + `</select></div>`
+      + `<div class="field"><label>Área</label><select id="ue-area" class="panelist-select" style="width:100%;">`
+      +   `<option value="">— Sin área —</option>` + opt(areas, u.area) + `</select></div>`
+      + (canMgmt ? '' : `<div class="field-hint">Solo puedes editar personas de nivel inferior al tuyo.</div>`)
+      + `<div style="display:flex;gap:8px;margin-top:12px;">`
+      +   `<button class="btn" data-mgmt="save-edit" data-id="${esc(u.id)}" style="flex:1;margin:0;">Guardar</button>`
+      +   `<button class="btn btn-outline" data-mgmt="cancel-edit" data-id="${esc(u.id)}" style="flex:1;margin:0;">Cancelar</button>`
+      + `</div>`;
+
+    const list = $('usu-list');
+    const anchor = list.querySelector(`[data-user-row="${CSS.escape(u.id)}"]`);
+    if (anchor) anchor.insertAdjacentElement('afterend', row);
+    else list.prepend(row);
+    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  function closeUsuarioEditor() {
+    const e = $('usu-editor');
+    if (e) e.remove();
+  }
+
   // Search re-render
   const usuSearch = $('usu-search');
   if (usuSearch) usuSearch.addEventListener('input', () => {
@@ -5392,8 +5469,23 @@
     const action = btn.getAttribute('data-mgmt');
     const msgEl = $('usu-msg');
     clearMsg(msgEl);
-    let user; try { user = await requireUser(); } catch(_) { return; }
-    if (!window.__usu_cache) { await loadUsuarios(); }
+
+    // CAPTURE THE EDITOR VALUES NOW, SYNCHRONOUSLY.
+    // loadUsuarios() below rebuilds #usu-list, which destroys #usu-editor. Any
+    // value read after an await is read from a detached node — that is why the
+    // save appeared to do nothing: the editor was gone by the time it was read,
+    // and the row re-rendered from the DB with the old value.
+    const pending = (action === 'save-edit') ? (() => {
+      const val = k => { const el = $('ue-' + k); return el ? String(el.value).trim() : ''; };
+      return { name: val('name'), email: val('email'), role: val('role'),
+               branch: val('branch'), area: val('area') };
+    })() : null;
+
+    let user; try { user = await requireUser(); } catch(e) { console.warn('usuarios: requireUser failed', e && e.message); return; }
+    // Only hydrate the cache for actions that need it. Never for an in-editor
+    // action: re-rendering mid-edit was destroying the editor being edited.
+    const isEditorAction = (action === 'save-edit' || action === 'cancel-edit');
+    if (!window.__usu_cache && !isEditorAction) { await loadUsuarios(); }
 
     if (action === 'deactivate' || action === 'activate') {
       const active = action === 'activate';
@@ -5408,26 +5500,51 @@
     }
 
     if (action === 'edit') {
-      const u = (window.__usu_cache || []).find(x => x.id === id);
-      if (!u) return;
-      const newName = prompt('Nombre completo', u.name || '');
-      if (newName === null) return;
-      const newRole = prompt('Rol (' + MGMT_ROLES.join(' / ') + ')', u.role || '');
-      if (newRole === null) return;
-      const newBranch = prompt('Sucursal (Roma Norte / Del Valle, o dejar vacío)', u.branch || '');
-      if (newBranch === null) return;
-      const newEmail = prompt('Correo (login)', u.email || '');
-      if (newEmail === null) return;
+      // v0.178: the inline editor's save path does not persist yet, so it is
+      // DISABLED rather than shipped broken — a Guardar that silently does
+      // nothing is worse than no editor. The manage-user backend (areas,
+      // Gerente guards) is live and used by the list; re-enable this once the
+      // save is verified end-to-end. See USU_EDITOR_ENABLED below.
+      if (!window.USU_EDITOR_ENABLED) {
+        showMsg(msgEl, 'La edición en pantalla estará disponible pronto. Por ahora pide el cambio a un Dueño.', 'err');
+        return;
+      }
+      const cached = (window.__usu_cache || []).find(x => x.id === id);
+      const el = $('usu-editor');
+      if (el) el.remove();
+      openUsuarioEditor(cached || { id, name: '', role: '', branch: '', area: '', email: '' });
+      return;
+    }
+
+    if (action === 'cancel-edit') {
+      closeUsuarioEditor();
+      return;
+    }
+
+    if (action === 'save-edit') {
+      // Resolve the row WITHOUT depending on __usu_cache. That cache is a search
+      // convenience and can legitimately be empty; when it was, this handler used
+      // to `return` silently and the save simply never happened.
+      const cached = (window.__usu_cache || []).find(x => x.id === id);
+      const domRow = document.querySelector(`[data-user-row="${CSS.escape(id)}"]`);
+      const u = cached || { id, name: '', role: '', branch: '', area: '', email: '' };
+      if (!cached && !domRow) {
+        showMsg(msgEl, 'No se pudo identificar al usuario. Recarga e intenta de nuevo.', 'err');
+        return;
+      }
+      const payload = {
+        id,
+        name: (pending && pending.name) || u.name,
+        role: (pending && pending.role) || u.role,
+        branch: (pending && pending.branch) || null,
+        area: (pending && pending.area) || null,
+        email: (pending && pending.email) || u.email,
+        _orig_email: u.email || '',
+      };
       try {
-        await mgmtCall('update', {
-          id,
-          name: newName.trim() || u.name,
-          role: newRole.trim() || u.role,
-          branch: newBranch.trim() || null,
-          email: newEmail.trim() || u.email,
-          _orig_email: u.email || '',
-        });
+        await mgmtCall('update', payload);
         showMsg(msgEl, '✅ Usuario actualizado.', 'ok');
+        closeUsuarioEditor();
         await loadUsuarios();
       } catch (err) {
         showMsg(msgEl, 'Error: ' + err.message, 'err');
