@@ -480,6 +480,11 @@
   .horas-chip.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
   /* v0.175 — whole hours only; the ±½ chips and .horas-half rule were removed (Ben). */
   .horas-val { min-width: 62px; text-align: center; font-weight: 700; font-size: 1rem; }
+  /* v0.176 — the "＋ horas" opt-in that accompanies a Falta (Ben: hiding the chips
+     is the feature, but a specific shortfall can still be recorded on request). */
+  .horas-hrs-toggle { margin-top: 8px; min-height: 40px; padding: 0 14px; border: 1px dashed var(--border);
+                      border-radius: 9px; background: transparent; color: var(--muted);
+                      font-size: 0.9rem; cursor: pointer; }
   .horas-add { min-height: 44px; width: 100%; margin-top: 10px; border: 1px dashed var(--border);
                border-radius: 10px; background: transparent; color: var(--ink); cursor: pointer; font-size: 0.95rem; }
   .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -708,70 +713,11 @@
             <div class="text"><div class="title">Solicitud de Compras y Reposición</div><div class="sub">Solicita compras o reposición de insumos</div></div>
             <div class="arrow">›</div>
           </a>
-          <a class="card" href="#" data-form="buzon">
-            <div class="icon icon-form">💬</div>
-            <div class="text"><div class="title">Buzón de Sugerencias</div><div class="sub">Anónimo y opcional</div></div>
-            <div class="arrow">›</div>
-          </a>
           <a class="card" href="#" data-form="descansos">
             <div class="icon icon-form">🗓️</div>
             <div class="text"><div class="title">Preferencia de Descansos</div><div class="sub">Llenar antes de las 10pm cada martes</div></div>
             <div class="arrow">›</div>
           </a>
-          <a class="card" href="#" id="equipo-card" data-form="equipo" style="display:none;">
-            <div class="icon icon-form">👥</div>
-            <div class="text"><div class="title">Equipo</div><div class="sub">Niveles, roles y quién es quién</div></div>
-            <div class="arrow">›</div>
-          </a>
-        </div>
-
-        <div class="section-title">Seguimiento</div>
-        <div class="card-list">
-          <a class="card" href="#" data-form="estatus">
-            <div class="icon icon-form">📋</div>
-            <div class="text"><div class="title">Seguimiento de solicitudes</div><div class="sub">Da seguimiento a tus solicitudes</div></div>
-            <div class="arrow">›</div>
-            <span id="estatus-badge" class="hidden" style="position:absolute;top:8px;right:34px;display:flex;gap:4px;align-items:center;"></span>
-          </a>
-        </div>
-
-        <!-- Mantenimiento preventivo — placeholder, leaders only (Ben 2026-09-14) -->
-        <div class="section-title" id="mantprev-section" style="display:none;">Mantenimiento</div>
-        <div class="card-list" id="mantprev-list" style="display:none;">
-          <div class="card" id="mantprev-card" style="display:none;opacity:0.5;cursor:not-allowed;filter:grayscale(0.6);">
-            <div class="icon icon-sheet">🧯</div>
-            <div class="text"><div class="title">Mantenimiento preventivo</div><div class="sub">Próximamente · fechas de extintores, inventarios programados</div></div>
-          </div>
-        </div>
-
-        <div class="section-title" id="recl-section">Reclutamiento</div>
-        <div class="card-list" id="recl-list">
-          <a class="card" href="#" id="entrevistas-card" data-form="entrevistas" style="display:none;">
-            <div class="icon icon-form">🎯</div>
-            <div class="text"><div class="title">Entrevistas</div><div class="sub">Registra candidatos y ofertas</div></div>
-            <div class="arrow">›</div>
-          </a>
-          <a class="card" href="#" id="entrevistados-card" data-form="entrevistados" style="display:none;">
-            <div class="icon icon-form">👥</div>
-            <div class="text"><div class="title">Entrevistados</div><div class="sub">Ver y editar todos los candidatos</div></div>
-            <div class="arrow">›</div>
-          </a>
-          <a class="card" href="#" id="usuarios-card" data-form="usuarios" style="display:none;">
-            <div class="icon icon-form">🛠️</div>
-            <div class="text"><div class="title">Usuarios</div><div class="sub">Agregar y administrar acceso del equipo</div></div>
-            <div class="arrow">›</div>
-          </a>
-        </div>
-
-        <!-- Horario (v0.125): Mi horario + Planear horario for staff/captains only;
-             Dueño gets the real planner in the Próximamente zone at the bottom. -->
-        <div class="section-title" id="horario-title">Horario</div>
-        <div class="card-list" id="horario-list">
-          <div class="card" style="opacity:0.5;cursor:not-allowed;filter:grayscale(0.6);">
-            <div class="icon icon-sheet">🗓️</div>
-            <div class="text"><div class="title">Mi horario</div><div class="sub">Próximamente</div></div>
-            <div class="arrow">›</div>
-          </div>
         </div>
 
         <div class="section-title">Guía</div>
@@ -803,6 +749,61 @@
           </a>
         </div>
 
+        <div class="section-title">Seguimiento</div>
+        <div class="card-list">
+          <a class="card" href="#" data-form="estatus">
+            <div class="icon icon-form">📋</div>
+            <div class="text"><div class="title">Seguimiento de solicitudes</div><div class="sub">Da seguimiento a tus solicitudes</div></div>
+            <div class="arrow">›</div>
+            <span id="estatus-badge" class="hidden" style="position:absolute;top:8px;right:34px;display:flex;gap:4px;align-items:center;"></span>
+          </a>
+        </div>
+
+        <!-- Mantenimiento preventivo — placeholder, leaders only (Ben 2026-09-14) -->
+        <div class="section-title" id="mantprev-section" style="display:none;">Mantenimiento</div>
+        <div class="card-list" id="mantprev-list" style="display:none;">
+          <div class="card" id="mantprev-card" style="display:none;opacity:0.5;cursor:not-allowed;filter:grayscale(0.6);">
+            <div class="icon icon-sheet">🧯</div>
+            <div class="text"><div class="title">Mantenimiento preventivo</div><div class="sub">Próximamente · fechas de extintores, inventarios programados</div></div>
+          </div>
+        </div>
+
+        <div class="section-title" id="recl-section">Equipo y Reclutamiento</div>
+        <div class="card-list" id="recl-list">
+          <a class="card" href="#" id="equipo-card" data-form="equipo" style="display:none;">
+            <div class="icon icon-form">👥</div>
+            <div class="text"><div class="title">Equipo</div><div class="sub">Niveles, roles y quién es quién</div></div>
+            <div class="arrow">›</div>
+          </a>
+          <a class="card" href="#" id="entrevistas-card" data-form="entrevistas" style="display:none;">
+            <div class="icon icon-form">🎯</div>
+            <div class="text"><div class="title">Entrevistas</div><div class="sub">Registra candidatos y ofertas</div></div>
+            <div class="arrow">›</div>
+          </a>
+          <a class="card" href="#" id="entrevistados-card" data-form="entrevistados" style="display:none;">
+            <div class="icon icon-form">👥</div>
+            <div class="text"><div class="title">Entrevistados</div><div class="sub">Ver y editar todos los candidatos</div></div>
+            <div class="arrow">›</div>
+          </a>
+          <a class="card" href="#" id="usuarios-card" data-form="usuarios" style="display:none;">
+            <div class="icon icon-form">🛠️</div>
+            <div class="text"><div class="title">Usuarios</div><div class="sub">Agregar y administrar acceso del equipo</div></div>
+            <div class="arrow">›</div>
+          </a>
+        </div>
+
+        <!-- Horario (v0.125): Mi horario + Planear horario for staff/captains only;
+             Dueño gets the real planner in the Próximamente zone at the bottom. -->
+        <div class="section-title" id="horario-title">Horario</div>
+        <div class="card-list" id="horario-list">
+          <div class="card" style="opacity:0.5;cursor:not-allowed;filter:grayscale(0.6);">
+            <div class="icon icon-sheet">🗓️</div>
+            <div class="text"><div class="title">Mi horario</div><div class="sub">Próximamente</div></div>
+            <div class="arrow">›</div>
+          </div>
+        </div>
+
+
         <!-- DESHABILITADO (v0.125): sections temporarily off for captains, parked at the
              bottom of Home. Hidden by default; loadUser() reveals per role:
              - Reclutamiento: greyed for captains, real cards for Dueño/Gerente
@@ -833,6 +834,18 @@
         <!-- Live sections pulled from the hub (Desempeño + Opiniones) so the
              app's bottom matches the public hub automatically. -->
         <div id="hub-live-sections"></div>
+
+        <!-- Buzón de Sugerencias — moved to the very bottom (Ben 2026-09-19), below
+             the reviews. Kept as an in-app form; the Google Form route is offered in
+             the subtitle because a suggestion form should never require a login. -->
+        <div class="section-title">Ayúdanos a mejorar</div>
+        <div class="card-list">
+          <a class="card" href="#" data-form="buzon">
+            <div class="icon icon-form">💬</div>
+            <div class="text"><div class="title">Buzón de Sugerencias</div><div class="sub">Anónimo y opcional · formulario de Google disponible</div></div>
+            <div class="arrow">›</div>
+          </a>
+        </div>
       </div>
 
       <!-- GUIDE VIEW (in-app, so back stays inside the app) -->
@@ -1405,7 +1418,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.175";
+  const APP_VERSION = "v0.176";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1917,8 +1930,11 @@
     if (entrevistadosCard) entrevistadosCard.style.display = showTop;
     if (usuariosCard) usuariosCard.style.display = (role === 'Dueño') ? '' : 'none';
     // v0.149 — the org chart is readable by any leader (captains and up).
+    // v0.176 (Ben) — the Equipo page is management-only: Gerente + Dueño.
+    // isRecl is exactly that set (Dueño OR role contains 'gerente'), reused so the
+    // file keeps ONE definition of "management" instead of a third role list.
     const equipoCard = document.getElementById('equipo-card');
-    if (equipoCard) equipoCard.style.display = isLeader ? '' : 'none';
+    if (equipoCard) equipoCard.style.display = isRecl ? '' : 'none';
     const reclDisSection = document.getElementById('recl-disabled-section');
     const reclDisList = document.getElementById('recl-disabled-list');
     const reclDisCard = document.getElementById('recl-disabled-card');
@@ -3764,22 +3780,23 @@
             <option value="">— Tipo —</option>
             <option value="falta">Falta</option>
             <option value="cambio">Cambio de horas</option>
-            <option value="extra">Hora extra</option>
           </select>
           <button type="button" class="horas-del" title="Quitar">✕</button>
         </div>
-        <div class="horas-chips">
+        <div class="horas-chips" data-chips>
           ${HORAS_CHIPS.map(c => `<button type="button" class="horas-chip ${c < 0 ? 'neg' : ''}" data-n="${c}">${c > 0 ? '+' + c + 'h' : c + 'h'}</button>`).join('')}
           <span class="horas-val"></span>
         </div>
+        <button type="button" class="horas-hrs-toggle hidden" data-hrs-toggle>＋ horas</button>
         <textarea class="horas-motivo hidden" placeholder="Motivo (obligatorio)" style="margin-top:8px;min-height:52px;"></textarea>
       </div>`;
   }
 
-  // Falta and Cambio de horas exist to RECORD A REASON, so the reason is required.
-  // Hora extra shows the box too (sometimes there is context) but does not force it.
-  const HORAS_MOTIVO_REQUIRED = { falta: true, cambio: true, extra: false };
-  const HORAS_MOTIVO_SHOWN = { falta: true, cambio: true, extra: true };
+  // Both types exist to RECORD A REASON, so the reason is required for both.
+  // Falta additionally hides the hour chips: it is a fact about attendance, not an
+  // hours adjustment. Option B (Ben) keeps them reachable behind "＋ horas" so a
+  // specific shortfall can still be captured when someone actually wants it.
+  const HORAS_MOTIVO_REQUIRED = { falta: true, cambio: true };
 
   function horasApplyTipo(row) {
     const tipoSel = row.querySelector('.horas-tipo');
@@ -3787,10 +3804,22 @@
     if (!tipoSel || !box) return;
     const t = tipoSel.value || '';
     row.setAttribute('data-tipo', t);
-    const show = !!HORAS_MOTIVO_SHOWN[t];
-    box.classList.toggle('hidden', !show);
-    box.placeholder = HORAS_MOTIVO_REQUIRED[t] ? 'Motivo (obligatorio)' : 'Motivo (opcional)';
-    if (!show) box.value = '';
+
+    box.classList.toggle('hidden', !(t === 'falta' || t === 'cambio'));
+    box.placeholder = 'Motivo (obligatorio)';
+    if (t !== 'falta' && t !== 'cambio') box.value = '';
+
+    // Falta: chips hidden unless the captain opted in via "＋ horas".
+    const chips = row.querySelector('[data-chips]');
+    const toggle = row.querySelector('[data-hrs-toggle]');
+    const manual = row.getAttribute('data-hrs-manual') === '1';
+    if (chips) chips.classList.toggle('hidden', t === 'falta' && !manual);
+    if (toggle) {
+      toggle.classList.toggle('hidden', t !== 'falta');
+      toggle.textContent = manual ? '− horas' : '＋ horas';
+    }
+    // Leaving Falta clears the opt-in, so Cambio always starts with chips shown.
+    if (t !== 'falta') row.removeAttribute('data-hrs-manual');
   }
 
   function currentBitacoraSucursal() {
@@ -3834,6 +3863,13 @@
     });
     const tipoSel = row.querySelector('.horas-tipo');
     if (tipoSel) tipoSel.addEventListener('change', () => horasApplyTipo(row));
+    const hrsToggle = row.querySelector('[data-hrs-toggle]');
+    if (hrsToggle) hrsToggle.addEventListener('click', () => {
+      const on = row.getAttribute('data-hrs-manual') === '1';
+      if (on) row.removeAttribute('data-hrs-manual');
+      else row.setAttribute('data-hrs-manual', '1');
+      horasApplyTipo(row);
+    });
     const del = row.querySelector('.horas-del');
     if (del) del.addEventListener('click', () => row.remove());
     horasApplyTipo(row);
@@ -3849,10 +3885,14 @@
       if (!name) return;                              // an un-named row is not an entry
       const txt = (row.querySelector('.horas-val') || {}).textContent || '0h';
       const num = Math.trunc(parseFloat(txt.replace('h', '')) || 0);   // whole hours only
-      if (!num) return;                               // 0h is "no adjustment"
       const tipo = (row.querySelector('.horas-tipo') || {}).value || '';
       const motivo = ((row.querySelector('.horas-motivo') || {}).value || '').trim();
-      const e = { nombre: name, horas: num };
+      // A Falta is a valid entry with NO hours — the person simply did not work.
+      // For any other kind, 0h means the row was never really filled in, so skip it.
+      if (!num && tipo !== 'falta') return;
+      const e = { nombre: name };
+      if (num) e.horas = num;              // omit rather than store a fake 0
+      else if (tipo === 'falta') e.horas = 0;
       if (tipo) e.tipo = tipo;
       if (motivo) e.motivo = motivo;
       out.push(e);
@@ -3871,6 +3911,8 @@
       if (!name) return;
       const tipo = (row.querySelector('.horas-tipo') || {}).value || '';
       if (!HORAS_MOTIVO_REQUIRED[tipo]) return;
+      // NOTE: deliberately NOT gated on hours — a Falta with no hours still needs
+      // its reason, otherwise the required field could be bypassed by leaving 0h.
       const motivo = ((row.querySelector('.horas-motivo') || {}).value || '').trim();
       if (!motivo) {
         const lbl = tipo === 'falta' ? 'Falta' : 'Cambio de horas';
@@ -5141,6 +5183,38 @@
     if (lv.error || pr.error) { body.innerHTML = '<div class="msg err">No se pudo cargar.</div>'; return; }
     const meta = {};
     (lv.data || []).forEach(r => { meta[r.level] = r; });
+
+    // ---- Niveles: what each level MEANS (Ben 2026-09-19) ----
+    // Read from role_levels (rank_label + responsibilities) so the explainer is the
+    // same source of truth as the roster below it. One row per DISTINCT level, using
+    // the canonical role for that level; those rows already carry the description.
+    const levelInfo = {};
+    (lv.data || []).forEach(r => {
+      if (r.level == null) return;
+      const hasDesc = !!(r.responsibilities || r.rank_label);
+      const cur = levelInfo[r.level];
+      if (!cur || (hasDesc && !cur.hasDesc)) {
+        levelInfo[r.level] = { level: r.level, label: r.rank_label || r.role, desc: r.responsibilities || '', hasDesc: hasDesc };
+      }
+    });
+    const levelKeys = Object.keys(levelInfo).map(Number).sort((a, b) => a - b);
+    let nivelesHtml = '<div style="margin:0 0 22px;padding:14px;border:1px solid var(--border);'
+      + 'border-radius:12px;background:var(--input-bg);">'
+      + '<div style="font-weight:700;font-size:1rem;margin-bottom:2px;">Niveles</div>'
+      + '<div style="color:var(--muted);font-size:0.85rem;margin-bottom:10px;">Qué significa cada nivel'
+      + ' — de mayor a menor responsabilidad.</div>';
+    levelKeys.forEach(n => {
+      const L = levelInfo[n];
+      nivelesHtml += '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;'
+        + 'border-top:1px solid var(--border);">'
+        + '<div style="min-width:56px;font-weight:700;font-size:0.85rem;color:var(--accent);">Nivel '
+        + n + '</div>'
+        + '<div style="flex:1;">'
+        + '<div style="font-weight:600;font-size:0.92rem;">' + esc(L.label || '') + '</div>'
+        + (L.desc ? '<div style="color:var(--muted);font-size:0.84rem;line-height:1.35;">' + esc(L.desc) + '</div>' : '')
+        + '</div></div>';
+    });
+    nivelesHtml += '</div>';
     // Outlet first, then area within it (Ben). Level is still shown, but per person
     // rather than as the top-level divider — "who works where" is the question this
     // screen answers, and area is how a shift actually gets covered.
@@ -5182,7 +5256,7 @@
         });
       html += '</div>';
     });
-    body.innerHTML = html || '<div class="msg">Sin datos.</div>';
+    body.innerHTML = nivelesHtml + (html || '<div class="msg">Sin datos.</div>');
   }
 
   // ---- [stepper] ± buttons (v0.113) ----
