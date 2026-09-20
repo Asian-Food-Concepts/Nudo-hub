@@ -790,6 +790,13 @@
             <div class="text"><div class="title">Usuarios</div><div class="sub">Agregar y administrar acceso del equipo</div></div>
             <div class="arrow">›</div>
           </a>
+          <!-- v0.187 — people who registered through the onboarding form, awaiting
+               activation. Gated like Usuarios (isRecl) and backed by the same RLS. -->
+          <a class="card" href="#" id="nuevos-card" data-form="nuevos" style="display:none;">
+            <div class="icon icon-form">🆕</div>
+            <div class="text"><div class="title">Nuevos ingresos</div><div class="sub">Registros del formulario, activa sus cuentas</div></div>
+            <div class="arrow">›</div>
+          </a>
         </div>
 
         <!-- Horario (v0.125): Mi horario + Planear horario for staff/captains only;
@@ -1346,6 +1353,27 @@
         </div>
       </div>
 
+      <!-- v0.187 — NUEVOS INGRESOS: registros del formulario de incorporación -->
+      <div id="form-nuevos" class="form-page">
+        <button class="back" data-back><span class="chev">‹</span> Volver</button>
+        <div class="form-card">
+          <h2>🆕 Nuevos ingresos</h2>
+          <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">
+            Personas que empezaron su registro en el formulario de incorporación. Activa su cuenta
+            cuando estén listas para entrar a la app.
+          </p>
+          <div id="nuevos-msg" class="msg hidden"></div>
+
+          <div class="field-hint" style="margin-bottom:12px;">
+            Un registro aquí significa que la persona <strong>empezó</strong> el formulario, no que
+            ya entregó todo. Los datos fiscales completos (RFC, CURP, NSS, CLABE, salario) viven en
+            la hoja del formulario, no en esta app.
+          </div>
+
+          <div id="nuevos-list"><p style="color:var(--muted);">Cargando…</p></div>
+        </div>
+      </div>
+
       <!-- BOTTOM TAB BAR (v0.126) — floating dock, 2 tabs (Ben: "Inicio and Seguimiento
            should be enough"; Bitácora/Planear/Guía stay reachable via Home cards) -->
       <nav class="bottom-tabs" id="bottom-tabs" aria-label="Navegación principal">
@@ -1420,7 +1448,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.185";
+  const APP_VERSION = "v0.187";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1948,6 +1976,8 @@
     // v0.178 (Ben) — Dueño + Gerente, matching the server's own gate on
     // manage-user. isRecl is the file's single definition of "management".
     if (usuariosCard) usuariosCard.style.display = isRecl ? '' : 'none';
+    const nuevosCard = document.getElementById('nuevos-card');
+    if (nuevosCard) nuevosCard.style.display = isRecl ? '' : 'none';
     // v0.149 — the org chart is readable by any leader (captains and up).
     // v0.176 (Ben) — the Equipo page is management-only: Gerente + Dueño.
     // isRecl is exactly that set (Dueño OR role contains 'gerente'), reused so the
@@ -2469,6 +2499,7 @@
       if (f === 'entrevistas') { loadEntrevistas(); loadPanelistRoster(); if (window.__slidePuestoReposition) window.__slidePuestoReposition(); }
       if (f === 'entrevistados') { loadEntrevistados(); }
       if (f === 'usuarios') { loadUsuarios(); loadRoleOptions(); }
+      if (f === 'nuevos') { loadNuevos(); loadRoleOptions(); }
       if (f === 'equipo') { loadEquipo(); }
       if (f === 'plan') loadPlanner();
       // v0.179: recompute the target week on every open. A form left open across
@@ -5125,7 +5156,7 @@
     const sel = $('u-role');
     if (!sel) return;
     const { data, error } = await supabase.from('role_levels')
-      .select('role,level,rank_label').order('level').order('role');
+      .select('role,level,rank_label,area').order('level').order('role');
     if (error || !data || !data.length) return;   // leave the select as-is
     const frag = document.createDocumentFragment();
     const roleList = [];
@@ -5149,6 +5180,11 @@
     // exactly the roles that exist in role_levels. (Was never exposed before, so
     // the editor would have rendered an empty Rol select.)
     window.__roleOptions = roleList;
+    // v0.186 — role -> canonical area, so the editor can show which area the
+    // sync_profile_level trigger will assign when the role changes. Area is a
+    // derived field; showing the derived value beats offering a choice that the
+    // trigger overwrites (which looked like a save that silently did nothing).
+    window.__roleAreas = Object.fromEntries(data.map(r => [r.role, r.area || null]));
     _roleOptionsLoaded = true;
   }
 
@@ -5266,7 +5302,7 @@
     const body = $('equipo-body');
     if (!body) return;
     const [lv, pr] = await Promise.all([
-      supabase.from('role_levels').select('role,level,rank_label,responsibilities').order('level'),
+      supabase.from('role_levels').select('role,level,rank_label,responsibilities,area').order('level'),
       supabase.from('profiles').select('name,role,branch,level,area').eq('active', true).order('name')
     ]);
     if (lv.error || pr.error) { body.innerHTML = '<div class="msg err">No se pudo cargar.</div>'; return; }
@@ -5518,8 +5554,16 @@
       +   `<option value="">— Sin cambio —</option>` + opt(roles, u.role) + `</select></div>`
       + `<div class="field"><label>Sucursal</label><select id="ue-branch" class="panelist-select" style="width:100%;">`
       +   `<option value="">— Sin sucursal —</option>` + opt(branches, u.branch) + `</select></div>`
-      + `<div class="field"><label>Área</label><select id="ue-area" class="panelist-select" style="width:100%;">`
-      +   `<option value="">— Sin área —</option>` + opt(areas, u.area) + `</select></div>`
+      // v0.186 — Area is NOT free-form: the sync_profile_level trigger overwrites
+      // profiles.area from role_levels whenever `role` is in the UPDATE, which it
+      // always is. Offering a dropdown here produced a control that reported success
+      // and saved nothing. Show the area the role maps to, and let it follow the role.
+      + `<div class="field"><label>Área <span style="font-weight:400;color:var(--muted);">(según el rol)</span></label>`
+      +   `<div id="ue-area-readout" class="panelist-select" style="width:100%;display:flex;align-items:center;min-height:44px;background:var(--bg);color:var(--muted);">`
+      +     `${esc(u.area || '—')}</div>`
+      +   `<input type="hidden" id="ue-area" value="${esc(u.area || '')}">`
+      +   `<div class="field-hint">El área se asigna según el rol (role_levels). Para cambiarla, cambia el rol.</div>`
+      + `</div>`
       + (canMgmt ? '' : `<div class="field-hint">Solo puedes editar personas de nivel inferior al tuyo.</div>`)
       + `<div style="display:flex;gap:8px;margin-top:12px;">`
       +   `<button class="btn" data-mgmt="save-edit" data-id="${esc(u.id)}" style="flex:1;margin:0;">Guardar</button>`
@@ -5533,10 +5577,140 @@
     row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
+  // ============ NUEVOS INGRESOS (v0.187) ============
+  // People who registered through the onboarding form. They live in public.onboarding,
+  // which the app had no view of: Usuarios reads public.profiles, and a profiles row only
+  // exists once an owner CREATES an account. So a finished registration was invisible and
+  // there was no step between "filled the form" and "boss manually adds them to Usuarios".
+  //
+  // Reading onboarding is gated by RLS to (is_dueno() OR is_gerente()); a captain who
+  // sees the card via isRecl but lacks those roles simply gets zero rows, and the
+  // empty state says why rather than looking broken.
+  async function loadNuevos() {
+    const list = $('nuevos-list');
+    if (!list) return;
+    list.innerHTML = '<p style="color:var(--muted);">Cargando…</p>';
+    try {
+      const { data, error } = await supabase
+        .from('onboarding')
+        .select('id,auth_user_id,email,nombres,apellido_paterno,apellido_materno,movil,current_step,created_at,updated_at,lfpdppp_consent')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      window.__nuevos_cache = data || [];
+      renderNuevos(window.__nuevos_cache);
+    } catch (e) {
+      list.innerHTML = '<p style="color:var(--red);">No se pudieron cargar los registros. '
+        + esc((e && e.message) || 'error') + '</p>';
+    }
+  }
+
+  function renderNuevos(rows) {
+    const list = $('nuevos-list');
+    if (!list) return;
+    if (!rows || !rows.length) {
+      list.innerHTML = '<p style="color:var(--muted);">No hay registros del formulario.</p>'
+        + '<div class="field-hint">Si esperabas ver personas aquí, puede que aún no hayan '
+        + 'empezado el formulario, o que tu cuenta no tenga permiso para verlo.</div>';
+      return;
+    }
+    // Which of these already have a staff account? That is the activation state.
+    const haveProfile = new Set((window.__usu_cache || []).map(u => (u.email || '').toLowerCase()));
+    // A record with no name (or no email) cannot be activated — manage-user requires
+    // both. Do not offer a button that can only fail; say what is missing instead.
+    const isComplete = r => !!(String(r.nombres || '').trim() && String(r.email || '').trim());
+    list.innerHTML = rows.map(r => {
+      const full = [r.nombres, r.apellido_paterno, r.apellido_materno].filter(Boolean).join(' ').trim()
+                   || '(sin nombre)';
+      const email = (r.email || '').toLowerCase();
+      const activated = haveProfile.has(email);
+      const complete = isComplete(r);
+      const step = Number(r.current_step || 1);
+      const pct = Math.min(100, Math.round((step / 4) * 100));
+      return '<div data-nuevo-row="' + esc(r.id) + '" style="border:1px solid var(--border);'
+        + 'border-radius:12px;padding:12px;margin-bottom:10px;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+        +   '<div style="font-weight:600;">' + esc(full) + '</div>'
+        +   (activated
+              ? '<span style="font-size:11px;color:var(--green);white-space:nowrap;">✓ con cuenta</span>'
+              : (complete
+                  ? '<span style="font-size:11px;color:var(--amber);white-space:nowrap;">sin cuenta</span>'
+                  : '<span style="font-size:11px;color:var(--muted);white-space:nowrap;">incompleto</span>'))
+        + '</div>'
+        + '<div style="color:var(--muted);font-size:13px;">' + esc(r.email || '—') + '</div>'
+        + '<div style="color:var(--muted);font-size:13px;">' + esc(r.movil || 'sin móvil')
+        +   ' · paso ' + step + '/4</div>'
+        + '<div style="height:6px;background:var(--border);border-radius:99px;margin:8px 0;">'
+        +   '<div style="height:6px;width:' + pct + '%;background:var(--accent2);border-radius:99px;"></div></div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+        + (activated
+            ? '<span class="field-hint" style="margin:0;">Ya tiene cuenta — adminístrala en Usuarios.</span>'
+            : (!complete
+                ? '<span class="field-hint" style="margin:0;color:var(--amber);">Registro incompleto — falta nombre o correo. No se puede activar todavía.</span>'
+                : '<button class="btn btn-outline" data-nuevo-activate="' + esc(r.id) + '"'
+                  + ' style="font-size:0.85rem;padding:10px 14px;min-height:44px;margin:0;flex:1;">✅ Activar cuenta</button>'))
+        + '</div></div>';
+    }).join('');
+  }
+
+  // Activation creates the auth user + profiles row through the same manage-user
+  // function Usuarios uses — one code path for account creation, not a second one.
+  document.addEventListener('click', async (e) => {
+    if (!e.target || !e.target.closest) return;
+    const btn = e.target.closest('[data-nuevo-activate]');
+    if (!btn) return;
+    e.preventDefault();
+    const msgEl = $('nuevos-msg');
+    clearMsg(msgEl);
+    const id = btn.getAttribute('data-nuevo-activate');
+    const row = (window.__nuevos_cache || []).find(r => r.id === id);
+    if (!row) { showMsg(msgEl, 'No se encontró el registro.', 'err'); return; }
+    const email = (row.email || '').trim().toLowerCase();
+    const name = [row.nombres, row.apellido_paterno, row.apellido_materno].filter(Boolean).join(' ').trim();
+    if (!email || !name) {
+      showMsg(msgEl, 'El registro no tiene nombre o correo. Pide que complete el formulario.', 'err');
+      return;
+    }
+    // Role is REQUIRED by manage-user and drives level + area via role_levels, so it
+    // cannot be guessed. Ask for it instead of inventing one.
+    const role = (window.prompt('Rol para ' + name + '\n\nEscríbelo tal como aparece en la lista de roles (ej. Mesero, Cocina, Barra):', '') || '').trim();
+    if (!role) return;
+    let user;
+    try { user = await requireUser(); }
+    catch (_) { showMsg($('nuevos-msg'), 'No se pudo verificar tu sesión. Recarga e intenta de nuevo.', 'err'); return; }
+    btn.disabled = true;
+    btn.textContent = 'Activando…';
+    try {
+      await mgmtCall('add', { name: name, email: email, role: role, branch: null, active: true, phone: row.movil || null });
+      showMsg(msgEl, '✅ Cuenta creada para ' + esc(name) + '. Ya puede entrar con su correo.', 'ok');
+      await loadUsuarios();
+      await loadNuevos();
+    } catch (err) {
+      showMsg(msgEl, 'Error: ' + esc(err.message), 'err');
+      btn.disabled = false;
+      btn.textContent = '✅ Activar cuenta';
+    }
+  });
+
   function closeUsuarioEditor() {
     const e = $('usu-editor');
     if (e) e.remove();
   }
+
+  // v0.186 — keep the Área readout in step with the Rol select. Area is derived
+  // (the sync_profile_level trigger sets profiles.area from role_levels.role), so the
+  // editor shows the value that WILL be stored rather than accepting one that will be
+  // thrown away. Delegated on the list so it survives the editor being re-rendered.
+  document.addEventListener('change', e => {
+    if (!e.target || e.target.id !== 'ue-role') return;
+    const readout = $('ue-area-readout');
+    const hidden = $('ue-area');
+    if (!readout) return;
+    const map = window.__roleAreas || {};
+    const next = map[e.target.value] || '—';
+    readout.textContent = next;
+    if (hidden) hidden.value = (next === '—') ? '' : next;
+  });
 
   // Search re-render
   const usuSearch = $('usu-search');
