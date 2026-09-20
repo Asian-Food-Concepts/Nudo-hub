@@ -1395,6 +1395,25 @@
         </div>
       </div>
 
+      <!-- USUARIOS EDIT MODAL (v0.189)
+           Was an inline card inserted INTO #usu-list. Ben: "the edit should be a js
+           pop up, like the review before submitting forms, this way more space can be
+           used efficiently". The inline card was bounded by the list's width and pushed
+           the roster around; the modal gets the full bottom-sheet like the review flow,
+           and matches what staff already know from Bitácora.
+           Reuses .review-modal / .review-box so it inherits the sheet behaviour, the
+           sticky action row and the body.modal-open dock handling. -->
+      <div class="review-modal hidden" id="usu-editor-modal">
+        <div class="review-box">
+          <h3 id="usu-editor-title">✏️ Editar usuario</h3>
+          <div class="review-body" id="usu-editor-body"></div>
+          <div class="review-actions" style="margin-top:8px;">
+            <button class="btn" data-mgmt="save-edit" id="usu-editor-save" style="margin:0;">Guardar</button>
+            <button class="btn btn-outline" data-mgmt="cancel-edit" id="usu-editor-cancel" style="margin:0;">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ESTATUS DETAIL MODAL -->
       <div class="review-modal hidden" id="estatus-detail">
         <div class="review-box">
@@ -1448,7 +1467,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.188";
+  const APP_VERSION = "v0.189";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -5538,53 +5557,71 @@
     $('u-submit').disabled = false;
   });
 
-  // ---- Inline user editor -------------------------------------------------
-  // Replaces the old four-prompt() flow. Dropdowns come from the live data:
-  // roles from role_levels (loaded by loadRoleOptions on this screen), areas and
-  // the mgmt-role permission from the server's own list response.
+  // ---- User editor (v0.189: now a MODAL) ---------------------------------
+  // Ben: "the edit should be a js pop up, like the review before submitting forms,
+  // this way more space can be used efficiently". It was an inline card injected
+  // into #usu-list; that was bounded by the list width and shoved the roster around.
+  // Now it fills #usu-editor-modal, reusing the review-sheet pattern staff already
+  // know. Fields are laid out with the modal's full width, so the longer labels
+  // (Nombre completo, Correo, Rol, Sucursal, Área) read without crowding.
+  //
+  // Dropdowns come from the live data: roles from role_levels (loaded by
+  // loadRoleOptions on this screen), areas and the mgmt-role permission from the
+  // server's own list response.
   function openUsuarioEditor(u) {
-    closeUsuarioEditor();
     const canMgmt = window.__usu_canMgmt === true;
-    const areas = window.__usu_areas || ['Dirección', 'Cocina', 'Barra', 'Piso'];
     const branches = ['Roma Norte', 'Del Valle'];
     const roles = (window.__roleOptions || [])
       .filter(r => canMgmt || !/due|gerente/i.test(r));
     const opt = (list, sel) => list.map(x =>
       `<option value="${esc(x)}"${String(sel||'') === String(x) ? ' selected' : ''}>${esc(x)}</option>`).join('');
 
-    const row = document.createElement('div');
-    row.id = 'usu-editor';
-    row.className = 'card';
-    row.style.cssText = 'padding:14px;margin:10px 0;border:2px solid var(--accent);border-radius:12px;background:var(--input-bg);';
-    row.innerHTML =
-      `<div style="font-weight:700;margin-bottom:10px;">✏️ Editar: ${esc(u.name || '')}</div>`
-      + `<div class="field"><label>Nombre completo</label><input type="text" id="ue-name" value="${esc(u.name||'')}"></div>`
-      + `<div class="field"><label>Correo (login)</label><input type="email" id="ue-email" value="${esc(u.email||'')}"></div>`
-      + `<div class="field"><label>Rol</label><select id="ue-role" class="panelist-select" style="width:100%;">`
-      +   `<option value="">— Sin cambio —</option>` + opt(roles, u.role) + `</select></div>`
-      + `<div class="field"><label>Sucursal</label><select id="ue-branch" class="panelist-select" style="width:100%;">`
-      +   `<option value="">— Sin sucursal —</option>` + opt(branches, u.branch) + `</select></div>`
+    const title = $('usu-editor-title');
+    const body = $('usu-editor-body');
+    if (!body) return;
+
+    // Keep the record being edited so save-edit does not have to re-derive it.
+    window.__usu_editing = u;
+
+    if (title) title.textContent = '✏️ Editar: ' + (u.name || 'usuario');
+
+    body.innerHTML =
+      `<div class="rv-row"><div class="rv-label">Nombre completo</div>` +
+        `<div class="rv-value"><input type="text" id="ue-name" value="${esc(u.name||'')}" style="width:100%;"></div></div>` +
+      `<div class="rv-row"><div class="rv-label">Correo (login)</div>` +
+        `<div class="rv-value"><input type="email" id="ue-email" value="${esc(u.email||'')}" style="width:100%;"></div></div>` +
+      `<div class="rv-row"><div class="rv-label">Rol</div>` +
+        `<div class="rv-value"><select id="ue-role" class="panelist-select" style="width:100%;">` +
+        `<option value="">— Sin cambio —</option>` + opt(roles, u.role) + `</select></div></div>` +
+      `<div class="rv-row"><div class="rv-label">Sucursal</div>` +
+        `<div class="rv-value"><select id="ue-branch" class="panelist-select" style="width:100%;">` +
+        `<option value="">— Sin sucursal —</option>` + opt(branches, u.branch) + `</select></div></div>` +
       // v0.186 — Area is NOT free-form: the sync_profile_level trigger overwrites
       // profiles.area from role_levels whenever `role` is in the UPDATE, which it
-      // always is. Offering a dropdown here produced a control that reported success
-      // and saved nothing. Show the area the role maps to, and let it follow the role.
-      + `<div class="field"><label>Área <span style="font-weight:400;color:var(--muted);">(según el rol)</span></label>`
-      +   `<div id="ue-area-readout" class="panelist-select" style="width:100%;display:flex;align-items:center;min-height:44px;background:var(--bg);color:var(--muted);">`
-      +     `${esc(u.area || '—')}</div>`
-      +   `<input type="hidden" id="ue-area" value="${esc(u.area || '')}">`
-      +   `<div class="field-hint">El área se asigna según el rol (role_levels). Para cambiarla, cambia el rol.</div>`
-      + `</div>`
-      + (canMgmt ? '' : `<div class="field-hint">Solo puedes editar personas de nivel inferior al tuyo.</div>`)
-      + `<div style="display:flex;gap:8px;margin-top:12px;">`
-      +   `<button class="btn" data-mgmt="save-edit" data-id="${esc(u.id)}" style="flex:1;margin:0;">Guardar</button>`
-      +   `<button class="btn btn-outline" data-mgmt="cancel-edit" data-id="${esc(u.id)}" style="flex:1;margin:0;">Cancelar</button>`
-      + `</div>`;
+      // always is. Offering a dropdown produced a control that reported success and
+      // saved nothing. Show the area the role maps to, and let it follow the role.
+      `<div class="rv-row"><div class="rv-label">Área</div>` +
+        `<div class="rv-value"><div id="ue-area-readout" style="display:flex;align-items:center;min-height:44px;color:var(--muted);">` +
+        `${esc(u.area || '—')}</div>` +
+        `<input type="hidden" id="ue-area" value="${esc(u.area || '')}">` +
+        `<div class="field-hint">El área se asigna según el rol (role_levels). Para cambiarla, cambia el rol.</div></div></div>` +
+      (canMgmt ? '' : `<div class="field-hint" style="padding-top:8px;">Solo puedes editar personas de nivel inferior al tuyo.</div>`);
 
-    const list = $('usu-list');
-    const anchor = list.querySelector(`[data-user-row="${CSS.escape(u.id)}"]`);
-    if (anchor) anchor.insertAdjacentElement('afterend', row);
-    else list.prepend(row);
-    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const modal = $('usu-editor-modal');
+    if (modal) modal.classList.remove('hidden');
+    // No manual body.modal-open here: _syncModalOpen()'s MutationObserver watches
+    // '.review-modal' class changes and toggles it. Setting it by hand would race
+    // the observer, which is the single source of truth for the dock state.
+    const save = $('usu-editor-save');
+    if (save) save.setAttribute('data-id', u.id || '');
+  }
+
+  function closeUsuarioEditor() {
+    const modal = $('usu-editor-modal');
+    if (modal) modal.classList.add('hidden');
+    // body.modal-open is cleared by the same observer, but only when NO modal is
+    // left open — which is the correct behaviour and why we do not clear it here.
+    window.__usu_editing = null;
   }
 
   // ============ NUEVOS INGRESOS (v0.187) ============
@@ -5702,11 +5739,6 @@
     }
   });
 
-  function closeUsuarioEditor() {
-    const e = $('usu-editor');
-    if (e) e.remove();
-  }
-
   // v0.186 — keep the Área readout in step with the Rol select. Area is derived
   // (the sync_profile_level trigger sets profiles.area from role_levels.role), so the
   // editor shows the value that WILL be stored rather than accepting one that will be
@@ -5789,8 +5821,6 @@
         return;
       }
       const cached = (window.__usu_cache || []).find(x => x.id === id);
-      const el = $('usu-editor');
-      if (el) el.remove();
       openUsuarioEditor(cached || { id, name: '', role: '', branch: '', area: '', email: '' });
       return;
     }
