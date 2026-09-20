@@ -1420,7 +1420,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.184";
+  const APP_VERSION = "v0.185";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1472,7 +1472,22 @@
       }).catch(() => {});
   }
   checkServerVersion();
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkServerVersion(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkServerVersion(); clearNotifBadge(); } });
+
+  // v0.185 — the home-screen icon badge means "unread". Clear it once the person is
+  // actually looking at the app. The Badging API is iOS 16.4+ for INSTALLED home-screen
+  // apps only, and only after notification permission is granted; everywhere else this
+  // is a harmless no-op. The SW keeps its own counter, so we tell it to reset.
+  function clearNotifBadge() {
+    try {
+      if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready
+          .then(reg => { if (reg.active) reg.active.postMessage({ type: 'badge-reset' }); })
+          .catch(() => {});
+      }
+    } catch (_) {}
+  }
   // PKCE flow (flowType:'pkce') is the permanent fix for the recurring
   // "magic link lands on the bare org root" error. Implicit flow made
   // supabase-js navigate to window.location.origin to strip the #access_token
