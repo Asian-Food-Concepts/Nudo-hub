@@ -1467,7 +1467,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.189";
+  const APP_VERSION = "v0.190";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -3436,6 +3436,27 @@
     }));
     rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
+    // Resolve submitter NAMES in one batch (Ben: "for mantenimiento, cocina roma
+    // norte, i can't see who submitted it?").
+    //
+    // The list already selected submitted_by but nothing ever rendered it, and the
+    // name could not be embedded either: maintenance_requests.submitted_by and
+    // purchases.submitted_by carry NO foreign key, and PostgREST can only embed a
+    // related table when it can detect the relationship. So we fetch the profiles
+    // explicitly and map id -> name here.
+    //
+    // Ids that no longer resolve (deactivated profiles, or rows written before
+    // profiles existed) fall back to '—' rather than showing a raw uuid, which
+    // would be worse than nothing.
+    const submitterIds = [...new Set(rows.map(r => r.submitted_by).filter(Boolean))];
+    let nameById = {};
+    if (submitterIds.length) {
+      const { data: people } = await supabase
+        .from('profiles').select('id, name').in('id', submitterIds);
+      (people || []).forEach(p => { nameById[p.id] = p.name; });
+    }
+    rows.forEach(r => { r.submitter_name = nameById[r.submitted_by] || ''; });
+
     // Everyone sees ALL requests (requester visibility); only admins can flip status inline
     const visible = rows;
     // Cache for the detail modal (no re-fetch on tap)
@@ -3501,6 +3522,7 @@
             ${badgeHtml}
           </div>
           ${r.detail ? `<div style="font-size:0.9rem;color:var(--muted);margin:4px 0;">${esc(r.detail)}</div>` : ''}
+          ${r.submitter_name ? `<div style="font-size:0.8rem;color:var(--muted);margin:2px 0;">👤 ${esc(r.submitter_name)}</div>` : ''}
           ${linkHtml}
           ${photosHtml}
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:8px;flex-wrap:wrap;">
@@ -3538,9 +3560,13 @@
     const prio = prioMeta(row.priority).label;
     const linkHtml = row.link ? `<div class="rv-row"><div class="rv-label">Enlace</div><div class="rv-value"><a href="${escAttr(row.link)}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600;">🔗 Abrir enlace</a></div></div>` : '';
     const photosHtml = (row.photo_urls && row.photo_urls.length) ? `<div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap;">${row.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" onclick="window.open('${escAttr(u)}','_blank')" />`).join('')}</div>` : '';
+    // v0.190 — Solicitante on BOTH kinds. The list already carried submitted_by but
+    // never showed it, so a Mantenimiento request had no visible author (Ben:
+    // "for mantenimiento, cocina roma norte, i can't see who submitted it?").
+    const submitter = row.submitter_name || '—';
     const detailRows = row.kind === 'mant'
-      ? [['Tipo','🔧 Mantenimiento'], ['Área / equipo', row.title], ['Descripción', row.detail], ['Notas', row.notes || '—'], ['Prioridad', prio], ['Sucursal', row.branch], ['Status', statusLabel], ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]]
-      : [['Tipo','🛒 Compra'], ['Artículo', row.title], ['Proveedor', row.vendor || '—'], ['Monto', row.amount ? '$' + Number(row.amount).toLocaleString('es-MX') + ' MXN' : '—'], ['Prioridad', prio], ['Sucursal', row.branch], ['Status', statusLabel], ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]];
+      ? [['Tipo','🔧 Mantenimiento'], ['Área / equipo', row.title], ['Descripción', row.detail], ['Notas', row.notes || '—'], ['Prioridad', prio], ['Sucursal', row.branch], ['Solicitante', submitter], ['Status', statusLabel], ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]]
+      : [['Tipo','🛒 Compra'], ['Artículo', row.title], ['Proveedor', row.vendor || '—'], ['Monto', row.amount ? '$' + Number(row.amount).toLocaleString('es-MX') + ' MXN' : '—'], ['Prioridad', prio], ['Sucursal', row.branch], ['Solicitante', submitter], ['Status', statusLabel], ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]];
     $('estatus-detail-title').textContent = row.typeLabel + ' · ' + row.title;
     $('estatus-detail-body').innerHTML = detailRows.map(r => `<div class="rv-row"><div class="rv-label">${esc(r[0])}</div><div class="rv-value">${r[1] || '—'}</div></div>`).join('') + linkHtml + photosHtml;
     const actions = $('estatus-detail-actions');
