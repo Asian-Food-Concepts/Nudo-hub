@@ -1448,7 +1448,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.187";
+  const APP_VERSION = "v0.188";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -3829,16 +3829,26 @@
   }
 
   function horasOptions(selected, branch) {
-    // Filter to the branch the captain picked, but never leave them stuck: if that
-    // branch has nobody listed, fall back to the whole roster.
-    let list = horasRoster;
-    if (branch) {
-      const scoped = list.filter(p => p.branch === branch);
-      if (scoped.length) list = scoped;
-    }
+    // Everyone, always (Ben 2026-09-20: "the horas y faltas dropdown menu only has
+    // people from that outlet, can you make it to have everyone?"). This is a
+    // company-wide attendance record: a capitán must be able to log a falta for
+    // someone covering from the other branch, and the 4 profiles with no branch set
+    // could otherwise never be selected at all.
+    //
+    // The branch stays a SORT key (own outlet first, then the rest) and a visible
+    // label, so a mixed list stays workable without hiding anyone. `branch` is the
+    // currently-selected outlet; it is no longer a filter.
+    const list = horasRoster.slice().sort((a, b) => {
+      const ao = (a.branch === branch) ? 0 : 1;
+      const bo = (b.branch === branch) ? 0 : 1;
+      if (ao !== bo) return ao - bo;
+      return String(a.name).localeCompare(String(b.name), 'es');
+    });
     let o = '<option value="">— Persona —</option>';
     list.forEach(p => {
-      o += `<option value="${escAttr(p.name)}" ${p.name === selected ? 'selected' : ''}>${esc(p.name)}</option>`;
+      const otros = p.branch && branch && p.branch !== branch;
+      const label = otros ? `${p.name} — ${p.branch}` : p.name;
+      o += `<option value="${escAttr(p.name)}" ${p.name === selected ? 'selected' : ''}>${esc(label)}</option>`;
     });
     return o;
   }
