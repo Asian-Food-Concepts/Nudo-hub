@@ -1467,7 +1467,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.190";
+  const APP_VERSION = "v0.191";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -5612,8 +5612,20 @@
     if (title) title.textContent = '✏️ Editar: ' + (u.name || 'usuario');
 
     body.innerHTML =
-      `<div class="rv-row"><div class="rv-label">Nombre completo</div>` +
-        `<div class="rv-value"><input type="text" id="ue-name" value="${esc(u.name||'')}" style="width:100%;"></div></div>` +
+      // v0.191 — the editor now edits the PARTS, not a single name string. The
+      // full name is derived server-side (nombres + apellido_paterno) and the
+      // full_name column is unreadable outside leadership, so this modal writes
+      // parts and lets the sync_profile_name trigger do the derivation.
+      `<div class="rv-row"><div class="rv-label">Nombre(s)</div>` +
+        `<div class="rv-value"><input type="text" id="ue-nombres" value="${esc(u.nombres||'')}" style="width:100%;" placeholder="Ej. Juan Carlos"></div></div>` +
+      `<div class="rv-row"><div class="rv-label">Apellido paterno</div>` +
+        `<div class="rv-value"><input type="text" id="ue-apellido-paterno" value="${esc(u.apellido_paterno||'')}" style="width:100%;" placeholder="Ej. Rodríguez"></div></div>` +
+      `<div class="rv-row"><div class="rv-label">Apellido materno</div>` +
+        `<div class="rv-value"><input type="text" id="ue-apellido-materno" value="${esc(u.apellido_materno||'')}" style="width:100%;" placeholder="Opcional"></div>` +
+        `<div class="field-hint">El apellido materno solo lo ve la Gerencia y el Dueño. No se muestra en la app.</div></div>` +
+      `<div class="rv-row"><div class="rv-label">Se mostrará como</div>` +
+        `<div class="rv-value"><div id="ue-preview" style="display:flex;align-items:center;min-height:44px;color:var(--muted);font-weight:600;">—</div>` +
+        `<div class="field-hint">Nombre(s) + apellido paterno. Esto es lo que ve todo el equipo.</div></div></div>` +
       `<div class="rv-row"><div class="rv-label">Correo (login)</div>` +
         `<div class="rv-value"><input type="email" id="ue-email" value="${esc(u.email||'')}" style="width:100%;"></div></div>` +
       `<div class="rv-row"><div class="rv-label">Rol</div>` +
@@ -5640,6 +5652,21 @@
     // the observer, which is the single source of truth for the dock state.
     const save = $('usu-editor-save');
     if (save) save.setAttribute('data-id', u.id || '');
+
+    // v0.191 — live "Se mostrará como" preview. The leader sees exactly the string
+    // the rest of the team will see, so a wrong split is caught before saving.
+    const updPreview = () => {
+      const n = ($('ue-nombres') || {}).value || '';
+      const p = ($('ue-apellido-paterno') || {}).value || '';
+      const out = [n.trim(), p.trim()].filter(Boolean).join(' ') || '—';
+      const el = $('ue-preview');
+      if (el) el.textContent = out;
+    };
+    ['ue-nombres', 'ue-apellido-paterno'].forEach(id => {
+      const el = $(id);
+      if (el) el.addEventListener('input', updPreview);
+    });
+    updPreview();
   }
 
   function closeUsuarioEditor() {
@@ -5803,7 +5830,12 @@
     // and the row re-rendered from the DB with the old value.
     const pending = (action === 'save-edit') ? (() => {
       const val = k => { const el = $('ue-' + k); return el ? String(el.value).trim() : ''; };
-      return { name: val('name'), email: val('email'), role: val('role'),
+      // v0.191 — send the PARTS. `name` is derived server-side by the
+      // sync_profile_name trigger; sending a hand-edited display name would
+      // desync it, and full_name is unreadable outside leadership anyway.
+      return { nombres: val('nombres'), apellido_paterno: val('apellido-paterno'),
+               apellido_materno: val('apellido-materno'),
+               email: val('email'), role: val('role'),
                branch: val('branch'), area: val('area') };
     })() : null;
 
@@ -5869,7 +5901,9 @@
       }
       const payload = {
         id,
-        name: (pending && pending.name) || u.name,
+        nombres: (pending && pending.nombres) || u.nombres || '',
+        apellido_paterno: (pending && pending.apellido_paterno) || u.apellido_paterno || '',
+        apellido_materno: (pending && pending.apellido_materno) || u.apellido_materno || '',
         role: (pending && pending.role) || u.role,
         branch: (pending && pending.branch) || null,
         area: (pending && pending.area) || null,
