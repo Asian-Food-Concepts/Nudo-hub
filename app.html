@@ -1327,7 +1327,14 @@
           <details id="usu-add-details" style="margin-bottom:14px;">
             <summary class="btn" style="display:block;text-align:center;font-size:0.95rem;min-height:48px;align-content:center;cursor:pointer;">＋ Agregar personal</summary>
             <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
-              <div class="field"><label>Nombre completo *</label><input type="text" id="u-name" placeholder="Nombre"></div>
+              <!-- v0.192 — a person is captured as PARTS, never as one free-text
+                   string. The display form is derived server-side (first name out,
+                   everything else initialled), so a hand-typed full name can no
+                   longer smuggle a surname into what the team sees. -->
+              <div class="field"><label>Nombre(s) *</label><input type="text" id="u-nombres" placeholder="Ej. Juan Carlos"></div>
+              <div class="field"><label>Apellido paterno *</label><input type="text" id="u-apellido-paterno" placeholder="Ej. Rodríguez"></div>
+              <div class="field"><label>Apellido materno</label><input type="text" id="u-apellido-materno" placeholder="Opcional"></div>
+              <div class="field-hint" id="u-preview-hint" style="margin-top:-6px;">Se mostrará como: —</div>
               <div class="field"><label>Correo (login) *</label><input type="email" id="u-email" placeholder="correo@ejemplo.com"></div>
               <div class="field"><label>Rol *</label>
                 <!-- v0.147: options come from role_levels, NOT a hardcoded list.
@@ -1467,7 +1474,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.191";
+  const APP_VERSION = "v0.192";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -5561,20 +5568,38 @@
 
   // Add staff
   $('u-submit').addEventListener('click', async () => {
-    const name = $('u-name').value.trim();
+    // v0.192 — capture the PARTS. The display name is derived server-side; the
+    // full name never has to be typed here, so it cannot leak into what the team sees.
+    const nombres = ($('u-nombres') || {}).value ? $('u-nombres').value.trim() : '';
+    const apPat = ($('u-apellido-paterno') || {}).value ? $('u-apellido-paterno').value.trim() : '';
+    const apMat = ($('u-apellido-materno') || {}).value ? $('u-apellido-materno').value.trim() : '';
     const email = $('u-email').value.trim();
     const role = $('u-role').value;
     const branch = $('u-branch').value;
     const msgEl = $('usu-msg');
     clearMsg(msgEl);
-    if (!name || !email || !role) { showMsg(msgEl, 'Completa nombre, correo y rol.', 'err'); return; }
+    if (!nombres || !apPat || !email || !role) {
+      showMsg(msgEl, 'Completa nombre(s), apellido paterno, correo y rol.', 'err'); return;
+    }
     if (!/^\S+@\S+\.\S+$/.test(email)) { showMsg(msgEl, 'Correo inválido.', 'err'); return; }
     let user; try { user = await requireUser(); } catch(_) { return; }
     $('u-submit').disabled = true;
     try {
-      await mgmtCall('add', { name, email, role, branch: branch || null, active: true });
-      showMsg(msgEl, '✅ Cuenta creada. ' + esc(name) + ' puede entrar con su correo por código.', 'ok');
-      $('u-name').value = ''; $('u-email').value = ''; $('u-role').value = ''; $('u-branch').value = '';
+      await mgmtCall('add', {
+        nombres, apellido_paterno: apPat, apellido_materno: apMat || null,
+        email, role, branch: branch || null, active: true,
+      });
+      // Say the name the team will actually see, so the leader can confirm the rule.
+      const shown = [nombres.split(/\s+/)[0],
+                     nombres.split(/\s+/).slice(1).map(t => t[0].toUpperCase() + '.').join(' '),
+                     apPat.split(/\s+/).map(t => t[0].toUpperCase() + '.').join(' ')]
+                    .filter(Boolean).join(' ');
+      showMsg(msgEl, '✅ Cuenta creada. Se mostrará como "' + esc(shown) +
+                     '" y puede entrar con su correo por código.', 'ok');
+      ['u-nombres', 'u-apellido-paterno', 'u-apellido-materno', 'u-email'].forEach(id => {
+        const el = $(id); if (el) el.value = '';
+      });
+      $('u-role').value = ''; $('u-branch').value = '';
       const d = $('usu-add-details'); if (d) d.removeAttribute('open');
       loadUsuarios();
     } catch (e) {
@@ -5582,6 +5607,24 @@
     }
     $('u-submit').disabled = false;
   });
+
+  // Live "Se mostrará como" hint on the add form (same rule as the editor).
+  (function () {
+    const ids = ['u-nombres', 'u-apellido-paterno', 'u-apellido-materno'];
+    const upd = () => {
+      const hint = $('u-preview-hint');
+      if (!hint) return;
+      const mask = part => String(part || '').split(/\s+/).filter(Boolean)
+        .map(t => t[0].toUpperCase() + '.').join(' ');
+      const toks = String(($('u-nombres') || {}).value || '').split(/\s+/).filter(Boolean);
+      const out = [toks[0] || '', toks.length > 1 ? mask(toks.slice(1).join(' ')) : '',
+                   mask(($('u-apellido-paterno') || {}).value || ''),
+                   mask(($('u-apellido-materno') || {}).value || '')]
+                  .filter(Boolean).join(' ');
+      hint.textContent = 'Se mostrará como: ' + (out || '—');
+    };
+    ids.forEach(id => { const el = $(id); if (el) el.addEventListener('input', upd); });
+  })();
 
   // ---- User editor (v0.189: now a MODAL) ---------------------------------
   // Ben: "the edit should be a js pop up, like the review before submitting forms,
@@ -5656,13 +5699,30 @@
     // v0.191 — live "Se mostrará como" preview. The leader sees exactly the string
     // the rest of the team will see, so a wrong split is caught before saving.
     const updPreview = () => {
-      const n = ($('ue-nombres') || {}).value || '';
-      const p = ($('ue-apellido-paterno') || {}).value || '';
-      const out = [n.trim(), p.trim()].filter(Boolean).join(' ') || '—';
+      // v0.192 — the preview now mirrors the SERVER's rule exactly:
+      // first name written out, every other part reduced to an initial.
+      // Juan Carlos Rodríguez Heredia -> Juan C. R. H.
+      // Kept in sync with public.build_short_name() in the database.
+      const mask = (part) => String(part || '')
+        .replace(/\([^)]*\)|\[[^\]]*\]/g, ' ')          // drop bracketed asides
+        .split(/\s+/)
+        .filter(t => t && !/^[().,;:-]+$/.test(t))
+        .map(t => t[0].toUpperCase() + '.')
+        .join(' ');
+      const nRaw = String(($('ue-nombres') || {}).value || '')
+        .replace(/\([^)]*\)|\[[^\]]*\]/g, ' ').split(/\s+/).filter(t => t && !/^[().,;:-]+$/.test(t));
+      const first = nRaw[0] || '';
+      const rest = nRaw.slice(1);
+      const out = [
+        first,
+        rest.length ? mask(rest.join(' ')) : '',
+        mask(($('ue-apellido-paterno') || {}).value || ''),
+        mask(($('ue-apellido-materno') || {}).value || ''),
+      ].filter(Boolean).join(' ') || '—';
       const el = $('ue-preview');
       if (el) el.textContent = out;
     };
-    ['ue-nombres', 'ue-apellido-paterno'].forEach(id => {
+    ['ue-nombres', 'ue-apellido-paterno', 'ue-apellido-materno'].forEach(id => {
       const el = $(id);
       if (el) el.addEventListener('input', updPreview);
     });
