@@ -1420,7 +1420,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.183";
+  const APP_VERSION = "v0.184";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -2032,7 +2032,12 @@
 
   // Guard for expired/missing session on form submit
   async function requireUser() {
-    const { data: { user } } = await supabase.auth.getUser();
+    // v0.184 — do NOT destructure in one step. getUser() returns `{data: null}` on a
+    // network hiccup, and `const { data: { user } } = ...` then throws TypeError, which
+    // the caller swallowed silently. Read defensively.
+    let res = null;
+    try { res = await supabase.auth.getUser(); } catch (e) { res = null; }
+    const user = (res && res.data) ? res.data.user : null;
     if (!user) {
       showLogin();
       showMsg($('login-msg'), 'Tu sesión terminó. Entra de nuevo.', 'err');
@@ -2719,6 +2724,10 @@
   // extra positions. Runs alongside the Google Sheet (sheet stays source of
   // truth until Ben flips over).
   // v0.180: 'Loza' merged into 'Cocina' — no separate row. See planRoleGroup().
+  // v0.184 — the Usuarios inline editor. Was read at the `edit` branch but never
+  // defined, so `!undefined` always refused and the feature could never open.
+  window.USU_EDITOR_ENABLED = true;
+
   const PLAN_ROLES = ['Capitán', 'Mesero', 'Barra', 'Cocina', 'Producción'];
   const PLAN_DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 
@@ -5408,6 +5417,9 @@
           '<div style="color:var(--muted);font-size:13px;">' + esc(u.email || '—') +
             '<span style="margin-left:8px;">· últ. ' + lastLoginStr(u.last_sign_in_at) + '</span></div>' +
           (editable ? '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
+            (window.USU_EDITOR_ENABLED
+              ? '<button class="btn btn-outline" data-mgmt="edit" data-id="' + u.id + '" style="font-size:0.85rem;padding:10px 14px;min-height:44px;margin:0;flex:1;">✏️ Editar</button>'
+              : '') +
             (u.active !== false && !isDueño
               ? '<button class="btn btn-outline" data-mgmt="deactivate" data-id="' + u.id + '" style="font-size:0.85rem;padding:10px 14px;min-height:44px;margin:0;flex:1;">⛔ Desactivar</button>'
               : (!isDueño ? '<button class="btn btn-outline" data-mgmt="activate" data-id="' + u.id + '" style="font-size:0.85rem;padding:10px 14px;min-height:44px;margin:0;flex:1;">✅ Activar</button>' : '')) +
@@ -5538,7 +5550,18 @@
                branch: val('branch'), area: val('area') };
     })() : null;
 
-    let user; try { user = await requireUser(); } catch(e) { console.warn('usuarios: requireUser failed', e && e.message); return; }
+    // v0.184 — this used to `console.warn` and return, which is INVISIBLE to the person
+    // clicking: indistinguishable from a dead button, and exactly how "Guardar doesn't
+    // persist" was experienced. Always say something on screen.
+    let user;
+    try { user = await requireUser(); }
+    catch (e) {
+      const noSession = e && e.message === 'no-session';
+      showMsg(msgEl, noSession
+        ? 'Tu sesión terminó. Entra de nuevo.'
+        : 'No se pudo verificar tu sesión. Recarga e intenta de nuevo.', 'err');
+      return;
+    }
     // Only hydrate the cache for actions that need it. Never for an in-editor
     // action: re-rendering mid-edit was destroying the editor being edited.
     const isEditorAction = (action === 'save-edit' || action === 'cancel-edit');
