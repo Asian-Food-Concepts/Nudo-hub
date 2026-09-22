@@ -569,15 +569,47 @@ function sandbox(src, names, opts = {}) {
 // Tiny assertion library
 // ---------------------------------------------------------------------------
 
-const results = { pass: 0, fail: 0, failures: [] };
+const results = { pass: 0, fail: 0, failures: [], pending: [] };
 
+/**
+ * Register a test. `fn` may be sync or ASYNC.
+ *
+ * ASYNC IS A TRAP THAT MUST BE HANDLED HERE. The original version was:
+ *     try { fn(); results.pass++; } catch (e) { ... }
+ * An async test returns a PROMISE. `fn()` does not throw, so the test counted as
+ * a pass IMMEDIATELY — and any assertion inside it that later failed was an
+ * unhandled rejection, invisible to the runner. Every `async` test would have
+ * passed no matter what. The Supabase tests are all async, so this had to be
+ * fixed before a single one of them could be believed.
+ *
+ * Now: a returned thenable is tracked and awaited by the runner, and a rejection
+ * is recorded as a real failure.
+ */
 function test(name, fn) {
+  let out;
   try {
-    fn();
-    results.pass++;
+    out = fn();
   } catch (e) {
     results.fail++;
     results.failures.push({ name, message: e.message });
+    return;
+  }
+  if (out && typeof out.then === 'function') {
+    const p = Promise.resolve(out).then(
+      () => { results.pass++; },
+      (e) => { results.fail++; results.failures.push({ name, message: (e && e.message) || String(e) }); }
+    );
+    results.pending.push(p);
+    return;
+  }
+  results.pass++;
+}
+
+/** Wait for every async test registered so far. */
+async function settle() {
+  while (results.pending.length) {
+    const batch = results.pending.splice(0);
+    await Promise.all(batch);
   }
 }
 
@@ -601,7 +633,7 @@ function includes(hay, needle, msg) {
 // Runner
 // ---------------------------------------------------------------------------
 
-function main() {
+async function main() {
   if (!fs.existsSync(APP)) {
     console.error('app.html not found at ' + APP);
     process.exit(2);
@@ -621,7 +653,7 @@ function main() {
     extractFunction: (n) => extractFunction(src, n),
     functionNames: () => functionNames(src),
     sandbox: (names, opts) => sandbox(src, names, Object.assign({ markup: extractMarkup(html) }, opts || {})),
-    test, eq, ok, includes, results,
+    test, eq, ok, includes, results, settle,
     ROOT,
   };
 
@@ -643,12 +675,17 @@ function main() {
   console.log(`  functions     ${functionNames(src).length} extracted-able\n`);
 
   for (const f of files) {
-    console.log(`— ${f}`);
     const before = { p: results.pass, f: results.fail };
     require(path.join(dir, f))(api);
-    console.log(`    ${results.pass - before.p} pass, ${results.fail - before.f} fail`);
+    // AWAIT async tests before reporting this file's tally, or a pending
+    // assertion would be counted after the summary and never seen.
+    await settle();
+    const fails = results.fail - before.f;
+    console.log(`— ${f}`);
+    console.log(`    ${results.pass - before.p} pass, ${fails} fail`);
   }
 
+  await settle();
   console.log(`\n${results.pass} passed, ${results.fail} failed`);
   if (results.failures.length) {
     console.log('\nFAILURES:');
@@ -658,6 +695,11 @@ function main() {
   console.log('OK\n');
 }
 
-if (require.main === module) main();
+if (require.main === module) {
+  main().catch((e) => {
+    console.error('harness crashed:', e && e.stack || e);
+    process.exit(2);
+  });
+}
 
-module.exports = { scriptBlocks, extractFunction, functionNames, sandbox };
+module.exports = { scriptBlocks, extractFunction, functionNames, sandbox, extractMarkup };
