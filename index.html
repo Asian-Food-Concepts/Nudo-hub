@@ -12,9 +12,9 @@
   (function () {
     var h = window.location.hash;
     if (h && (h.indexOf('access_token=') !== -1 || h.indexOf('error=') !== -1)) {
-      window.location.replace('/Nudo-hub/app.html' + h);
+      window.location.replace('./app.html' + h);
     } else {
-      window.location.replace('/Nudo-hub/app.html');
+      window.location.replace('./app.html');
     }
   })();
 </script>
@@ -23,7 +23,7 @@
   <noscript>
     <p style="font-family:system-ui,sans-serif;text-align:center;margin-top:40px;">
       Nudo Hub es una app con acceso del equipo. Activa JavaScript para entrar.
-      <br><a href="/Nudo-hub/app.html">Ir a Nudo Hub</a>
+      <br><a href="./app.html">Ir a Nudo Hub</a>
     </p>
   </noscript>
 </body>

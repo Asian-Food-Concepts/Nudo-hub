@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Nudo Hub</title>
-<link rel="manifest" href="/Nudo-hub/manifest.json">
+<link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#2f3a2f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Nudo Hub">
-<link rel="apple-touch-icon" href="/Nudo-hub/icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <script>
   // Apply saved theme before first paint to avoid a flash of the wrong mode.
   (function () {
@@ -616,7 +616,7 @@
 <body>
   <div class="wrap">
   <header>
-    <h1><a href="/Nudo-hub/">Nudo Hub</a></h1>
+    <h1><a href="./">Nudo Hub</a></h1>
     <p id="header-sub">Acceso del equipo</p>
     <!-- User row now lives INSIDE the header card (v0.116: unified shape) -->
     <div id="viewas-banner" class="hidden" style="position:sticky;top:0;z-index:70;background:#fff3cd;border-bottom:2px solid #e0a800;padding:8px 12px;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;gap:10px;">
@@ -668,11 +668,11 @@
              page). Lets Ben jump from the testing page back to the live app
              with one tap. Never visible to staff on prod. -->
         <div class="login-links hidden" id="login-live-link" style="display:flex;justify-content:center;margin-top:6px;">
-          <a class="btn" href="https://asian-food-concepts.github.io/Nudo-hub/app.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.85rem;padding:10px 18px;min-height:44px;">🏠 Ir a la página en vivo</a>
+          <a class="btn" href="https://hub.asianfoodconcepts.mx/app.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.85rem;padding:10px 18px;min-height:44px;">🏠 Ir a la página en vivo</a>
         </div>
         <!-- v0.138+: Link to onboarding page for new hires who have no account yet -->
         <div style="text-align:center;margin-top:14px;">
-          <a href="/Nudo-hub/onboarding.html" class="link-btn" style="font-size:0.85rem;">¿Eres nuevo al equipo? Regístrate aquí →</a>
+          <a href="./onboarding.html" class="link-btn" style="font-size:0.85rem;">¿Eres nuevo al equipo? Regístrate aquí →</a>
         </div>
       </div>
     </div>
@@ -749,17 +749,17 @@
             </div>
             <div id="guide-search-results"></div>
           </div>
-          <a class="card" href="#" data-guide="/Nudo-hub/reglas.html">
+          <a class="card" href="#" data-guide="./reglas.html">
             <div class="icon icon-doc">📄</div>
             <div class="text"><div class="title">Reglas y Políticas</div><div class="sub">Manual del equipo</div></div>
             <div class="arrow">›</div>
           </a>
-          <a class="card" href="#" data-guide="/Nudo-hub/guia.html">
+          <a class="card" href="#" data-guide="./guia.html">
             <div class="icon icon-doc">📘</div>
             <div class="text"><div class="title">Guía Operativa</div><div class="sub">Referencia operativa</div></div>
             <div class="arrow">›</div>
           </a>
-          <a class="card" href="#" data-guide="/Nudo-hub/contactos.html">
+          <a class="card" href="#" data-guide="./contactos.html">
             <div class="icon icon-sheet">📞</div>
             <div class="text"><div class="title">Contactos de servicios</div><div class="sub">Electricista, plomero y más</div></div>
             <div class="arrow">›</div>
@@ -1503,7 +1503,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.199";
+  const APP_VERSION = "v0.200";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1521,7 +1521,7 @@
   // compare running version to version.json; if server differs and we haven't
   // already reloaded FOR that version, unregister SW, wipe caches, hard-reload.
   function checkServerVersion(){
-    fetch('/Nudo-hub/version.json?t=' + Date.now(), { cache: 'no-store' })
+    fetch('./version.json?t=' + Date.now(), { cache: 'no-store' })
       .then(r => r.ok ? r.json() : null)
       .then(v => {
         if (!v || v.version === APP_VERSION) return;
@@ -1664,7 +1664,10 @@
     // stays hidden — staff never see a link back to a test page or vice versa.
     try {
       const live = $('login-live-link');
-      if (live) live.classList.toggle('hidden', location.hostname === 'asian-food-concepts.github.io');
+      // Both the legacy project-site host and the custom subdomain are PRODUCTION.
+      // The button exists only for preview/test hosts (githack), so hide it on either.
+      const PROD_HOSTS = ['asian-food-concepts.github.io', 'hub.asianfoodconcepts.mx'];
+      if (live) live.classList.toggle('hidden', PROD_HOSTS.includes(location.hostname));
     } catch(e) {}
   }
   function showApp() {
@@ -1958,7 +1961,8 @@
     showMsg($('login-msg'), 'Enviando código...', 'info');
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: 'https://asian-food-concepts.github.io/Nudo-hub/app.html' }
+      // Origin-derived, so magic links come back to whichever host the user is on.
+      options: { emailRedirectTo: location.origin + location.pathname }
     });
     if (error) { showMsg($('login-msg'), 'Error: ' + error.message, 'err'); $('send-code').disabled = false; return; }
     enterOtpState();
@@ -1983,7 +1987,8 @@
     showMsg($('login-msg'), 'Reenviando código...', 'info');
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: 'https://asian-food-concepts.github.io/Nudo-hub/app.html' }
+      // Origin-derived, so magic links come back to whichever host the user is on.
+      options: { emailRedirectTo: location.origin + location.pathname }
     });
     $('resend-code').disabled = false;
     if (error) { showMsg($('login-msg'), 'Error: ' + error.message, 'err'); return; }
@@ -2750,9 +2755,9 @@
   // Searches all guide pages' content simultaneously, shows matches, and opens
   // the right page scrolled to the first matching element when tapped.
   const GUIDE_DOCS = {
-    '/Nudo-hub/reglas.html': { title: 'Reglas y Políticas', icon: '📄' },
-    '/Nudo-hub/guia.html':   { title: 'Guía Operativa',    icon: '📘' },
-    '/Nudo-hub/contactos.html': { title: 'Contactos de servicios', icon: '📞' },
+    './reglas.html': { title: 'Reglas y Políticas', icon: '📄' },
+    './guia.html':   { title: 'Guía Operativa',    icon: '📘' },
+    './contactos.html': { title: 'Contactos de servicios', icon: '📞' },
   };
   const GUIDE_INDEXES = {}; // url -> {text:[{el,id}], html}
   let guideCacheLoaded = false;
@@ -5338,9 +5343,9 @@
       try {
         reg.showNotification('Nudo Hub', {
           body: '🔔 Notificaciones activadas con éxito.',
-          icon: '/Nudo-hub/icon-192.png',
-          badge: '/Nudo-hub/icon-192.png',
-          data: { url: '/Nudo-hub/app.html' }
+          icon: './icon-192.png',
+          badge: './icon-192.png',
+          data: { url: './app.html' }
         });
       } catch (_) {}
     } catch (e) {
@@ -5666,7 +5671,7 @@
   (function loadHubLiveSections() {
     const target = $('hub-live-sections');
     if (!target) return;
-    fetch('/Nudo-hub/live.html')
+    fetch('./live.html')
       .then(r => r.text())
       .then(html => {
         const perf = (html.match(/<!-- NUDO_PERF_START -->([\s\S]*?)<!-- NUDO_PERF_END -->/) || [])[1] || '';
@@ -5689,7 +5694,7 @@
       // v0.143: updateViaCache 'none' stops the browser HTTP-caching sw.js itself (GitHub Pages
       // sends max-age=600 on it too), and the foreground update() below actively hunts for new
       // code instead of waiting on the browser's own check, which can be up to 24h.
-      navigator.serviceWorker.register('/Nudo-hub/sw.js', { updateViaCache: 'none' }).then(reg => {
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(reg => {
         document.addEventListener('visibilitychange', () => {
           if (!document.hidden) { try { reg.update(); } catch (_) {} }
         });
