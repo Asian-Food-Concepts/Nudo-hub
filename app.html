@@ -1433,6 +1433,18 @@
         </div>
       </div>
 
+      <!-- ESTATUS EDIT MODAL -->
+      <div class="review-modal hidden" id="estatus-edit">
+        <div class="review-box">
+          <h3 id="estatus-edit-title">✏️ Editar solicitud</h3>
+          <div id="estatus-edit-body" class="review-body"></div>
+          <div class="review-actions" id="estatus-edit-actions"></div>
+          <div class="review-actions" style="margin-top:8px;">
+            <button class="btn btn-outline" id="estatus-edit-close" style="margin:0;">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- REVIEW-BEFORE-SUBMIT MODAL -->
       <div class="review-modal hidden" id="review-modal">
         <div class="review-box">
@@ -1474,7 +1486,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.194";
+  const APP_VERSION = "v0.195";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -3368,12 +3380,14 @@
     comp: {
       'Solicitado': { label: '🔴 Solicitado', next: 'Comprado' },
       'Comprado':   { label: '🟡 Comprado',   next: 'Entregado' },
-      'Entregado':  { label: '🟢 Entregado',  next: null }
+      'Entregado':  { label: '🟢 Entregado',  next: null },
+      'Cancelado':  { label: '⛔ Cancelado',  next: null }
     },
     mant: {
       'Solicitado':  { label: '🔴 Solicitado',  next: 'Comunicado con proveedor' },
       'Comunicado con proveedor': { label: '🟡 Comunicado con proveedor', next: 'Completado' },
-      'Completado':  { label: '🟢 Completado',  next: null }
+      'Completado':  { label: '🟢 Completado',  next: null },
+      'Cancelado':  { label: '⛔ Cancelado',  next: null }
     }
   };
   // Look up the status meta for a row by its kind.
@@ -3409,15 +3423,16 @@
     const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
     if (prof && prof.role) profileRole = prof.role;
     const isAdmin = ADMIN_ROLES.includes(profileRole);
+    __currentUserId = user.id;
 
     // Fetch both request tables (newest first)
     const { data: mant, error: em } = await supabase
       .from('maintenance_requests')
-      .select('id, branch, area, description, notes, priority, status, submitted_by, created_at, photo_urls, service_date, follow_ups, outcome')
+      .select('id, branch, area, description, notes, priority, status, submitted_by, created_at, photo_urls, service_date, follow_ups, outcome, cancel_reason')
       .order('created_at', { ascending: false });
     const { data: comp, error: ec } = await supabase
       .from('purchases')
-      .select('id, branch, item, vendor, amount, priority, link, notes, status, submitted_by, created_at, photo_urls')
+      .select('id, branch, item, vendor, amount, priority, link, notes, status, submitted_by, created_at, photo_urls, cancel_reason')
       .order('created_at', { ascending: false });
     if (em || ec) {
       showMsg(msgEl, 'Error al cargar solicitudes: ' + (em ? em.message : ec.message), 'err');
@@ -3436,14 +3451,16 @@
       link: '', photo_urls: r.photo_urls || [], vendor: '', amount: null,
       service_date: r.service_date || null,
       follow_ups: r.follow_ups || [],
-      outcome: r.outcome || null
+      outcome: r.outcome || null,
+      cancel_reason: r.cancel_reason || ''
     }));
     (comp || []).forEach(r => rows.push({
       kind: 'comp', typeLabel: '🛒 Compra', title: r.item || 'Compra',
       detail: (r.vendor ? 'Proveedor: ' + r.vendor + ' · ' : '') + (r.amount ? '$' + Number(r.amount).toLocaleString('es-MX') + ' MXN' : ''),
       priority: r.priority || 'Normal', branch: r.branch, status: r.status, created_at: r.created_at,
       id: r.id, table: 'purchases', submitted_by: r.submitted_by, link: r.link || '',
-      photo_urls: r.photo_urls || [], vendor: r.vendor || '', amount: r.amount || null
+      photo_urls: r.photo_urls || [], vendor: r.vendor || '', amount: r.amount || null,
+      cancel_reason: r.cancel_reason || ''
     }));
     rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -3538,7 +3555,10 @@
           ${photosHtml}
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:8px;flex-wrap:wrap;">
             <div style="font-size:0.8rem;color:var(--accent);">Ver detalles ›</div>
-            ${(isAdmin && statusMeta(r)[r.status] && statusMeta(r)[r.status].next) ? `<button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;" data-advance="${r.table}|${r.id}|${statusMeta(r)[r.status].next}">Marcar ${statusMeta(r)[r.status].next}</button>` : ''}
+            <div style="display:flex;gap:8px;align-items:center;">
+              ${((isAdmin || (r.submitted_by && r.submitted_by === __currentUserId)) && !['Entregado','Completado','Resuelto','Cancelado'].includes(r.status)) ? `<button class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
+              ${(isAdmin && statusMeta(r)[r.status] && statusMeta(r)[r.status].next) ? `<button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;" data-advance="${r.table}|${r.id}|${statusMeta(r)[r.status].next}">Marcar ${statusMeta(r)[r.status].next}</button>` : ''}
+            </div>
           </div>
         </div>`;
     }
@@ -3567,6 +3587,7 @@
     const row = estatusRowsCache.find(r => r.table === table && r.id === id);
     if (!row) return;
     const isAdmin = estatusAdminFlag;
+    const isMine = !!row.submitted_by && row.submitted_by === __currentUserId;
     const statusLabel = statusMeta(row)[row.status] ? statusMeta(row)[row.status].label : esc(row.status);
     const prio = prioMeta(row.priority).label;
     const linkHtml = row.link ? `<div class="rv-row"><div class="rv-label">Enlace</div><div class="rv-value"><a href="${escAttr(row.link)}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600;">🔗 Abrir enlace</a></div></div>` : '';
@@ -3606,6 +3627,7 @@
         ['Status', statusLabel],
         ['Fecha de servicio (TBC)', serviceDateFormatted],
         ['Resultado', outcomeFormatted],
+        ...(row.status === 'Cancelado' && row.cancel_reason ? [['Motivo de cancelación', row.cancel_reason]] : []),
         ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]
       );
     } else {
@@ -3618,6 +3640,7 @@
         ['Sucursal', row.branch],
         ['Solicitante', submitter],
         ['Status', statusLabel],
+        ...(row.status === 'Cancelado' && row.cancel_reason ? [['Motivo de cancelación', row.cancel_reason]] : []),
         ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]
       );
     }
@@ -3807,22 +3830,223 @@
       pdf.addEventListener('click', () => { downloadPdf(row.table, row.id); });
       actions.appendChild(pdf);
     }
+
+    const closed = ['Entregado','Completado','Resuelto','Cancelado'].includes(row.status);
+    if ((isMine || isAdmin) && !closed) {
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn btn-outline'; editBtn.style.margin = '0';
+      editBtn.textContent = '✏️ Editar';
+      editBtn.addEventListener('click', () => openEstatusEdit(row));
+      actions.appendChild(editBtn);
+    }
+
+    if ((isMine || isAdmin) && !closed && row.status !== 'Cancelado') {
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn btn-outline'; cancelBtn.style.margin = '0';
+      cancelBtn.style.color = 'var(--red, #d93025)';
+      cancelBtn.textContent = '🚫 Cancelar solicitud';
+      cancelBtn.addEventListener('click', async () => {
+        const reason = (prompt('¿Por qué cancelas esta solicitud? (queda registrado)') || '').trim();
+        if (!reason) { alert('El motivo es obligatorio para cancelar.'); return; }
+        cancelBtn.disabled = true;
+        const { error } = await supabase.from(row.table)
+          .update({ status: 'Cancelado', cancel_reason: reason }).eq('id', row.id);
+        if (error) {
+          showMsg($('estatus-msg'), 'Error al cancelar: ' + error.message, 'err');
+          cancelBtn.disabled = false; return;
+        }
+        const { data: verifyRow } = await supabase.from(row.table).select('status').eq('id', row.id).maybeSingle();
+        if (verifyRow && verifyRow.status !== 'Cancelado') {
+          showMsg($('estatus-msg'), 'No se pudo cancelar la solicitud', 'err');
+          cancelBtn.disabled = false; return;
+        }
+        toast('🚫 Solicitud cancelada');
+        closeEstatusDetail(); loadEstatus();
+      });
+      actions.appendChild(cancelBtn);
+    }
+
     estatusDetail.classList.remove('hidden');
   }
   function closeEstatusDetail() { estatusDetail.classList.add('hidden'); }
   $('estatus-detail-close').addEventListener('click', closeEstatusDetail);
   estatusDetail.addEventListener('click', e => { if (e.target === estatusDetail) closeEstatusDetail(); });
 
+  // ---- ESTATUS EDIT MODAL ----
+  const estatusEdit = $('estatus-edit');
+  function closeEstatusEdit() { if (estatusEdit) estatusEdit.classList.add('hidden'); }
+  const estatusEditClose = $('estatus-edit-close');
+  if (estatusEditClose) estatusEditClose.addEventListener('click', closeEstatusEdit);
+  if (estatusEdit) estatusEdit.addEventListener('click', e => { if (e.target === estatusEdit) closeEstatusEdit(); });
+
+  function openEstatusEdit(row) {
+    if (!row) return;
+    closeEstatusDetail();
+    const isMant = row.kind === 'mant';
+    $('estatus-edit-title').textContent = isMant ? '✏️ Editar mantenimiento' : '✏️ Editar compra';
+
+    const prioOptions = ['Urgente', 'Alta', 'Normal', 'Baja'].map(p =>
+      `<option value="${p}" ${row.priority === p ? 'selected' : ''}>${p}</option>`
+    ).join('');
+
+    const branchOptions = ['Roma Norte', 'Del Valle'].map(b =>
+      `<option value="${b}" ${row.branch === b ? 'selected' : ''}>${b}</option>`
+    ).join('');
+    const otherBranchSelected = !['Roma Norte', 'Del Valle'].includes(row.branch) && row.branch;
+    const branchOptionsFull = branchOptions + (otherBranchSelected ? `<option value="${escAttr(row.branch)}" selected>${esc(row.branch)}</option>` : '') + `<option value="Otra" ${!row.branch ? 'selected' : ''}>Otra</option>`;
+
+    let formFields = '';
+    if (isMant) {
+      formFields = `
+        <div class="field"><label>Sucursal</label>
+          <select id="ee-branch" class="panelist-select" style="width:100%;font-size:16px;min-height:44px;">
+            ${branchOptionsFull}
+          </select>
+        </div>
+        <div class="field"><label>Área / equipo</label>
+          <input type="text" id="ee-title" value="${escAttr(row.title || '')}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+        </div>
+        <div class="field"><label>Descripción</label>
+          <textarea id="ee-detail" style="width:100%;font-size:16px;min-height:80px;box-sizing:border-box;">${esc(row.detail || '')}</textarea>
+        </div>
+        <div class="field"><label>Notas</label>
+          <textarea id="ee-notes" style="width:100%;font-size:16px;min-height:60px;box-sizing:border-box;">${esc(row.notes || '')}</textarea>
+        </div>
+        <div class="field"><label>Prioridad</label>
+          <select id="ee-prio" class="panelist-select" style="width:100%;font-size:16px;min-height:44px;">
+            ${prioOptions}
+          </select>
+        </div>
+      `;
+    } else {
+      formFields = `
+        <div class="field"><label>Sucursal</label>
+          <select id="ee-branch" class="panelist-select" style="width:100%;font-size:16px;min-height:44px;">
+            ${branchOptionsFull}
+          </select>
+        </div>
+        <div class="field"><label>Artículo</label>
+          <input type="text" id="ee-title" value="${escAttr(row.title || '')}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+        </div>
+        <div class="field"><label>Proveedor</label>
+          <input type="text" id="ee-vendor" value="${escAttr(row.vendor || '')}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+        </div>
+        <div class="field"><label>Monto</label>
+          <input type="number" id="ee-amount" value="${row.amount != null ? escAttr(String(row.amount)) : ''}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+        </div>
+        <div class="field"><label>Link</label>
+          <input type="url" id="ee-link" value="${escAttr(row.link || '')}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+        </div>
+        <div class="field"><label>Notas</label>
+          <textarea id="ee-notes" style="width:100%;font-size:16px;min-height:60px;box-sizing:border-box;">${esc(row.notes || '')}</textarea>
+        </div>
+        <div class="field"><label>Prioridad</label>
+          <select id="ee-prio" class="panelist-select" style="width:100%;font-size:16px;min-height:44px;">
+            ${prioOptions}
+          </select>
+        </div>
+      `;
+    }
+
+    $('estatus-edit-body').innerHTML = formFields;
+    const actions = $('estatus-edit-actions');
+    actions.innerHTML = '';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn';
+    saveBtn.style.cssText = 'width:100%;min-height:44px;font-size:16px;margin:0;';
+    saveBtn.textContent = 'Guardar cambios';
+    saveBtn.addEventListener('click', async () => {
+      saveBtn.disabled = true;
+      let payload = {};
+      const branchVal = $('ee-branch').value;
+      const prioVal = $('ee-prio').value;
+      const notesVal = $('ee-notes').value.trim();
+
+      if (isMant) {
+        const areaVal = $('ee-title').value.trim();
+        const descVal = $('ee-detail').value.trim();
+        if (!areaVal) { alert('El área / equipo es obligatorio.'); saveBtn.disabled = false; return; }
+        payload = {
+          area: areaVal,
+          description: descVal,
+          notes: notesVal,
+          priority: prioVal,
+          branch: branchVal
+        };
+      } else {
+        const itemVal = $('ee-title').value.trim();
+        const vendorVal = $('ee-vendor').value.trim();
+        const amountRaw = $('ee-amount').value.trim();
+        const linkVal = $('ee-link').value.trim();
+        if (!itemVal) { alert('El artículo es obligatorio.'); saveBtn.disabled = false; return; }
+        payload = {
+          item: itemVal,
+          vendor: vendorVal,
+          amount: amountRaw ? parseFloat(amountRaw) : null,
+          link: linkVal,
+          notes: notesVal,
+          priority: prioVal,
+          branch: branchVal
+        };
+      }
+
+      const { error } = await supabase.from(row.table).update(payload).eq('id', row.id);
+      if (error) {
+        showMsg($('estatus-msg'), 'Error al actualizar: ' + error.message, 'err');
+        saveBtn.disabled = false;
+        return;
+      }
+
+      // Re-read row to confirm the values landed before reporting success
+      const verifyCols = isMant ? 'area, description, notes, priority, branch' : 'item, vendor, amount, link, notes, priority, branch';
+      const { data: updatedData, error: verifyErr } = await supabase.from(row.table).select(verifyCols).eq('id', row.id).maybeSingle();
+      if (verifyErr || !updatedData) {
+        showMsg($('estatus-msg'), 'Error al verificar la actualización.', 'err');
+        saveBtn.disabled = false;
+        return;
+      }
+      if (isMant) {
+        if (updatedData.area !== payload.area) {
+          showMsg($('estatus-msg'), 'No se pudieron guardar los cambios.', 'err');
+          saveBtn.disabled = false;
+          return;
+        }
+      } else {
+        if (updatedData.item !== payload.item) {
+          showMsg($('estatus-msg'), 'No se pudieron guardar los cambios.', 'err');
+          saveBtn.disabled = false;
+          return;
+        }
+      }
+
+      toast('✅ Solicitud actualizada');
+      closeEstatusEdit();
+      loadEstatus();
+    });
+    actions.appendChild(saveBtn);
+
+    estatusEdit.classList.remove('hidden');
+  }
+
   // Cache the last-loaded rows + admin flag so the detail modal can read them
   // without re-fetching. Set at the end of loadEstatus.
   let estatusRowsCache = [];
   let estatusAdminFlag = false;
+  let __currentUserId = '';
   // (assigned inside loadEstatus below)
 
   // Tap a request card -> open its detail modal (but not when tapping the
-  // inline advance button, which has its own handler below).
+  // inline advance button or inline edit button, which have their own handlers).
   document.addEventListener('click', (e) => {
     if (e.target.closest('[data-advance]')) return;
+    const editBtn = e.target.closest('[data-edit]');
+    if (editBtn) {
+      const [table, id] = editBtn.getAttribute('data-edit').split('|');
+      const row = estatusRowsCache.find(r => r.table === table && r.id === id);
+      if (row) openEstatusEdit(row);
+      return;
+    }
     const card = e.target.closest('[data-open-detail]');
     if (!card) return;
     const [table, id] = card.getAttribute('data-open-detail').split('|');
@@ -3835,8 +4059,18 @@
     if (!btn) return;
     const [table, id, newStatus] = btn.getAttribute('data-advance').split('|');
     btn.disabled = true;
+    // v0.195 — a blocked UPDATE does NOT raise: RLS silently filters the row, so the
+    // call "succeeds" while changing nothing. Read the row back before reporting success
+    // (this is exactly how a Gerente Regional clicking "Marcar Entregado" failed
+    // silently on purchases). Never trust the absence of an error.
     const { error } = await supabase.from(table).update({ status: newStatus }).eq('id', id);
     if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); btn.disabled = false; return; }
+    const { data: chk } = await supabase.from(table).select('status').eq('id', id).maybeSingle();
+    if (!chk || chk.status !== newStatus) {
+      showMsg($('estatus-msg'), 'No se pudo actualizar el estatus. Verifica tus permisos.', 'err');
+      btn.disabled = false;
+      return;
+    }
     loadEstatus();
   });
 
