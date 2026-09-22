@@ -1474,7 +1474,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.192";
+  const APP_VERSION = "v0.193";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -3377,8 +3377,8 @@
   };
   // Look up the status meta for a row by its kind.
   function statusMeta(r) { return STATUS_META[r.kind] || {}; }
-  // ADMIN_ROLES = who can CHANGE status (Dueño only for now, per Ben)
-  const ADMIN_ROLES = ['Dueño'];
+  // ADMIN_ROLES = who can CHANGE status (Dueño and Gerente Regional)
+  const ADMIN_ROLES = ['Dueño', 'Gerente Regional'];
 
   // Shared priority -> label/color map (used by both the card badge and the
   // detail modal). Single source of truth so the two never drift.
@@ -3412,7 +3412,7 @@
     // Fetch both request tables (newest first)
     const { data: mant, error: em } = await supabase
       .from('maintenance_requests')
-      .select('id, branch, area, description, notes, priority, status, submitted_by, created_at, photo_urls')
+      .select('id, branch, area, description, notes, priority, status, submitted_by, created_at, photo_urls, service_date, follow_ups, outcome')
       .order('created_at', { ascending: false });
     const { data: comp, error: ec } = await supabase
       .from('purchases')
@@ -3432,7 +3432,10 @@
       priority: r.priority || 'Normal',
       branch: r.branch, status: r.status, created_at: r.created_at,
       id: r.id, table: 'maintenance_requests', submitted_by: r.submitted_by,
-      link: '', photo_urls: r.photo_urls || [], vendor: '', amount: null
+      link: '', photo_urls: r.photo_urls || [], vendor: '', amount: null,
+      service_date: r.service_date || null,
+      follow_ups: r.follow_ups || [],
+      outcome: r.outcome || null
     }));
     (comp || []).forEach(r => rows.push({
       kind: 'comp', typeLabel: '🛒 Compra', title: r.item || 'Compra',
@@ -3571,11 +3574,180 @@
     // never showed it, so a Mantenimiento request had no visible author (Ben:
     // "for mantenimiento, cocina roma norte, i can't see who submitted it?").
     const submitter = row.submitter_name || '—';
-    const detailRows = row.kind === 'mant'
-      ? [['Tipo','🔧 Mantenimiento'], ['Área / equipo', row.title], ['Descripción', row.detail], ['Notas', row.notes || '—'], ['Prioridad', prio], ['Sucursal', row.branch], ['Solicitante', submitter], ['Status', statusLabel], ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]]
-      : [['Tipo','🛒 Compra'], ['Artículo', row.title], ['Proveedor', row.vendor || '—'], ['Monto', row.amount ? '$' + Number(row.amount).toLocaleString('es-MX') + ' MXN' : '—'], ['Prioridad', prio], ['Sucursal', row.branch], ['Solicitante', submitter], ['Status', statusLabel], ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]];
+    const detailRows = [];
+    if (row.kind === 'mant') {
+      let serviceDateFormatted = 'Sin fecha';
+      if (row.service_date) {
+        try {
+          const parts = String(row.service_date).slice(0, 10).split('-');
+          if (parts.length === 3) {
+            const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            serviceDateFormatted = d.toLocaleDateString('es-MX');
+          } else {
+            serviceDateFormatted = new Date(row.service_date).toLocaleDateString('es-MX');
+          }
+        } catch (_) {
+          serviceDateFormatted = esc(row.service_date);
+        }
+      }
+      let outcomeFormatted = '—';
+      if (row.outcome) {
+        outcomeFormatted = row.outcome === 'completado' ? 'Completado' : (row.outcome === 'resuelto' ? 'Resuelto' : esc(row.outcome));
+      }
+      detailRows.push(
+        ['Tipo', '🔧 Mantenimiento'],
+        ['Área / equipo', row.title],
+        ['Descripción', row.detail],
+        ['Notas', row.notes || '—'],
+        ['Prioridad', prio],
+        ['Sucursal', row.branch],
+        ['Solicitante', submitter],
+        ['Status', statusLabel],
+        ['Fecha de servicio (TBC)', serviceDateFormatted],
+        ['Resultado', outcomeFormatted],
+        ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]
+      );
+    } else {
+      detailRows.push(
+        ['Tipo', '🛒 Compra'],
+        ['Artículo', row.title],
+        ['Proveedor', row.vendor || '—'],
+        ['Monto', row.amount ? '$' + Number(row.amount).toLocaleString('es-MX') + ' MXN' : '—'],
+        ['Prioridad', prio],
+        ['Sucursal', row.branch],
+        ['Solicitante', submitter],
+        ['Status', statusLabel],
+        ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]
+      );
+    }
+
     $('estatus-detail-title').textContent = row.typeLabel + ' · ' + row.title;
-    $('estatus-detail-body').innerHTML = detailRows.map(r => `<div class="rv-row"><div class="rv-label">${esc(r[0])}</div><div class="rv-value">${r[1] || '—'}</div></div>`).join('') + linkHtml + photosHtml;
+
+    let mantControlsHtml = '';
+    let followUpsHtml = '';
+    if (row.kind === 'mant') {
+      if (isAdmin) {
+        mantControlsHtml = `
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;">📅 Fecha de servicio (TBC)</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="date" id="estatus-mant-date" value="${escAttr(row.service_date ? String(row.service_date).slice(0, 10) : '')}" style="flex:1;min-height:44px;font-size:16px;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--input-bg);color:var(--ink);" />
+              <button class="btn" id="estatus-mant-date-save" style="width:auto;min-height:44px;padding:8px 14px;font-size:0.9rem;margin:0;">Guardar fecha</button>
+            </div>
+          </div>
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;">📝 Agregar seguimiento</div>
+            <textarea id="estatus-mant-note" placeholder="Escribe un seguimiento o nota..." style="width:100%;min-height:80px;font-size:16px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--input-bg);color:var(--ink);box-sizing:border-box;resize:vertical;"></textarea>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+              <button class="btn" id="estatus-mant-note-save" style="min-height:44px;padding:10px 14px;font-size:0.95rem;margin:0;">Agregar seguimiento</button>
+              <button class="btn btn-outline" id="estatus-mant-not-resolved" style="min-height:44px;padding:10px 14px;font-size:0.95rem;margin:0;color:var(--red);border-color:var(--red);">No resuelto — agregar seguimiento</button>
+            </div>
+          </div>
+        `;
+      }
+
+      const list = [...(row.follow_ups || [])].reverse();
+      followUpsHtml = `
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+          <div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;">📋 Historial de seguimientos</div>
+          ${list.length === 0 ? '<div style="font-size:0.85rem;color:var(--muted);font-style:italic;">Sin seguimientos</div>' : `
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              ${list.map(f => {
+                const dateStr = f.at ? new Date(f.at).toLocaleString('es-MX') : '—';
+                const author = esc(f.by_name || 'Personal');
+                const tag = f.kind === 'not_resolved' ? ' <span style="display:inline-block;background:#fce8e6;color:#d93025;font-size:0.75rem;font-weight:700;padding:1px 6px;border-radius:6px;margin-left:4px;">No resuelto</span>' : '';
+                return `
+                  <div style="background:var(--frame-bg, rgba(0,0,0,0.03));border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.85rem;">
+                    <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:0.78rem;margin-bottom:4px;">
+                      <span>👤 ${author}${tag}</span>
+                      <span>${esc(dateStr)}</span>
+                    </div>
+                    <div style="white-space:pre-wrap;color:var(--ink);">${esc(f.text || '')}</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    $('estatus-detail-body').innerHTML = detailRows.map(r => `<div class="rv-row"><div class="rv-label">${esc(r[0])}</div><div class="rv-value">${r[1] || '—'}</div></div>`).join('') + linkHtml + photosHtml + mantControlsHtml + followUpsHtml;
+
+    const resolveCurrentUserName = async () => {
+      let name = (currentProfile && currentProfile.name) || '';
+      let uid = (currentProfile && currentProfile.id) || null;
+      if (!name || !uid) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            uid = uid || user.id;
+            const { data: p } = await supabase.from('profiles').select('name').eq('id', user.id).maybeSingle();
+            name = (p && p.name) || user.email || 'Equipo';
+          }
+        } catch (_) {}
+      }
+      return { by: uid || '00000000-0000-0000-0000-000000000000', by_name: name || 'Equipo' };
+    };
+
+    if (row.kind === 'mant' && isAdmin) {
+      const dateSaveBtn = $('estatus-mant-date-save');
+      if (dateSaveBtn) {
+        dateSaveBtn.addEventListener('click', async () => {
+          const val = $('estatus-mant-date').value || null;
+          dateSaveBtn.disabled = true;
+          const { error } = await supabase.from(row.table).update({ service_date: val }).eq('id', row.id);
+          if (error) { showMsg($('estatus-msg'), 'Error al guardar fecha: ' + error.message, 'err'); dateSaveBtn.disabled = false; return; }
+          row.service_date = val;
+          toast('✅ Fecha de servicio guardada');
+          loadEstatus();
+          openEstatusDetail(row.table, row.id);
+        });
+      }
+
+      const noteSaveBtn = $('estatus-mant-note-save');
+      if (noteSaveBtn) {
+        noteSaveBtn.addEventListener('click', async () => {
+          const text = ($('estatus-mant-note').value || '').trim();
+          if (!text) { alert('Escribe una nota de seguimiento'); return; }
+          noteSaveBtn.disabled = true;
+          const author = await resolveCurrentUserName();
+          const cur = row.follow_ups || [];
+          const entry = { at: new Date().toISOString(), by: author.by, by_name: author.by_name, text, kind: 'followup' };
+          const updated = [...cur, entry];
+          const { error } = await supabase.from(row.table).update({ follow_ups: updated }).eq('id', row.id);
+          if (error) { showMsg($('estatus-msg'), 'Error al guardar seguimiento: ' + error.message, 'err'); noteSaveBtn.disabled = false; return; }
+          row.follow_ups = updated;
+          toast('✅ Seguimiento agregado');
+          loadEstatus();
+          openEstatusDetail(row.table, row.id);
+        });
+      }
+
+      const notResolvedBtn = $('estatus-mant-not-resolved');
+      if (notResolvedBtn) {
+        notResolvedBtn.addEventListener('click', async () => {
+          let text = ($('estatus-mant-note').value || '').trim();
+          if (!text) {
+            const promptVal = prompt('Por favor escribe el motivo o seguimiento de por qué no se ha resuelto:');
+            text = (promptVal || '').trim();
+          }
+          if (!text) { alert('El seguimiento es obligatorio para registrar que no está resuelto.'); return; }
+          notResolvedBtn.disabled = true;
+          const author = await resolveCurrentUserName();
+          const cur = row.follow_ups || [];
+          const entry = { at: new Date().toISOString(), by: author.by, by_name: author.by_name, text, kind: 'not_resolved' };
+          const updated = [...cur, entry];
+          const { error } = await supabase.from(row.table).update({ follow_ups: updated }).eq('id', row.id);
+          if (error) { showMsg($('estatus-msg'), 'Error al guardar: ' + error.message, 'err'); notResolvedBtn.disabled = false; return; }
+          row.follow_ups = updated;
+          toast('✅ Registrado como no resuelto');
+          loadEstatus();
+          openEstatusDetail(row.table, row.id);
+        });
+      }
+    }
+
     const actions = $('estatus-detail-actions');
     actions.innerHTML = '';
     if (isAdmin && statusMeta(row)[row.status] && statusMeta(row)[row.status].next) {
@@ -3590,6 +3762,43 @@
       });
       actions.appendChild(adv);
     }
+
+    if (isAdmin && row.kind === 'mant') {
+      const btnComp = document.createElement('button');
+      btnComp.className = 'btn'; btnComp.style.margin = '0';
+      btnComp.textContent = 'Completado';
+      btnComp.addEventListener('click', async () => {
+        btnComp.disabled = true;
+        const author = await resolveCurrentUserName();
+        const cur = row.follow_ups || [];
+        const entry = { at: new Date().toISOString(), by: author.by, by_name: author.by_name, text: 'Marcado como Completado', kind: 'followup' };
+        const updated = [...cur, entry];
+        const { error } = await supabase.from(row.table).update({ status: 'Completado', outcome: 'completado', follow_ups: updated }).eq('id', row.id);
+        if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); btnComp.disabled = false; return; }
+        row.status = 'Completado'; row.outcome = 'completado'; row.follow_ups = updated;
+        toast('✅ Mantenimiento completado');
+        closeEstatusDetail(); loadEstatus();
+      });
+      actions.appendChild(btnComp);
+
+      const btnRes = document.createElement('button');
+      btnRes.className = 'btn btn-secondary'; btnRes.style.margin = '0';
+      btnRes.textContent = 'Resuelto';
+      btnRes.addEventListener('click', async () => {
+        btnRes.disabled = true;
+        const author = await resolveCurrentUserName();
+        const cur = row.follow_ups || [];
+        const entry = { at: new Date().toISOString(), by: author.by, by_name: author.by_name, text: 'Marcado como Resuelto', kind: 'followup' };
+        const updated = [...cur, entry];
+        const { error } = await supabase.from(row.table).update({ outcome: 'resuelto', follow_ups: updated }).eq('id', row.id);
+        if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); btnRes.disabled = false; return; }
+        row.outcome = 'resuelto'; row.follow_ups = updated;
+        toast('✅ Marcado como resuelto');
+        closeEstatusDetail(); loadEstatus();
+      });
+      actions.appendChild(btnRes);
+    }
+
     if (isAdmin) {
       const pdf = document.createElement('button');
       pdf.className = 'btn btn-outline'; pdf.style.margin = '0';
