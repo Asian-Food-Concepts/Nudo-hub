@@ -1486,7 +1486,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.195";
+  const APP_VERSION = "v0.196";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -3556,7 +3556,7 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:8px;flex-wrap:wrap;">
             <div style="font-size:0.8rem;color:var(--accent);">Ver detalles ›</div>
             <div style="display:flex;gap:8px;align-items:center;">
-              ${((isAdmin || (r.submitted_by && r.submitted_by === __currentUserId)) && !['Entregado','Completado','Resuelto','Cancelado'].includes(r.status)) ? `<button class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
+              ${(isAdmin || (r.submitted_by && r.submitted_by === __currentUserId && r.status === 'Solicitado')) && !['Entregado','Completado','Resuelto','Cancelado'].includes(r.status) ? `<button class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
               ${(isAdmin && statusMeta(r)[r.status] && statusMeta(r)[r.status].next) ? `<button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;" data-advance="${r.table}|${r.id}|${statusMeta(r)[r.status].next}">Marcar ${statusMeta(r)[r.status].next}</button>` : ''}
             </div>
           </div>
@@ -3832,7 +3832,11 @@
     }
 
     const closed = ['Entregado','Completado','Resuelto','Cancelado'].includes(row.status);
-    if ((isMine || isAdmin) && !closed) {
+    // v0.196 — a non-admin may only edit while the request is still 'Solicitado'.
+    // Once the team has acted, editing is frozen (Ben 2026-09-21) so a purchase
+    // that was already bought cannot be rewritten. Admins keep full authority.
+    const canEdit = isAdmin ? !closed : (isMine && row.status === 'Solicitado');
+    if (canEdit) {
       const editBtn = document.createElement('button');
       editBtn.className = 'btn btn-outline'; editBtn.style.margin = '0';
       editBtn.textContent = '✏️ Editar';
