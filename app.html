@@ -349,6 +349,23 @@
   /* In-app guide view */
   .guide-frame { width: 100%; border: 1px solid var(--border); border-radius: 12px; min-height: 60vh; background: var(--frame-bg); }
 
+  /* v0.198 — search result cards. Built for a phone first: a >=48px tap target,
+     the match pulled out and highlighted, the section named, and the snippet
+     clamped so a hit is never a 96px wall of scraped text. */
+  .guide-hit { display:flex; align-items:center; gap:10px; padding:10px 12px; margin:6px 0;
+               min-height:48px; background:var(--card); border:1px solid var(--border);
+               border-radius:10px; cursor:pointer; }
+  .guide-hit:active { transform:scale(0.99); background:var(--checked-bg); }
+  .guide-hit-main { flex:1; min-width:0; }
+  .guide-hit-title { font-weight:600; font-size:0.86rem; line-height:1.25; }
+  .guide-hit-sec { font-weight:500; font-size:0.76rem; color:var(--muted); }
+  .guide-hit-snip { font-size:0.8rem; color:var(--muted); margin-top:3px; line-height:1.35;
+                    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+                    overflow:hidden; word-break:break-word; }
+  .guide-hit-chev { color:var(--muted); font-size:1.1rem; flex-shrink:0; }
+  .guide-mark { background:rgba(232,161,58,0.42); color:inherit; border-radius:3px;
+                padding:0 2px; font-weight:600; }
+
   /* Schedule */
   .sched-frame { width: 100%; border: 1px solid var(--border); border-radius: 12px; min-height: 400px; background: var(--frame-bg); }
 
@@ -1486,7 +1503,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.197";
+  const APP_VERSION = "v0.198";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -2725,6 +2742,26 @@
             if (n.id) { id = n.id; break; }
             n = n.parentElement;
           }
+          // v0.198 — a <p>/<li>/<td> sits in a generic wrapper, so the ancestor walk
+          // almost always resolved to the page's own id ("top") and EVERY search hit
+          // dumped the reader at the top of the document. Section ids live on the
+          // HEADINGS, so when no meaningful ancestor id exists, fall back to the
+          // nearest PRECEDING heading — the section the text actually belongs to.
+          if (!id || id === 'top' || id === 'docSearchInput') {
+            let h = el;
+            while (h && !/^H[1-6]$/.test(h.tagName)) h = h.previousElementSibling || h.parentElement;
+            // also walk up-then-back when the block is nested (e.g. inside <li>)
+            if (!h || !h.id) {
+              let scope = el.closest('li, td, div');
+              while (scope && !h) {
+                let s = scope.previousElementSibling;
+                while (s) { if (/^H[1-6]$/.test(s.tagName) && s.id) { h = s; break; } s = s.previousElementSibling; }
+                if (h) break;
+                scope = scope.parentElement ? scope.parentElement.closest('li, td, div') : null;
+              }
+            }
+            if (h && h.id) id = h.id;
+          }
           targets.push({ el, id: id || 'top', txt });
         });
         GUIDE_INDEXES[url] = { document: doc, targets, html };
@@ -2736,8 +2773,73 @@
     return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
 
+  // v0.198 — build a SHORT excerpt centred on the match instead of dumping the
+  // whole scraped block. Returns escaped HTML with the needle marked.
+  function excerptAround(text, needle, span) {
+    span = span || 54;
+    const src = String(text || '');
+    const n = normalize(src), q = normalize(String(needle || ''));
+    let i = q ? n.indexOf(q) : -1;
+    let out;
+    if (i === -1) {
+      out = src.slice(0, span * 2);
+    } else {
+      const from = Math.max(0, i - span);
+      const to = Math.min(src.length, i + q.length + span);
+      out = (from > 0 ? '…' : '') + src.slice(from, to) + (to < src.length ? '…' : '');
+    }
+    let safe = esc(out);
+    if (needle) {
+      // Mark the needle occurrences. Do it on the ESCAPED text with a literal
+      // case-insensitive match — no accent gymnastics, which only made this fragile.
+      const lit = esc(String(needle)).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      try {
+        safe = safe.replace(new RegExp(lit, 'gi'), '<mark class="guide-mark">$&</mark>');
+      } catch (_) {}
+    }
+    return safe;
+  }
+
+  // v0.198 — after opening a doc from search, flash the matched phrase so the reader
+  // does not have to scan the page. Same-origin iframe, so we can reach in.
+  let pendingGuideHighlight = null;
+  function applyGuideHighlight() {
+    if (!pendingGuideHighlight) return;
+    const { needle, tries } = pendingGuideHighlight;
+    const frame = $('guide-frame');
+    let doc = null;
+    try { doc = frame && frame.contentDocument; } catch (_) { doc = null; }
+    if (!doc || !doc.body || !doc.body.childElementCount) {
+      if (tries < 20) {
+        pendingGuideHighlight.tries = tries + 1;
+        setTimeout(applyGuideHighlight, 150);
+      }
+      return;
+    }
+    if (!needle) { pendingGuideHighlight = null; return; }
+    const q = normalize(needle);
+    let target = null;
+    const blocks = doc.querySelectorAll('p, li, td, h2, h3, h4');
+    for (const el of blocks) {
+      if (normalize(el.textContent || '').includes(q)) { target = el; break; }
+    }
+    if (target) {
+      try {
+        target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      } catch (_) { target.scrollIntoView(); }
+      try {
+        target.style.transition = 'background 0.4s';
+        target.style.background = 'rgba(232,161,58,0.28)';
+        target.style.borderRadius = '6px';
+        setTimeout(() => { target.style.background = ''; }, 2600);
+      } catch (_) {}
+    }
+    pendingGuideHighlight = null;
+  }
+
   function runGuideSearch() {
-    const q = normalize($('guide-search-input').value.trim());
+    const q_raw = $('guide-search-input').value.trim();
+    const q = normalize(q_raw);
     const resultsEl = $('guide-search-results');
     if (!q) { resultsEl.innerHTML = ''; return; }
     ensureGuideCache().then(() => {
@@ -2749,17 +2851,35 @@
         idx.targets.forEach(t => {
           const nText = normalize(t.txt || t.el.textContent || '');
           if (nText.includes(q)) {
-            const snippet = (t.txt || t.el.textContent || '').trim().slice(0, 90) + '…';
-            results.push({ url, id: t.id, title: meta.title, icon: meta.icon, snippet });
+            // Prefer the matched element's own text, but fall back to the whole block;
+            // keep it short — the card excerpts around the match anyway.
+            const rawTxt = (t.txt || t.el.textContent || '').trim();
+            const snippet = rawTxt.slice(0, 220);
+            // Name the section the hit lives in, so two hits with the same page title
+            // are still distinguishable in the list.
+            let section = '';
+            try {
+              const secEl = idx.document.getElementById(t.id);
+              section = secEl ? (secEl.textContent || '').trim().slice(0, 42) : '';
+            } catch (_) {}
+            results.push({ url, id: t.id, title: meta.title, icon: meta.icon,
+                           snippet, needle: q_raw, section });
           }
         });
       });
       if (!results.length) { resultsEl.innerHTML = '<p style="margin:8px 0 4px;font-size:0.85rem;color:var(--muted);">Sin resultados.</p>'; return; }
+      // v0.198 — mobile-first result card: the old layout stacked a 22px title over a
+      // 58px un-truncated snippet (snippets were whole paragraphs scraped from a
+      // wrapper div), so each row was up to 96px tall and read as a wall of text with
+      // no tap affordance. Now: a short excerpt centred on the match, clamped to 2
+      // lines, a section label, a chevron, and a >=48px tap target.
       resultsEl.innerHTML = results.slice(0, 8).map(r => {
-        const safe = r.snippet.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-        return `<div data-search-hit="${encodeURIComponent(r.url)}|${encodeURIComponent(r.id)}" style="padding:8px 4px;border-bottom:1px solid var(--border);cursor:pointer;">
-          <div style="font-weight:600;font-size:0.9rem;">${r.icon} ${r.title}</div>
-          <div style="font-size:0.8rem;color:var(--muted);">${safe}</div>
+        return `<div data-search-hit="${encodeURIComponent(r.url)}|${encodeURIComponent(r.id)}|${encodeURIComponent(r.needle || '')}" class="guide-hit">
+          <div class="guide-hit-main">
+            <div class="guide-hit-title">${r.icon} ${r.title}${r.section ? ` <span class="guide-hit-sec">› ${esc(r.section)}</span>` : ''}</div>
+            <div class="guide-hit-snip">${excerptAround(r.snippet, r.needle)}</div>
+          </div>
+          <div class="guide-hit-chev">›</div>
         </div>`;
       }).join('');
     });
@@ -2772,7 +2892,7 @@
   document.getElementById('guide-search-results').addEventListener('click', async (e) => {
     const hit = e.target.closest('[data-search-hit]');
     if (!hit) return;
-    const [url, id] = hit.getAttribute('data-search-hit').split('|').map(decodeURIComponent);
+    const [url, id, needle] = hit.getAttribute('data-search-hit').split('|').map(decodeURIComponent);
     // Open the guide iframe to the section anchor
     document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
     $('home-view').style.display = 'none';
@@ -2780,6 +2900,10 @@
     $('form-guide').classList.add('active');
     $('guide-search-input').value = '';
     $('guide-search-results').innerHTML = '';
+    // v0.198 — and actually HIGHLIGHT what was searched for. Landing on the section was
+    // only half the job: on a long page the person still had to hunt for the phrase.
+    pendingGuideHighlight = { url, needle: needle || '', tries: 0 };
+    applyGuideHighlight();
   });
 
   document.querySelectorAll('[data-back]').forEach(b => {
@@ -6220,6 +6344,19 @@
     // left open — which is the correct behaviour and why we do not clear it here.
     window.__usu_editing = null;
   }
+
+  // v0.198 — the Cancel button was DEAD. The delegated [data-mgmt] listener below is
+  // bound to #usu-list, but #usu-editor-modal lives OUTSIDE that container (it is a
+  // sibling under #app-view), so a click on #usu-editor-cancel never bubbled to the
+  // listener and the 'cancel-edit' branch was unreachable. Bind it directly.
+  // Verified: the click does not reach the #usu-list listener at all.
+  (function bindUsuarioEditorCancel() {
+    const btn = $('usu-editor-cancel');
+    if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); closeUsuarioEditor(); });
+    // Also allow tapping the dimmed backdrop to dismiss, like every other sheet.
+    const modal = $('usu-editor-modal');
+    if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeUsuarioEditor(); });
+  })();
 
   // ============ NUEVOS INGRESOS (v0.187) ============
   // People who registered through the onboarding form. They live in public.onboarding,
