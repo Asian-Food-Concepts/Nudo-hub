@@ -38,34 +38,48 @@ function scriptBlocks(html) {
 }
 
 /**
- * Extract a named function's FULL source by brace matching.
- * Anchored to a line start so a call site (`foo(`) can never match, and so the
- * `function foo(` inside a string/comment cannot be picked up by accident.
+ * Extract a named function or a const-arrow function by brace matching.
+ *
+ * Handles BOTH shapes, because a refactor may legitimately turn
+ * `function f(){}` into `const f = () => {}`:
+ *     function nudoWarn(scope, err) { ... }
+ *     const nudoDebug = () => { ... }
+ *     const f = async (a) => { ... }
+ * Anchored to a line start so a call site (`foo(`) can never match.
  */
 function extractFunction(src, name) {
-  const re = new RegExp('^[ \\t]*(?:async[ \\t]+)?function[ \\t]+' + name + '[ \\t]*\\(', 'm');
-  const m = re.exec(src);
-  if (!m) return null;
-  const braceStart = src.indexOf('{', m.index);
-  if (braceStart === -1) return null;
-  let depth = 0;
-  for (let i = braceStart; i < src.length; i++) {
-    const c = src[i];
-    if (c === '{') depth++;
-    else if (c === '}') {
-      depth--;
-      if (depth === 0) return src.slice(m.index, i + 1);
+  const patterns = [
+    // function NAME(  /  async function NAME(
+    '^[ \\t]*(?:async[ \\t]+)?function[ \\t]+' + name + '[ \\t]*\\(',
+    // const/let/var NAME = (  /  = async (  /  = function (
+    '^[ \\t]*(?:const|let|var)[ \\t]+' + name + '[ \\t]*=[ \\t]*(?:async[ \\t]+)?(?:function[ \\t]*)?\\(',
+  ];
+  for (const p of patterns) {
+    const m = new RegExp(p, 'm').exec(src);
+    if (!m) continue;
+    const braceStart = src.indexOf('{', m.index);
+    if (braceStart === -1) continue;
+    let depth = 0;
+    for (let i = braceStart; i < src.length; i++) {
+      const c = src[i];
+      if (c === '{') depth++;
+      else if (c === '}') {
+        depth--;
+        if (depth === 0) return src.slice(m.index, i + 1);
+      }
     }
   }
   return null;
 }
 
-/** Names of every top-level `function NAME(` in the source. */
+/** Names of every function-shaped declaration (function, or const arrow). */
 function functionNames(src) {
   const names = [];
-  const re = /^[ \t]*(?:async[ \t]+)?function[ \t]+(\w+)[ \t]*\(/gm;
   let m;
-  while ((m = re.exec(src)) !== null) names.push(m[1]);
+  const reDecl = /^[ \t]*(?:async[ \t]+)?function[ \t]+(\w+)[ \t]*\(/gm;
+  while ((m = reDecl.exec(src)) !== null) names.push(m[1]);
+  const reArrow = /^[ \t]*(?:const|let|var)[ \t]+(\w+)[ \t]*=[ \t]*(?:async[ \t]+)?(?:function[ \t]*)?\(/gm;
+  while ((m = reArrow.exec(src)) !== null) names.push(m[1]);
   return names;
 }
 
@@ -185,23 +199,47 @@ function sandbox(src, names, opts = {}) {
     wanted.push({ name, body });
     const called = new Set([...body.matchAll(/\b(\w+)\s*\(/g)].map((x) => x[1]));
     for (const c of called) add(c);
-    // Some functions depend on a sibling CONSTANT rather than a function
-    // (_MESES / _DIAS). Bring those along, or the function throws
-    // "X is not defined" and the harness's own gap looks like a code defect.
-    for (const ident of new Set([...body.matchAll(/\b([A-Z_][A-Z0-9_]{2,})\b/g)].map((x) => x[1]))) {
-      if (seen.has(ident)) continue;
-      const decl = extractConst(src, ident);
-      if (decl) {
-        seen.add(ident);
-        wanted.push({ name: ident, body: decl });
-      }
-    }
   }
   names.forEach(add);
 
+  // Bring along module-level CONSTANTS the loaded functions close over.
+  //
+  // WHY AN EXPLICIT LIST, not an automatic scan: a scan over every identifier in
+  // the extracted bodies is unstable. It matches `e` in `catch (e) {}` and short
+  // locals, and any one-letter name that happens to be declared as a `const`
+  // somewhere in this 6,600-line file gets pulled in — which then fails to load
+  // ("s is not defined") or silently shadows a real value. Two attempts at a
+  // clever auto-scan both produced that failure. A named list is honest: it
+  // states exactly what the harness depends on, and adding a dependency is a
+  // deliberate one-line change.
+  //
+  // Only SINGLE-LINE declarations can be pulled (see extractConst); if a needed
+  // constant is declared across several lines, the test using it will report the
+  // missing name and it must be added here by hand rather than half-extracted.
+  const NEEDED_CONSTS = ['_MESES', '_DIAS', '__nudoDiagOnce'];
+  for (const ident of NEEDED_CONSTS) {
+    if (seen.has(ident)) continue;
+    const decl = extractConst(src, ident);
+    if (decl) {
+      seen.add(ident);
+      wanted.push({ name: ident, body: decl });
+    }
+  }
+
   for (const { name, body } of wanted) {
     try {
-      vm.runInContext(body, ctx, { filename: `app.html:${name}` });
+      // APPEND AN EXPLICIT EXPORT.
+      // A top-level `const f = () => {}` (or `let`) run via runInContext lands in
+      // the context's global LEXICAL scope — reachable from later scripts, but
+      // NOT a property of the context object, so `ctx.f` is undefined and the
+      // test reports "f is not a function". A `function` declaration DOES become
+      // a property, which is why only the arrow-shaped helpers failed. Binding
+      // with globalThis.<name> makes both shapes readable identically.
+      vm.runInContext(
+        body + '\n;try{globalThis.' + name + ' = ' + name + ';}catch(e){}',
+        ctx,
+        { filename: `app.html:${name}` }
+      );
     } catch (e) {
       throw new Error(`failed to load ${name}(): ${e.message}`);
     }

@@ -1503,7 +1503,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.198";
+  const APP_VERSION = "v0.199";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1585,6 +1585,44 @@
 
   const $ = id => document.getElementById(id);
   const views = { login: $('login-view'), app: $('app-view') };
+
+  // ---- DIAGNOSTICS ----
+  // Several catch blocks below deliberately swallow their error: localStorage
+  // throws in private browsing, vibrate() is absent on desktop, focus() throws
+  // on some mobile browsers. Silencing THOSE is correct — a cosmetic failure
+  // must not take down the action the user asked for.
+  //
+  // The danger is a catch that hides a REAL defect: the write never lands, the
+  // name resolves to a placeholder, and nothing anywhere says so. The owner's
+  // standing order is that failures must be announced. These helpers keep a
+  // genuinely fatal error visible without turning every cosmetic miss into noise
+  // on a staff phone.
+  //
+  //   nudoWarn(scope, err)  — dev-only console warning (set window.__NUDO_DEBUG)
+  //   nudoDiag(scope, err)  — dev-only warning AND a one-time toast, for cases
+  //                           where a wrong value is stored rather than merely
+  //                           displayed (a silent data defect the user must know
+  //                           about because the fix is on them).
+  const nudoDebug = () => {
+    try { return !!window.__NUDO_DEBUG; } catch (e) { return false; }
+  };
+  function nudoWarn(scope, err) {
+    if (!nudoDebug()) return;
+    try { console.warn('[nudo:' + scope + ']', err); } catch (e) {}
+  }
+  let __nudoDiagOnce = {};
+  function nudoDiag(scope, err) {
+    nudoWarn(scope, err);
+    if (__nudoDiagOnce[scope]) return;   // once per page load, never on every retry
+    __nudoDiagOnce[scope] = true;
+    try {
+      // pushToast is defined later in this same scope; guard the call so a load
+      // order change can never turn a diagnostic into a new failure.
+      if (typeof pushToast === 'function') {
+        pushToast('Aviso interno: algo no se guardó (' + scope + '). Avísale a Ben.', true);
+      }
+    } catch (e) {}
+  }
 
   // ---- THEME (light / dark / system) ----
   const THEME_KEY = 'nudo_theme';
@@ -2795,7 +2833,12 @@
       const lit = esc(String(needle)).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       try {
         safe = safe.replace(new RegExp(lit, 'gi'), '<mark class="guide-mark">$&</mark>');
-      } catch (_) {}
+      } catch (err) {
+        // Must not be fatal — the snippet still renders without the mark — but a
+        // permanently missing highlight is otherwise unexplainable, so report it
+        // in dev. nudoWarn is defined in the diagnostics block.
+        nudoWarn('search-highlight', err);
+      }
     }
     return safe;
   }
@@ -3831,11 +3874,23 @@
           if (user) {
             uid = uid || user.id;
             const { data: p } = await supabase.from('profiles').select('name').eq('id', user.id).maybeSingle();
-            name = (p && p.name) || user.email || 'Equipo';
+            name = (p && p.name) || user.email || '';
           }
-        } catch (_) {}
+        } catch (err) { nudoWarn('attribution', err); }
       }
-      return { by: uid || '00000000-0000-0000-0000-000000000000', by_name: name || 'Equipo' };
+      // Attribution must never be invented. An entry recorded against the
+      // all-zero UUID with the name "Equipo" is indistinguishable from a real
+      // record, so it silently corrupts the audit trail. Fall back to the email
+      // (a real identifier), and if there is genuinely nothing, say so — the
+      // caller renders this string, so the gap is visible on screen instead of
+      // being papered over.
+      if (!name) {
+        nudoWarn('attribution', 'no name resolvable — entry will read as unattributed');
+      }
+      return {
+        by: uid || '00000000-0000-0000-0000-000000000000',
+        by_name: name || '— sin identificar —'
+      };
     };
 
     if (row.kind === 'mant' && isAdmin) {
@@ -5380,7 +5435,10 @@
     try { sub = await getPushSubscription(); } catch (_) {}
     setNotifState(!!sub);
 
-    // Non-fatal: the subscription is still valid locally even if this write fails.
+    // The local subscription stays valid even if this write fails, so the catch
+    // must NOT be fatal — but it must not be silent either: a device that never
+    // registers looks exactly like a healthy one, and the only symptom is a
+    // notification that never arrives. Read the result back and say so.
     try {
       if (sub && Notification.permission === 'granted') {
         const j = (typeof sub.toJSON === 'function') ? sub.toJSON() : null;
@@ -5389,14 +5447,18 @@
         if (p256dh && auth) {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            await supabase.from('push_subscriptions').upsert(
+            const { error: pushErr } = await supabase.from('push_subscriptions').upsert(
               { user_id: user.id, endpoint: sub.endpoint, p256dh: p256dh, auth: auth },
               { onConflict: 'endpoint' }
             );
+            // An RLS-blocked write does not throw — it returns an error object,
+            // or silently filters the row. Checking `error` is the only way to
+            // distinguish "saved" from "ignored".
+            if (pushErr) nudoDiag('push', pushErr);
           }
         }
       }
-    } catch (_) {}
+    } catch (err) { nudoDiag('push', err); }
   })();
 
   // ---- CHANGELOG / NOVEDADES MODAL (v0.138) ----
