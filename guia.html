@@ -4,82 +4,113 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guía Operativa · Nudo Hub</title>
+<script>
+  // Apply the saved theme before first paint (shares 'nudo_theme' with app.html so
+  // this page matches the app instead of always rendering light).
+  (function () {
+    try {
+      var m = localStorage.getItem('nudo_theme') || 'system';
+      if (m !== 'system') document.documentElement.setAttribute('data-theme', m);
+    } catch (e) {}
+  })();
+</script>
 <style>
-:root { --bg:#f7f5f0; --card:#fff; --ink:#1a1a1a; --muted:#6b6b6b; --accent:#2f3a2f; --border:#e3e0d8; }
+:root {
+  color-scheme: light;
+  --bg:var(--bg); --card:var(--card); --ink:var(--ink); --muted:var(--muted); --accent:var(--accent);
+  --border:var(--border); --header-bg:var(--accent); --header-ink:var(--card);
+  --hover-bg:var(--hover-bg); --zebra:var(--zebra); --quote-bg:var(--quote-bg); --quote-ink:var(--quote-ink); --meta:var(--meta);
+  --search-bg:var(--search-bg); --track:var(--track);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:#12171a; --card:#1e2528; --ink:#e6e9ea; --muted:#9aa7ad; --accent:#7d9c85;
+  --border:#2c3538; --header-bg:#1e2528; --header-ink:#e6e9ea;
+  --hover-bg:#263034; --zebra:#1a2226; --quote-bg:#1a2226; --quote-ink:#c9d1d4; --meta:#7d8a90;
+  --search-bg:rgba(18,23,26,0.94); --track:#c98a2e;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bg:#12171a; --card:#1e2528; --ink:#e6e9ea; --muted:#9aa7ad; --accent:#7d9c85;
+    --border:#2c3538; --header-bg:#1e2528; --header-ink:#e6e9ea;
+    --hover-bg:#263034; --zebra:#1a2226; --quote-bg:#1a2226; --quote-ink:#c9d1d4; --meta:#7d8a90;
+    --search-bg:rgba(18,23,26,0.94); --track:#c98a2e;
+  }
+}
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; min-height:100vh; }
-header { background:var(--accent); color:#fff; padding:26px 20px; text-align:center; }
+header { background:var(--header-bg); color:var(--header-ink); padding:26px 20px; text-align:center; border-bottom:1px solid var(--border); }
 header h1 { font-size:1.4rem; font-weight:700; }
-header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
+header a { color:var(--header-ink); text-decoration:none; opacity:0.9; font-size:0.9rem; }
 
   
   .doc-page { max-width: 780px; margin: 0 auto; padding: 28px 20px 80px; }
-  .doc-breadcrumb { font-size: 0.85rem; color: #6b6b6b; margin-bottom: 18px; }
-  .doc-breadcrumb a { color: #2f3a2f; text-decoration: none; font-weight: 600; }
+  .doc-breadcrumb { font-size: 0.85rem; color: var(--muted); margin-bottom: 18px; }
+  .doc-breadcrumb a { color: var(--accent); text-decoration: none; font-weight: 600; }
   .doc-breadcrumb a:hover { text-decoration: underline; }
   .doc-title { font-size: 1.9rem; font-weight: 800; line-height: 1.2; margin: 8px 0 6px; }
-  .doc-subtitle { font-size: 1.05rem; color: #6b6b6b; font-weight: 400; margin: 0 0 24px; }
-  .doc-h2 { font-size: 1.35rem; font-weight: 800; margin: 40px 0 14px; padding: 14px 0 10px; border-top: 2px solid #2f3a2f; scroll-margin-top: 70px; }
-  .doc-h3 { font-size: 1.12rem; font-weight: 700; margin: 30px 0 10px; color: #2f3a2f; scroll-margin-top: 70px; }
+  .doc-subtitle { font-size: 1.05rem; color: var(--muted); font-weight: 400; margin: 0 0 24px; }
+  .doc-h2 { font-size: 1.35rem; font-weight: 800; margin: 40px 0 14px; padding: 14px 0 10px; border-top: 2px solid var(--accent); scroll-margin-top: 70px; }
+  .doc-h3 { font-size: 1.12rem; font-weight: 700; margin: 30px 0 10px; color: var(--accent); scroll-margin-top: 70px; }
   .doc-h4 { font-size: 1.02rem; font-weight: 700; margin: 22px 0 8px; }
   .doc-h5, .doc-h6 { font-size: 0.95rem; font-weight: 700; margin: 16px 0 6px; }
   .doc-page p { margin: 12px 0; line-height: 1.7; font-size: 1rem; }
   .doc-page ul, .doc-page ol { margin: 10px 0 10px 24px; line-height: 1.65; }
   .doc-page li { margin: 7px 0; }
-  .doc-page li::marker { color: #2f3a2f; }
-  .doc-page b, .doc-page strong { font-weight: 700; color: #1a1a1a; }
+  .doc-page li::marker { color: var(--accent); }
+  .doc-page b, .doc-page strong { font-weight: 700; color: var(--ink); }
   .doc-page table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92rem; }
-  .doc-page th { background: #2f3a2f; color: #fff; text-align: left; padding: 10px 12px; border: 1px solid #2f3a2f; font-weight: 700; }
-  .doc-page td { padding: 10px 12px; border: 1px solid #e3e0d8; vertical-align: top; }
-  .doc-page tr:nth-child(even) td { background: #faf9f5; }
-  .doc-page a { color: #2f3a2f; font-weight: 600; }
+  .doc-page th { background: var(--accent); color: #fff; text-align: left; padding: 10px 12px; border: 1px solid var(--accent); font-weight: 700; }
+  .doc-page td { padding: 10px 12px; border: 1px solid var(--border); vertical-align: top; }
+  .doc-page tr:nth-child(even) td { background: var(--zebra); }
+  .doc-page a { color: var(--accent); font-weight: 600; }
   .doc-page a:hover { text-decoration: underline; }
-  .doc-page blockquote { margin: 14px 0; padding: 12px 18px; border-left: 4px solid #2f3a2f; background: #f4f6f4; color: #3a3a3a; font-style: italic; border-radius: 0 8px 8px 0; }
-  .doc-meta { font-size: 0.78rem; color: #a0a0a0; margin-top: 30px; padding-top: 14px; border-top: 1px solid #e3e0d8; }
+  .doc-page blockquote { margin: 14px 0; padding: 12px 18px; border-left: 4px solid var(--accent); background: var(--quote-bg); color: var(--quote-ink); font-style: italic; border-radius: 0 8px 8px 0; }
+  .doc-meta { font-size: 0.78rem; color: var(--meta); margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--border); }
 
   /* Sticky TOC */
-  .doc-toc { background:#fff; border:1px solid #e3e0d8; border-radius:12px; padding:16px 18px; margin:0 0 24px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
-  .doc-toc-title { font-size:0.85rem; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:#6b6b6b; margin-bottom:10px; }
+  .doc-toc { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 18px; margin:0 0 24px; box-shadow:0 1px 3px var(--shadow, rgba(0,0,0,0.05)); }
+  .doc-toc-title { font-size:0.85rem; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--muted); margin-bottom:10px; }
   .doc-toc ul { list-style:none; margin:0; padding:0; }
   .doc-toc li { margin:6px 0; line-height:1.4; }
-  .doc-toc a { color:#2f3a2f; text-decoration:none; font-weight:500; }
-  .doc-toc a:hover { text-decoration:underline; color:#4a5d4a; }
+  .doc-toc a { color:var(--accent); text-decoration:none; font-weight:500; }
+  .doc-toc a:hover { text-decoration:underline; color:var(--accent); }
   .doc-toc .toc-h3 { padding-left:16px; font-size:0.92rem; }
   .doc-toc .toc-h2 { font-weight:600; }
-  .doc-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:16px 0; border-radius:8px; border:1px solid #e3e0d8; }
+  .doc-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:16px 0; border-radius:8px; border:1px solid var(--border); }
   .doc-table-wrap table { margin:0; min-width:100%; }
 
   /* Reading progress bar */
-  .progress-bar { position:fixed; top:0; left:0; height:4px; width:0%; background:#e8a13a; z-index:200; transition:width 0.1s; }
+  .progress-bar { position:fixed; top:0; left:0; height:4px; width:0%; background:var(--track); z-index:200; transition:width 0.1s; }
   /* Scroll-to-top button */
-  .to-top { position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:#2f3a2f; color:#fff; border:none; font-size:1.3rem; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.2); opacity:0; pointer-events:none; transition:opacity 0.2s; z-index:100; }
+  .to-top { position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--accent); color:#fff; border:none; font-size:1.3rem; cursor:pointer; box-shadow:0 2px 8px var(--shadow, rgba(0,0,0,0.2)); opacity:0; pointer-events:none; transition:opacity 0.2s; z-index:100; }
   .to-top.show { opacity:1; pointer-events:auto; }
   .to-top:active { transform:scale(0.95); }
   /* Back-to-top links */
   .doc-backtop { display:block; text-align:right; font-size:0.8rem; margin:18px 0 4px; }
-  .doc-backtop a { color:#6b6b6b; text-decoration:none; font-weight:500; }
-  .doc-backtop a:hover { color:#2f3a2f; text-decoration:underline; }
+  .doc-backtop a { color:var(--muted); text-decoration:none; font-weight:500; }
+  .doc-backtop a:hover { color:var(--accent); text-decoration:underline; }
 
   /* Search box + scrollspy */
-  .doc-search-wrap { position:sticky; top:10px; z-index:120; background:rgba(247,245,240,0.94); backdrop-filter:blur(4px); padding:10px 0 12px; margin:0 0 6px; }
-  .doc-search { display:flex; align-items:center; gap:8px; background:#fff; border:2px solid #2f3a2f; border-radius:12px; padding:0 12px; height:46px; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
-  .doc-search input { flex:1; border:none; outline:none; font-size:1rem; font-family:inherit; background:transparent; color:#1a1a1a; min-width:0; }
-  .doc-search .doc-search-icon { color:#2f3a2f; font-size:1.1rem; }
-  .doc-search .doc-search-clear { border:none; background:none; color:#6b6b6b; font-size:1.1rem; cursor:pointer; padding:0 2px; display:none; }
+  .doc-search-wrap { position:sticky; top:10px; z-index:120; background:var(--search-bg); backdrop-filter:blur(4px); padding:10px 0 12px; margin:0 0 6px; }
+  .doc-search { display:flex; align-items:center; gap:8px; background:var(--card); border:2px solid var(--accent); border-radius:12px; padding:0 12px; height:46px; box-shadow:0 2px 6px var(--shadow, rgba(0,0,0,0.08)); }
+  .doc-search input { flex:1; border:none; outline:none; font-size:1rem; font-family:inherit; background:transparent; color:var(--ink); min-width:0; }
+  .doc-search .doc-search-icon { color:var(--accent); font-size:1.1rem; }
+  .doc-search .doc-search-clear { border:none; background:none; color:var(--muted); font-size:1.1rem; cursor:pointer; padding:0 2px; display:none; }
   .doc-search .doc-search-clear.show { display:inline; }
-  .doc-search-empty { display:none; text-align:center; color:#6b6b6b; font-size:0.85rem; padding:8px 0 4px; }
+  .doc-search-empty { display:none; text-align:center; color:var(--muted); font-size:0.85rem; padding:8px 0 4px; }
   .doc-search-empty.show { display:block; }
   /* current-section chip */
-  .doc-now { position:fixed; top:12px; right:12px; max-width:60vw; background:#2f3a2f; color:#fff; font-size:0.78rem; font-weight:600; padding:6px 12px; border-radius:999px; box-shadow:0 2px 8px rgba(0,0,0,0.2); opacity:0; pointer-events:none; transform:translateY(-6px); transition:opacity .2s,transform .2s; z-index:150; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .doc-now { position:fixed; top:12px; right:12px; max-width:60vw; background:var(--accent); color:#fff; font-size:0.78rem; font-weight:600; padding:6px 12px; border-radius:999px; box-shadow:0 2px 8px var(--shadow, rgba(0,0,0,0.2)); opacity:0; pointer-events:none; transform:translateY(-6px); transition:opacity .2s,transform .2s; z-index:150; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .doc-now.show { opacity:1; transform:translateY(0); }
   /* scrollspy active state on TOC */
-  .doc-toc li a.active { background:#eef1eb; color:#2f3a2f; font-weight:700; border-radius:6px; padding:2px 6px; margin-left:-6px; }
+  .doc-toc li a.active { background:var(--hover-bg); color:var(--accent); font-weight:700; border-radius:6px; padding:2px 6px; margin-left:-6px; }
 </style>
 </head>
 <body>
   <header>
     <h1>Guía Operativa</h1>
-    <p style="margin-top:4px;"><a href="/Nudo-hub/">← Volver a Nudo Hub</a></p>
   </header>
   <div class="doc-page" id="top">
 

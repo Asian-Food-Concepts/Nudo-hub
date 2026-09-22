@@ -4,13 +4,39 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Proveedores de servicios clave · Nudo Hub</title>
+<script>
+  // Apply the saved theme before first paint (shares 'nudo_theme' with app.html so
+  // this page matches the app instead of always rendering light).
+  (function () {
+    try {
+      var m = localStorage.getItem('nudo_theme') || 'system';
+      if (m !== 'system') document.documentElement.setAttribute('data-theme', m);
+    } catch (e) {}
+  })();
+</script>
 <style>
-:root { --bg:#f7f5f0; --card:#fff; --ink:#1a1a1a; --muted:#6b6b6b; --accent:#2f3a2f; --border:#e3e0d8; }
+:root {
+  color-scheme: light;
+  --bg:#f7f5f0; --card:#fff; --ink:#1a1a1a; --muted:#6b6b6b; --accent:#2f3a2f;
+  --border:#e3e0d8; --header-bg:#2f3a2f; --header-ink:#fff;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:#12171a; --card:#1e2528; --ink:#e6e9ea; --muted:#9aa7ad; --accent:#7d9c85;
+  --border:#2c3538; --header-bg:#1e2528; --header-ink:#e6e9ea;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bg:#12171a; --card:#1e2528; --ink:#e6e9ea; --muted:#9aa7ad; --accent:#7d9c85;
+    --border:#2c3538; --header-bg:#1e2528; --header-ink:#e6e9ea;
+  }
+}
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; min-height:100vh; }
-header { background:var(--accent); color:#fff; padding:26px 20px; text-align:center; }
+header { background:var(--header-bg); color:var(--header-ink); padding:26px 20px; text-align:center; border-bottom:1px solid var(--border); }
 header h1 { font-size:1.4rem; font-weight:700; }
-header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
+header a { color:var(--header-ink); text-decoration:none; opacity:0.9; font-size:0.9rem; }
 .wrap { max-width:640px; margin:0 auto; padding:20px 16px 40px; }
 .contact { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; text-decoration:none; color:inherit; background:var(--card); border:1px solid var(--border); border-radius:12px; margin-bottom:10px; }
 .contact .title { font-weight:600; }
@@ -22,7 +48,6 @@ header a { color:#fff; text-decoration:none; opacity:0.9; font-size:0.9rem; }
 <body>
   <header>
     <h1>📞 Proveedores de servicios clave</h1>
-    <p style="margin-top:4px;"><a href="/Nudo-hub/">← Volver a Nudo Hub</a></p>
   </header>
   <div class="wrap">
     <a class="contact" href="tel:+525577911283" style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;text-decoration:none;color:inherit;border-bottom:1px solid var(--border);">
