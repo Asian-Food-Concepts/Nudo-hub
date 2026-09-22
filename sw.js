@@ -1,4 +1,10 @@
-const CACHE = 'nudo-hub-v96'; // v0.200: ORIGIN MIGRATION — every asset path is now RELATIVE ('./x') so the identical
+const CACHE = 'nudo-hub-v97'; // v0.201: CUTOVER — the repo now carries a CNAME file, so GitHub Pages
+// serves the app at https://hub.asianfoodconcepts.mx/ and the old project-site URL
+// (asian-food-concepts.github.io/Nudo-hub/) 301-redirects here. The version bump is what
+// moves EXISTING clients: a stale client detects the new version, reloads, follows the
+// redirect, and re-registers its service worker at the NEW root scope — the old SW scope
+// (/Nudo-hub/) could never control the new origin, so staff must reinstall the PWA once.
+// v0.200: ORIGIN MIGRATION — every asset path is now RELATIVE ('./x') so the identical
 // code works at BOTH https://asian-food-concepts.github.io/Nudo-hub/ (project site, subpath) and
 // https://hub.asianfoodconcepts.mx/ (custom subdomain, root). Ben: deploying the Hub to the company domain.
 // The SW's own scope makes './' resolve inside the correct tree, so the cache keys stay inside the layout
