@@ -1474,7 +1474,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.193";
+  const APP_VERSION = "v0.194";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -1907,6 +1907,7 @@
     if (error) { showMsg($('login-msg'), 'Código incorrecto: ' + error.message, 'err'); $('verify-code').disabled = false; return; }
     showApp();
     loadUser();
+    openEstatusDeepLink();
   });
 
   $('resend-code').addEventListener('click', async () => {
@@ -5167,9 +5168,45 @@
   // ---- INIT ----
   (async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (session) { showApp(); loadUser(); }
+    if (session) { showApp(); loadUser(); openEstatusDeepLink(); }
     else showLogin();
   })();
+
+  // ---- DEEP LINK (v0.194) ----
+  // The solicitud email links here as #estatus=<table>/<uuid> so a request can be
+  // opened and READ directly. No status change is implied or forced.
+  let deepLinkConsumed = false;   // consume exactly once per page load
+  function readEstatusDeepLink() {
+    const m = (location.hash || '').match(/estatus=([A-Za-z_]+)\/([0-9a-fA-F-]{36})/);
+    if (!m) return null;
+    const table = m[1];
+    if (table !== 'maintenance_requests' && table !== 'purchases') return null;
+    return { table, id: m[2] };
+  }
+  async function openEstatusDeepLink() {
+    if (deepLinkConsumed) return;
+    const target = readEstatusDeepLink();
+    if (!target) return;
+    deepLinkConsumed = true;
+    try {
+      // Clear the hash so a refresh or a later re-login does not reopen the modal.
+      if (history.replaceState) history.replaceState(null, '', location.pathname + location.search);
+      // Activate the Estatus view via the SAME path the tab button uses.
+      document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
+      const home = $('home-view'); if (home) home.style.display = 'none';
+      const form = $('form-estatus'); if (form) form.classList.add('active');
+      setActiveTab('estatus');
+      await loadEstatus();                 // populates estatusRowsCache
+      if (estatusRowsCache.some(r => r.table === target.table && r.id === target.id)) {
+        openEstatusDetail(target.table, target.id);
+      } else {
+        const el = $('estatus-msg');
+        if (el) showMsg(el, 'No se encontró la solicitud', 'err');
+      }
+    } catch (e) {
+      deepLinkConsumed = false;   // something failed — allow a retry on next auth
+    }
+  }
 
   // ---- LIVE REALTIME REFRESH ----
   // Keep the Estatus view current without manual refresh: when a new
