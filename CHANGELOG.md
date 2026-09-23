@@ -5,6 +5,17 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
+## [v0.202] - 2026-09-22
+
+### Añadido (Added)
+- **Nuevos ingresos — contratos, edición rápida y reenvío**:
+  - Descarga de contratos en PDF desde Supabase Storage (`onboarding-documents`): versión con resaltado (`revision`) para impresión/revisión y versión sin resaltado (`firma`) para firma.
+  - Modal de edición rápida (`nuevo-editor-modal`) para modificar puesto, salario semanal y fecha de ingreso, con verificación de RLS contra la base de datos.
+  - Modo B de reenvío para corrección: envía enlace al aspirante mediante `signInWithOtp` (con confirmación previa y guard de seguridad en modo de prueba).
+  - Unificación de definición de gestión (`isManagement`) alineada con la regla del servidor (`is_dueno() OR is_gerente() OR is_agf()`), permitiendo acceso a perfiles de nivel <= 2.
+
+---
+
 ## [v0.140] - 2026-09-17
 
 ### Modificado (Changed)

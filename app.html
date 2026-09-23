@@ -1438,6 +1438,19 @@
         </div>
       </div>
 
+      <!-- NUEVOS INGRESOS EDIT MODAL (v0.202) -->
+      <div class="review-modal hidden" id="nuevo-editor-modal">
+        <div class="review-box">
+          <h3 id="nuevo-editor-title">✏️ Editar nuevo ingreso</h3>
+          <div id="nuevo-editor-msg" class="msg hidden" style="margin-bottom:8px;"></div>
+          <div class="review-body" id="nuevo-editor-body"></div>
+          <div class="review-actions" style="margin-top:8px;">
+            <button class="btn" id="nuevo-editor-save" style="margin:0;min-height:44px;font-size:16px;">Guardar</button>
+            <button class="btn btn-outline" id="nuevo-editor-cancel" style="margin:0;min-height:44px;font-size:16px;">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ESTATUS DETAIL MODAL -->
       <div class="review-modal hidden" id="estatus-detail">
         <div class="review-box">
@@ -1503,7 +1516,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.201";
+  const APP_VERSION = "v0.202";
   document.getElementById('ver').textContent = APP_VERSION;
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -2060,7 +2073,7 @@
     // isRecl = Dueño or Gerente keep the real features; captains (isLeader
     // without management role) get greyed "Próximamente" placeholders parked
     // at the BOTTOM of Home; non-leaders see nothing (unchanged).
-    const isRecl = (role === 'Dueño' || role.toLowerCase().includes('gerente'));
+    const isRecl = currentProfile ? isManagement(currentProfile.role, currentProfile.level) : false;
     const isCaptainOnly = (isLeader && !isRecl);
     const reclSection = document.getElementById('recl-section');
     const reclList = document.getElementById('recl-list');
@@ -4748,9 +4761,9 @@
       let user; try { user = await requireUser(); } catch(e) { return; }
       // Enforce leader role at submit (defense in depth)
       // v0.125: entrevistas insert = Dueño/Gerente only (captains disabled)
-      const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      const { data: prof } = await supabase.from('profiles').select('role,level').eq('id', user.id).maybeSingle();
       const role = (prof && prof.role) || '';
-      const isRecl = role === 'Dueño' || role.toLowerCase().includes('gerente');
+      const isRecl = isManagement(role, prof && prof.level);
       if (!isRecl) {
         showMsg($('i-msg'), 'Solo Dueño o Gerente pueden registrar entrevistas.', 'err');
         goHome();
@@ -5001,9 +5014,9 @@
       if (!first || !paterno) { showMsg(msg, 'Nombre y apellido paterno son obligatorios', 'err'); return; }
       let user; try { user = await requireUser(); } catch(err) { return; }
       // leader gate — v0.125: entrevistas edit = Dueño/Gerente only
-      const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      const { data: prof } = await supabase.from('profiles').select('role,level').eq('id', user.id).maybeSingle();
       const role = (prof && prof.role) || '';
-      const isRecl = role === 'Dueño' || role.toLowerCase().includes('gerente');
+      const isRecl = isManagement(role, prof && prof.level);
       if (!isRecl) { showMsg(msg, 'Solo Dueño o Gerente pueden editar entrevistas.', 'err'); return; }
       const panelists = Array.from(document.querySelectorAll('.ee-panelist')).map(v => v.value.trim()).filter(Boolean);
       const sal = $('ee-salario').value;
@@ -5043,9 +5056,9 @@
       if (!confirm('¿Eliminar definitivamente a "' + name + '"? Esta acción no se puede deshacer.')) return;
       let user; try { user = await requireUser(); } catch(err) { return; }
       // v0.125: entrevistas delete = Dueño/Gerente only
-      const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      const { data: prof } = await supabase.from('profiles').select('role,level').eq('id', user.id).maybeSingle();
       const role = (prof && prof.role) || '';
-      const isRecl = role === 'Dueño' || role.toLowerCase().includes('gerente');
+      const isRecl = isManagement(role, prof && prof.level);
       if (!isRecl) { showMsg(msg, 'Solo Dueño o Gerente pueden eliminar.', 'err'); return; }
       const { error } = await supabase.from('interviews').delete().eq('id', _editingId);
       if (error) { showMsg(msg, 'Error: ' + error.message, 'err'); return; }
@@ -5955,6 +5968,20 @@
     __writeGuardOn = true;
   }
 
+  // One definition of "management", matching the server's own gate:
+  // is_dueno() OR is_gerente() OR is_agf()  (is_agf == active and level <= 2).
+  // The old local rule (role === 'Dueño' || role.includes('gerente')) disagreed with the
+  // database, so a level-2 manager without "gerente" in their title was silently shown
+  // nothing. Level is the durable signal, so accept it too.
+  function isManagement(role, level) {
+    const r = String(role || '').toLowerCase();
+    if (!r && level == null) return false;
+    if (String(role || '') === 'Dueño') return true;
+    if (r.includes('gerente')) return true;
+    const lv = Number(level);
+    return Number.isFinite(lv) && lv <= 2;
+  }
+
   function realLevel() {
     const p = VIEW_AS ? __realProfile : currentProfile;
     return p ? Number(p.level) : null;
@@ -6439,13 +6466,28 @@
     if (!list) return;
     list.innerHTML = '<p style="color:var(--muted);">Cargando…</p>';
     try {
-      const { data, error } = await supabase
-        .from('onboarding')
-        .select('id,auth_user_id,email,nombres,apellido_paterno,apellido_materno,movil,current_step,created_at,updated_at,lfpdppp_consent')
-        .order('created_at', { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      window.__nuevos_cache = data || [];
+      const [onbRes, contractsRes] = await Promise.all([
+        supabase
+          .from('onboarding')
+          .select('id,auth_user_id,email,nombres,apellido_paterno,apellido_materno,movil,current_step,created_at,updated_at,lfpdppp_consent,puesto,salario_semanal,fecha_de_ingreso,dias_de_probacion,stage1_submitted_at')
+          .order('created_at', { ascending: false })
+          .limit(200),
+        supabase
+          .from('onboarding_contracts')
+          .select('id,onboarding_id,puesto,salario_semanal,fecha_de_ingreso,revision_doc_id,revision_path,firma_doc_id,firma_path,generated_at')
+          .order('generated_at', { ascending: false })
+      ]);
+      if (onbRes.error) throw onbRes.error;
+      window.__nuevos_cache = onbRes.data || [];
+      const contractsMap = {};
+      if (contractsRes && contractsRes.data) {
+        contractsRes.data.forEach(c => {
+          if (!contractsMap[c.onboarding_id]) {
+            contractsMap[c.onboarding_id] = c;
+          }
+        });
+      }
+      window.__nuevos_contracts = contractsMap;
       renderNuevos(window.__nuevos_cache);
     } catch (e) {
       list.innerHTML = '<p style="color:var(--red);">No se pudieron cargar los registros. '
@@ -6475,6 +6517,15 @@
       const complete = isComplete(r);
       const step = Number(r.current_step || 1);
       const pct = Math.min(100, Math.round((step / 4) * 100));
+      const contract = (window.__nuevos_contracts || {})[r.id] || null;
+      const revPath = contract && contract.revision_path ? contract.revision_path : null;
+      const firmaPath = contract && contract.firma_path ? contract.firma_path : null;
+      const details = [
+        r.puesto ? esc(r.puesto) : null,
+        r.salario_semanal != null ? ('$' + Number(r.salario_semanal).toLocaleString('es-MX') + '/sem') : null,
+        r.fecha_de_ingreso ? esc(String(r.fecha_de_ingreso).slice(0, 10)) : null
+      ].filter(Boolean).join(' · ');
+
       return '<div data-nuevo-row="' + esc(r.id) + '" style="border:1px solid var(--border);'
         + 'border-radius:12px;padding:12px;margin-bottom:10px;">'
         + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
@@ -6488,15 +6539,28 @@
         + '<div style="color:var(--muted);font-size:13px;">' + esc(r.email || '—') + '</div>'
         + '<div style="color:var(--muted);font-size:13px;">' + esc(r.movil || 'sin móvil')
         +   ' · paso ' + step + '/4</div>'
+        + (details ? '<div style="color:var(--muted);font-size:13px;">' + details + '</div>' : '')
         + '<div style="height:6px;background:var(--border);border-radius:99px;margin:8px 0;">'
         +   '<div style="height:6px;width:' + pct + '%;background:var(--accent2);border-radius:99px;"></div></div>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
         + (activated
-            ? '<span class="field-hint" style="margin:0;">Ya tiene cuenta — adminístrala en Usuarios.</span>'
+            ? '<span class="field-hint" style="margin:0;width:100%;">Ya tiene cuenta — adminístrala en Usuarios.</span>'
             : (!complete
-                ? '<span class="field-hint" style="margin:0;color:var(--amber);">Registro incompleto — falta nombre o correo. No se puede activar todavía.</span>'
+                ? '<span class="field-hint" style="margin:0;color:var(--amber);width:100%;">Registro incompleto — falta nombre o correo. No se puede activar todavía.</span>'
                 : '<button class="btn btn-outline" data-nuevo-activate="' + esc(r.id) + '"'
                   + ' style="font-size:0.85rem;padding:10px 14px;min-height:44px;margin:0;flex:1;">✅ Activar cuenta</button>'))
+        + '<button class="btn btn-outline" data-nuevo-edit="' + esc(r.id) + '"'
+          + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">✏️ Editar</button>'
+        + '<button class="btn btn-outline" data-nuevo-dl="revision" data-id="' + esc(r.id) + '"'
+          + (revPath ? '' : ' disabled')
+          + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">'
+          + (revPath ? '📄 Descargar con resaltado' : 'Sin contrato') + '</button>'
+        + '<button class="btn btn-outline" data-nuevo-dl="firma" data-id="' + esc(r.id) + '"'
+          + (firmaPath ? '' : ' disabled')
+          + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">'
+          + (firmaPath ? '✍️ Descargar sin resaltado' : 'Sin contrato') + '</button>'
+        + '<button class="btn btn-outline" data-nuevo-sendback="' + esc(r.id) + '"'
+          + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">✉️ Enviar para corrección</button>'
         + '</div></div>';
     }).join('');
   }
@@ -6537,6 +6601,242 @@
       showMsg(msgEl, 'Error: ' + esc(err.message), 'err');
       btn.disabled = false;
       btn.textContent = '✅ Activar cuenta';
+    }
+  });
+
+  // ---- NUEVOS INGRESOS: EDIT, DOWNLOAD & SEND-BACK (v0.202) ----
+  function openNuevoEditor(r) {
+    window.__nuevo_editing = r;
+    const modal = $('nuevo-editor-modal');
+    const title = $('nuevo-editor-title');
+    const body = $('nuevo-editor-body');
+    const msg = $('nuevo-editor-msg');
+    if (!modal || !body) return;
+    if (msg) clearMsg(msg);
+
+    const full = [r.nombres, r.apellido_paterno, r.apellido_materno].filter(Boolean).join(' ').trim() || '(sin nombre)';
+    if (title) title.textContent = '✏️ Editar: ' + full;
+
+    const fecha = r.fecha_de_ingreso ? String(r.fecha_de_ingreso).slice(0, 10) : '';
+    const sal = r.salario_semanal != null ? String(r.salario_semanal) : '';
+
+    body.innerHTML =
+      '<div class="rv-row"><div class="rv-label">Persona</div>' +
+        '<div class="rv-value" style="min-height:44px;display:flex;flex-direction:column;justify-content:center;">' +
+        '<strong style="font-size:16px;">' + esc(full) + '</strong>' +
+        '<span style="color:var(--muted);font-size:14px;">' + esc(r.email || '—') + '</span></div></div>' +
+      '<div class="rv-row"><div class="rv-label">Puesto</div>' +
+        '<div class="rv-value"><input type="text" id="ne-puesto" value="' + escAttr(r.puesto || '') + '" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" placeholder="Ej. Mesero, Cocina, Barra"></div></div>' +
+      '<div class="rv-row"><div class="rv-label">Sueldo semanal</div>' +
+        '<div class="rv-value"><input type="number" id="ne-salario" step="0.01" min="0" value="' + escAttr(sal) + '" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" placeholder="Ej. 2500"></div></div>' +
+      '<div class="rv-row"><div class="rv-label">Fecha de ingreso</div>' +
+        '<div class="rv-value"><input type="date" id="ne-fecha" value="' + escAttr(fecha) + '" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;"></div></div>';
+
+    modal.classList.remove('hidden');
+  }
+
+  function closeNuevoEditor() {
+    const modal = $('nuevo-editor-modal');
+    if (modal) modal.classList.add('hidden');
+    window.__nuevo_editing = null;
+  }
+
+  // Cancel & backdrop dismissal for nuevo-editor-modal
+  const nuevoCancel = $('nuevo-editor-cancel');
+  if (nuevoCancel) nuevoCancel.addEventListener('click', (e) => { e.preventDefault(); closeNuevoEditor(); });
+  const nuevoModal = $('nuevo-editor-modal');
+  if (nuevoModal) nuevoModal.addEventListener('click', (e) => { if (e.target === nuevoModal) closeNuevoEditor(); });
+
+  // Quick-edit save (Mode A)
+  const nuevoSave = $('nuevo-editor-save');
+  if (nuevoSave) {
+    nuevoSave.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const r = window.__nuevo_editing;
+      if (!r) return;
+      const msg = $('nuevo-editor-msg');
+      if (msg) clearMsg(msg);
+
+      const puestoVal = ($('ne-puesto') ? $('ne-puesto').value : '').trim() || null;
+      const salStr = ($('ne-salario') ? $('ne-salario').value : '').trim();
+      let salarioVal = null;
+      if (salStr !== '') {
+        salarioVal = parseFloat(salStr);
+        if (isNaN(salarioVal) || salarioVal < 0) {
+          if (msg) showMsg(msg, 'El salario debe ser un número válido.', 'err');
+          return;
+        }
+      }
+      const fechaVal = ($('ne-fecha') ? $('ne-fecha').value : '').trim() || null;
+
+      nuevoSave.disabled = true;
+      const origText = nuevoSave.textContent;
+      nuevoSave.textContent = 'Guardando…';
+
+      try {
+        const { error: updateErr } = await supabase
+          .from('onboarding')
+          .update({
+            puesto: puestoVal,
+            salario_semanal: salarioVal,
+            fecha_de_ingreso: fechaVal
+          })
+          .eq('id', r.id);
+
+        if (updateErr) {
+          if (msg) showMsg(msg, 'Error al guardar: ' + esc(updateErr.message), 'err');
+          return;
+        }
+
+        // Verify the write actually landed by selecting the row back (RLS reality check)
+        const { data: checkRow, error: checkErr } = await supabase
+          .from('onboarding')
+          .select('id,puesto,salario_semanal,fecha_de_ingreso')
+          .eq('id', r.id)
+          .maybeSingle();
+
+        if (checkErr || !checkRow) {
+          if (msg) showMsg(msg, 'No se pudo verificar el guardado: ' + esc((checkErr && checkErr.message) || 'registro no encontrado'), 'err');
+          return;
+        }
+
+        const matchPuesto = (checkRow.puesto || null) === puestoVal;
+        const matchSalario = (checkRow.salario_semanal != null ? Number(checkRow.salario_semanal) : null) === salarioVal;
+        const matchFecha = (checkRow.fecha_de_ingreso ? String(checkRow.fecha_de_ingreso).slice(0, 10) : null) === fechaVal;
+
+        if (!matchPuesto || !matchSalario || !matchFecha) {
+          if (msg) showMsg(msg, 'No se pudo guardar: tu cuenta no tiene permiso para editar este registro.', 'err');
+          return;
+        }
+
+        closeNuevoEditor();
+        const full = [r.nombres, r.apellido_paterno, r.apellido_materno].filter(Boolean).join(' ').trim() || 'registro';
+        showMsg($('nuevos-msg'), '✅ Cambios guardados para ' + esc(full) + '.', 'ok');
+        await loadNuevos();
+      } catch (err) {
+        if (msg) showMsg(msg, 'Error: ' + esc((err && err.message) || 'error inesperado'), 'err');
+      } finally {
+        nuevoSave.disabled = false;
+        nuevoSave.textContent = origText;
+      }
+    });
+  }
+
+  // Open editor click handler
+  document.addEventListener('click', (e) => {
+    if (!e.target || !e.target.closest) return;
+    const btn = e.target.closest('[data-nuevo-edit]');
+    if (!btn) return;
+    e.preventDefault();
+    const id = btn.getAttribute('data-nuevo-edit');
+    const row = (window.__nuevos_cache || []).find(r => r.id === id);
+    if (!row) {
+      showMsg($('nuevos-msg'), 'No se encontró el registro para editar.', 'err');
+      return;
+    }
+    openNuevoEditor(row);
+  });
+
+  // Download contract PDF (revision / firma)
+  document.addEventListener('click', async (e) => {
+    if (!e.target || !e.target.closest) return;
+    const btn = e.target.closest('[data-nuevo-dl]');
+    if (!btn || btn.disabled) return;
+    e.preventDefault();
+    const msgEl = $('nuevos-msg');
+    clearMsg(msgEl);
+    const variant = btn.getAttribute('data-nuevo-dl'); // 'revision' or 'firma'
+    const id = btn.getAttribute('data-id');
+    const row = (window.__nuevos_cache || []).find(r => r.id === id);
+    const contract = (window.__nuevos_contracts || {})[id];
+    const path = variant === 'revision'
+      ? (contract && contract.revision_path)
+      : (contract && contract.firma_path);
+
+    if (!path) {
+      showMsg(msgEl, 'No hay contrato disponible para descargar.', 'err');
+      return;
+    }
+
+    const full = row
+      ? [row.nombres, row.apellido_paterno, row.apellido_materno].filter(Boolean).join(' ').trim()
+      : 'Nuevo ingreso';
+    const puesto = (row && row.puesto) || (contract && contract.puesto) || 'Puesto';
+    const origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Descargando…';
+
+    try {
+      const { data, error } = await supabase.storage.from('onboarding-documents').createSignedUrl(path, 120);
+      if (error) throw error;
+      if (!data || !data.signedUrl) throw new Error('No se obtuvo URL de descarga');
+
+      const filename = 'Contrato ' + full + ' - ' + puesto + ' (' + variant + ').pdf';
+      const a = document.createElement('a');
+      a.href = data.signedUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      showMsg(msgEl, '✅ Descargando contrato (' + variant + ') de ' + esc(full) + '.', 'ok');
+    } catch (err) {
+      showMsg(msgEl, 'Error al descargar el contrato: ' + esc((err && err.message) || 'error desconocido'), 'err');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+  });
+
+  // Mode B: Send applicant back to onboarding form
+  document.addEventListener('click', async (e) => {
+    if (!e.target || !e.target.closest) return;
+    const btn = e.target.closest('[data-nuevo-sendback]');
+    if (!btn) return;
+    e.preventDefault();
+    const msgEl = $('nuevos-msg');
+    clearMsg(msgEl);
+    const id = btn.getAttribute('data-nuevo-sendback');
+    const row = (window.__nuevos_cache || []).find(r => r.id === id);
+    if (!row) { showMsg(msgEl, 'No se encontró el registro.', 'err'); return; }
+
+    // Mode B emails a real human. During testing the ONLY permitted recipient is the
+    // operator's own address. Ben's standing rule: "during testing do not test mode B,
+    // or if you need to test mode B, use your own email to test it."
+    // Ben must approve real sends before this is flipped.
+    const MODE_B_TEST_ALLOW = ['katto.en.mx@gmail.com', 'katto.en.mx+test@gmail.com'];
+    const TEST_MODE = true;   // <- flip to false ONLY when Ben green-lights real sends
+    if (TEST_MODE && !MODE_B_TEST_ALLOW.includes(String(row.email || '').toLowerCase())) {
+      showMsg(msgEl, 'Modo de prueba activo: solo se permite enviar correos a ' + MODE_B_TEST_ALLOW.join(', ') + '. El correo no fue enviado.', 'err');
+      return;
+    }
+
+    if (!row.email) {
+      showMsg(msgEl, 'El registro no tiene correo electrónico.', 'err');
+      return;
+    }
+
+    const email = String(row.email).trim().toLowerCase();
+    if (!confirm('Esto enviará un correo a ' + email + ' para que vuelva a llenar sus datos. ¿Continuar?')) {
+      return;
+    }
+
+    btn.disabled = true;
+    const origText = btn.textContent;
+    btn.textContent = 'Enviando…';
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: { emailRedirectTo: location.origin + '/onboarding.html' }
+      });
+      if (error) throw error;
+      showMsg(msgEl, '✅ Correo enviado a ' + esc(email) + ' para que complete su información.', 'ok');
+    } catch (err) {
+      showMsg(msgEl, 'Error al enviar correo: ' + esc((err && err.message) || 'error desconocido'), 'err');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = origText;
     }
   });
 
