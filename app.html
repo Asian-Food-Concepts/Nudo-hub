@@ -132,6 +132,19 @@
   header h1 a:active { opacity: 0.85; }
   header p { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
   .wrap { max-width: 640px; margin: 0 auto; padding: 16px 16px 40px; }
+  /* The wrapper is 640px for every page — right for forms, wrong for the PLANNER, whose
+     grid has 8 columns (role + 7 days) and only ever shows 5 before it scrolls sideways
+     (Ben 2026-09-23: "can allow it to be bigger, esp if on desktop?"). Desktop only: a
+     phone has no room to gain, and widening there would only add padding. */
+  @media (min-width: 900px) {
+    .wrap.wrap-wide { max-width: 1180px; }
+  }
+  /* Inside the planner, the grid is the thing that needs the room — let it fill the
+     now-wider card instead of being squeezed by the form padding. */
+  @media (min-width: 900px) {
+    .wrap.wrap-wide #form-plan .form-card { padding: 18px 22px; }
+    .wrap.wrap-wide .plan-grid { overflow-x: visible; }
+  }
   .section-title {
     font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.6px; color: var(--muted); margin: 20px 0 8px;
@@ -439,6 +452,16 @@
   .plan-table th { background: var(--frame-bg); position: sticky; top: env(safe-area-inset-top, 0px); }
   .plan-table th.day { min-width: 74px; }
   .plan-table td.name { text-align: left; white-space: nowrap; font-weight: 600; }
+  /* On a desktop-sized planner the grid has real room, so stop wrapping names/times and
+     let each day column take an even share (Ben 2026-09-23). Mobile keeps the current
+     compact behaviour — the min-width + sideways scroll is correct there. */
+  @media (min-width: 900px) {
+    .wrap.wrap-wide .plan-table { min-width: 0; }
+    .wrap.wrap-wide .plan-table th.day { min-width: 0; }
+    .wrap.wrap-wide .plan-table .nm,
+    .wrap.wrap-wide .plan-table .tm { white-space: nowrap; overflow: visible; text-overflow: clip; }
+    .wrap.wrap-wide .plan-table .tm { font-variant-numeric: tabular-nums; }
+  }
   .plan-table td.role { color: var(--muted); font-size: 0.72rem; }
   .plan-cell { cursor: pointer; border-radius: 6px; min-height: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
   .plan-cell.shift { background: rgba(60,140,220,0.14); }
@@ -1700,7 +1723,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.8";
+  const APP_VERSION = "v0.209.9";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -2086,6 +2109,14 @@
     if (!el) return;
     el.textContent = 'Hub';
     el.classList.add('brand-hub');
+  }
+
+  // Wider wrapper for the planner only (Ben 2026-09-23). The 8-column week grid was
+  // squeezed into the app's global 640px shell, hiding 2 of 7 days behind a sideways
+  // scroll on a desktop that had room to spare. Desktop-only via the media query.
+  function setPlannerWide(on) {
+    const w = document.querySelector('.wrap');
+    if (w) w.classList.toggle('wrap-wide', !!on);
   }
 
   function showLogin() {
@@ -2660,6 +2691,7 @@
   // ---- NAVIGATION ----
   function goHome() {
     document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
+    setPlannerWide(false);   // the planner's wider wrapper must not leak into Home
     $('home-view').style.display = 'block';
     setActiveTab && setActiveTab('home');
   }
@@ -3074,6 +3106,10 @@
       document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
       $('home-view').style.display = 'none';
       $('form-' + f).classList.add('active');
+      // The planner may use a wider wrapper than the rest of the app (Ben 2026-09-23).
+      // Applied on the shared .wrap, so it MUST be cleared on every other page — a plain
+      // remove here is safer than adding it in 30 places.
+      setPlannerWide(f === 'plan');
       if (f === 'horario') loadSchedule();
       if (f === 'estatus')     { estatusTab = 'comp'; loadEstatus(); }
       if (f === 'mantestatus') { estatusTab = 'mant'; loadEstatus(); }
