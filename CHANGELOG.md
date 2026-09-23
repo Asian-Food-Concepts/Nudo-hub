@@ -5,6 +5,25 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
+## [v0.204] - 2026-09-22
+
+### Añadido (Added)
+- **Nuevos ingresos — modos de edición, documentos y ocultación**:
+  - Diferenciación de edición: botón *"➕ Agregar puesto, sueldo y fecha de ingreso"* para el modal rápido de datos contractuales, y nuevo botón *"✏️ Editar"* que abre el formulario `./onboarding.html?onboarding_id=<id>` en una nueva pestaña para modificar el expediente completo.
+  - Indicador de verificación de documentos (`onboarding_documents`): estado neutral (*"📎 Sin documentos subidos"*) para perfiles sin archivos y contador con distintivo dinámico (*"📎 Documentos: X/Y verificados ✅/⏳/⚠️"*) según validación de nivel 2.
+  - Botón *"🗑️ Eliminar"* exclusivo para registros incompletos sin cuenta, realizando borrado lógico (`hidden_at`) con confirmación de usuario, verificación read-back inmediata y exclusión automática en la consulta de `loadNuevos()`.
+
+### Modificado (Changed)
+- **Nuevos ingresos — etiquetas y visibilidad**:
+  - Renombrados los botones de contrato a *"📄 Contrato con resaltado"* (revisión) y *"✍️ Contrato sin resaltado"* (firma).
+  - Renombrado botón de reenvío a *"✉️ Enviar correo con link para corrección"*, restringido a registros no activados o incompletos con guardia de modo de prueba intacta.
+- **Estatus — Solicitud de compras**:
+  - Eliminada la opción de descarga/visualización de PDF para compras (`row.table !== 'purchases'`), manteniéndola disponible únicamente para mantenimiento.
+- **Selectores de calendario (Date pickers)**:
+  - Estilo CSS unificado en `app.html` y `onboarding.html` para campos `input[type="date"]`: icono de calendario SVG amplio a la derecha, objetivo táctil cómodo (≥44px, fuente 16px anti-zoom iOS), bordes redondeados, anillo de enfoque accesible y apertura nativa al hacer clic en cualquier parte del campo en escritorio.
+
+---
+
 ## [v0.203] - 2026-09-22
 
 ### Modificado (Changed)

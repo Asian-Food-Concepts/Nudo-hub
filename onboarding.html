@@ -182,6 +182,47 @@
   #s1-dia:focus, #s1-mes:focus, #s1-ano:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
   .field input:focus, .field select:focus, .field textarea:focus {
     outline:2px solid var(--accent); outline-offset:-1px; }
+
+  /* Shared custom date picker (touch and desktop friendly) */
+  input[type="date"] {
+    min-height: 44px;
+    font-size: 16px;
+    line-height: 1.4;
+    padding: 10px 42px 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background-color: var(--input-bg);
+    color: var(--ink);
+    box-sizing: border-box;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='2' ry='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 20px 20px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+  input[type="date"]:hover {
+    border-color: var(--accent);
+  }
+  input[type="date"]:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+    border-color: var(--accent);
+  }
   .field-hint { font-size:0.78rem; color:var(--muted); margin-top:4px; }
   .field-valid { position:relative; }
   .field-valid .val-badge { display:none; font-size:0.78rem; font-weight:600; margin-top:5px;
@@ -1023,11 +1064,26 @@
 
   // ---- POST-AUTH: resume or create row ----
   async function initAfterAuth() {
-    var qres = await supabase
-      .from('onboarding')
-      .select('id, current_step, stage1_submitted_at')
-      .eq('auth_user_id', currentUser.id)
-      .maybeSingle();
+    var requestedId = null;
+    try {
+      var params = new URLSearchParams(window.location.search);
+      requestedId = params.get('onboarding_id');
+    } catch (_) {}
+
+    var qres;
+    if (requestedId) {
+      qres = await supabase
+        .from('onboarding')
+        .select('id, current_step, stage1_submitted_at')
+        .eq('id', requestedId)
+        .maybeSingle();
+    } else {
+      qres = await supabase
+        .from('onboarding')
+        .select('id, current_step, stage1_submitted_at')
+        .eq('auth_user_id', currentUser.id)
+        .maybeSingle();
+    }
     if (qres.error && qres.error.code !== 'PGRST116') {
       showMsg($('auth-msg'), 'Error al recuperar tu registro: ' + qres.error.message, 'err');
       showToast('No pudimos abrir tu expediente. Avisa a tu contacto de Nudo.', 'err');
@@ -1036,6 +1092,13 @@
     }
     if (qres.data) {
       onboardingId = qres.data.id;
+      if (requestedId) {
+        currentStep = (typeof qres.data.current_step === 'number' && qres.data.current_step >= 1 && qres.data.current_step <= 4) ? qres.data.current_step : 1;
+        await loadStepData(currentStep);
+        if (currentStep !== 1) await loadStepData(1);
+        showScreen('screen-' + currentStep);
+        return;
+      }
       currentStep  = qres.data.current_step || 1;
       if (qres.data.stage1_submitted_at) { currentStep = 'done'; showScreen('screen-done'); return; }
       await loadStepData(currentStep);
@@ -1045,6 +1108,11 @@
       if (currentStep !== 1) await loadStepData(1);
       showScreen('screen-' + currentStep);
     } else {
+      if (requestedId) {
+        showMsg($('auth-msg'), 'No se encontró el registro solicitado.', 'err');
+        showToast('No se encontró el expediente solicitado.', 'err');
+        return;
+      }
       var ires = await supabase
         .from('onboarding')
         .insert({ auth_user_id: currentUser.id, email: currentUser.email, current_step: 1 })
@@ -1880,6 +1948,19 @@
     r.addEventListener('change', function() {
       var c = $('s3-curp'); if (c && c.value.trim().length === 18) c.dispatchEvent(new Event('blur'));
     });
+  });
+
+  // Native date picker activation on click for desktop / touch (DELIVERABLE 7)
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'date') {
+      if (typeof e.target.showPicker === 'function') {
+        try {
+          e.target.showPicker();
+        } catch (err) {
+          /* ignore if picker is already open or dismissed */
+        }
+      }
+    }
   });
 
   // ---- Boot: check existing session ----

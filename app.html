@@ -184,6 +184,47 @@
   }
   .field textarea { min-height: 80px; resize: vertical; }
   .t-detail { margin-top: 8px; min-height: 60px !important; }
+
+  /* Shared custom date picker (touch and desktop friendly) */
+  input[type="date"] {
+    min-height: 44px;
+    font-size: 16px;
+    line-height: 1.4;
+    padding: 10px 42px 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background-color: var(--input-bg);
+    color: var(--ink);
+    box-sizing: border-box;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='2' ry='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 20px 20px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+  input[type="date"]:hover {
+    border-color: var(--accent);
+  }
+  input[type="date"]:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+    border-color: var(--accent);
+  }
   .btn {
     width: 100%; padding: 16px; font-size: 1.05rem; font-weight: 600;
     border: none; border-radius: 12px; cursor: pointer;
@@ -1444,7 +1485,7 @@
       <!-- NUEVOS INGRESOS EDIT MODAL (v0.202) -->
       <div class="review-modal hidden" id="nuevo-editor-modal">
         <div class="review-box">
-          <h3 id="nuevo-editor-title">✏️ Editar nuevo ingreso</h3>
+          <h3 id="nuevo-editor-title">➕ Agregar puesto, sueldo y fecha de ingreso</h3>
           <div id="nuevo-editor-msg" class="msg hidden" style="margin-bottom:8px;"></div>
           <div class="review-body" id="nuevo-editor-body"></div>
           <div class="review-actions" style="margin-top:8px;">
@@ -1519,7 +1560,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.203";
+  const APP_VERSION = "v0.204";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -3882,7 +3923,7 @@
           <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
             <div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;">📅 Fecha de servicio (TBC)</div>
             <div style="display:flex;gap:8px;align-items:center;">
-              <input type="date" id="estatus-mant-date" value="${escAttr(row.service_date ? String(row.service_date).slice(0, 10) : '')}" style="flex:1;min-height:44px;font-size:16px;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--input-bg);color:var(--ink);" />
+              <input type="date" id="estatus-mant-date" value="${escAttr(row.service_date ? String(row.service_date).slice(0, 10) : '')}" style="flex:1;" />
               <button class="btn" id="estatus-mant-date-save" style="width:auto;min-height:44px;padding:8px 14px;font-size:0.9rem;margin:0;">Guardar fecha</button>
             </div>
           </div>
@@ -4062,7 +4103,8 @@
       actions.appendChild(btnRes);
     }
 
-    if (isAdmin) {
+    // v0.204: no PDFs for purchases (Ben: "no PDFs for purcahses") — maintenance only
+    if (isAdmin && row.table !== 'purchases') {
       const pdf = document.createElement('button');
       pdf.className = 'btn btn-outline'; pdf.style.margin = '0';
       pdf.textContent = '📄 PDF';
@@ -4332,6 +4374,7 @@
 
   // Admin PDF download from the detail modal (reuses the existing print view)
   async function downloadPdf(table, id) {
+    if (table === 'purchases') return; // Purchases PDF removed (v0.204)
     let user; try { user = await requireUser(); } catch(err) { return; }
     const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
     if (!ADMIN_ROLES.includes(prof && prof.role)) { showMsg($('estatus-msg'), 'Solo el Dueño puede descargar PDFs', 'err'); return; }
@@ -6574,16 +6617,20 @@
     if (!list) return;
     list.innerHTML = '<p style="color:var(--muted);">Cargando…</p>';
     try {
-      const [onbRes, contractsRes] = await Promise.all([
+      const [onbRes, contractsRes, docsRes] = await Promise.all([
         supabase
           .from('onboarding')
           .select('id,auth_user_id,email,nombres,apellido_paterno,apellido_materno,movil,current_step,created_at,updated_at,lfpdppp_consent,puesto,salario_semanal,fecha_de_ingreso,dias_de_probacion,stage1_submitted_at')
+          .is('hidden_at', null)
           .order('created_at', { ascending: false })
           .limit(200),
         supabase
           .from('onboarding_contracts')
           .select('id,onboarding_id,puesto,salario_semanal,fecha_de_ingreso,revision_doc_id,revision_path,firma_doc_id,firma_path,generated_at')
-          .order('generated_at', { ascending: false })
+          .order('generated_at', { ascending: false }),
+        supabase
+          .from('onboarding_documents')
+          .select('onboarding_id,doc_type,required,tier2_ok,uploaded_at,reviewer_status')
       ]);
       if (onbRes.error) throw onbRes.error;
       window.__nuevos_cache = onbRes.data || [];
@@ -6596,6 +6643,16 @@
         });
       }
       window.__nuevos_contracts = contractsMap;
+      const docsMap = {};
+      if (docsRes && docsRes.data) {
+        docsRes.data.forEach(d => {
+          if (!docsMap[d.onboarding_id]) {
+            docsMap[d.onboarding_id] = [];
+          }
+          docsMap[d.onboarding_id].push(d);
+        });
+      }
+      window.__nuevos_docs = docsMap;
       renderNuevos(window.__nuevos_cache);
     } catch (e) {
       list.innerHTML = '<p style="color:var(--red);">No se pudieron cargar los registros. '
@@ -6634,6 +6691,37 @@
         r.fecha_de_ingreso ? esc(String(r.fecha_de_ingreso).slice(0, 10)) : null
       ].filter(Boolean).join(' · ');
 
+      const docs = (window.__nuevos_docs || {})[r.id] || [];
+      let docLine = '';
+      if (!docs.length) {
+        docLine = '<div style="color:var(--muted);font-size:13px;">📎 Sin documentos subidos</div>';
+      } else {
+        const totalDocs = docs.length;
+        const verifiedDocs = docs.filter(d => d.tier2_ok === true).length;
+        const reqDocs = docs.filter(d => d.required);
+        const hasFailedReq = docs.some(d => (d.required || reqDocs.length === 0) && d.tier2_ok === false);
+        const allReqVerified = reqDocs.length > 0
+          ? reqDocs.every(d => d.tier2_ok === true)
+          : (verifiedDocs === totalDocs);
+
+        let docBadge = '';
+        let docColor = 'var(--muted)';
+
+        if (hasFailedReq) {
+          docBadge = '⚠️';
+          docColor = 'var(--amber)';
+        } else if (allReqVerified && verifiedDocs > 0) {
+          docBadge = '✅';
+          docColor = 'var(--green)';
+        } else {
+          docBadge = '⏳';
+          docColor = 'var(--amber)';
+        }
+
+        docLine = '<div style="color:' + docColor + ';font-size:13px;">📎 Documentos: '
+          + verifiedDocs + '/' + totalDocs + ' verificados ' + docBadge + '</div>';
+      }
+
       return '<div data-nuevo-row="' + esc(r.id) + '" style="border:1px solid var(--border);'
         + 'border-radius:12px;padding:12px;margin-bottom:10px;">'
         + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
@@ -6648,6 +6736,7 @@
         + '<div style="color:var(--muted);font-size:13px;">' + esc(r.movil || 'sin móvil')
         +   ' · paso ' + step + '/4</div>'
         + (details ? '<div style="color:var(--muted);font-size:13px;">' + details + '</div>' : '')
+        + docLine
         + '<div style="height:6px;background:var(--border);border-radius:99px;margin:8px 0;">'
         +   '<div style="height:6px;width:' + pct + '%;background:var(--accent2);border-radius:99px;"></div></div>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
@@ -6658,17 +6747,25 @@
                 : '<button class="btn btn-outline" data-nuevo-activate="' + esc(r.id) + '"'
                   + ' style="font-size:0.85rem;padding:10px 14px;min-height:44px;margin:0;flex:1;">✅ Activar cuenta</button>'))
         + '<button class="btn btn-outline" data-nuevo-edit="' + esc(r.id) + '"'
+          + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">➕ Agregar puesto, sueldo y fecha de ingreso</button>'
+        + '<button class="btn btn-outline" data-nuevo-onboarding="' + esc(r.id) + '"'
           + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">✏️ Editar</button>'
         + '<button class="btn btn-outline" data-nuevo-dl="revision" data-id="' + esc(r.id) + '"'
           + (revPath ? '' : ' disabled')
           + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">'
-          + (revPath ? '📄 Descargar con resaltado' : 'Sin contrato') + '</button>'
+          + (revPath ? '📄 Contrato con resaltado' : 'Sin contrato') + '</button>'
         + '<button class="btn btn-outline" data-nuevo-dl="firma" data-id="' + esc(r.id) + '"'
           + (firmaPath ? '' : ' disabled')
           + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">'
-          + (firmaPath ? '✍️ Descargar sin resaltado' : 'Sin contrato') + '</button>'
-        + '<button class="btn btn-outline" data-nuevo-sendback="' + esc(r.id) + '"'
-          + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">✉️ Enviar para corrección</button>'
+          + (firmaPath ? '✍️ Contrato sin resaltado' : 'Sin contrato') + '</button>'
+        + (!activated
+            ? '<button class="btn btn-outline" data-nuevo-sendback="' + esc(r.id) + '"'
+              + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">✉️ Enviar correo con link para corrección</button>'
+            : '')
+        + (!complete && !activated
+            ? '<button class="btn btn-outline" data-nuevo-delete="' + esc(r.id) + '"'
+              + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;color:var(--red);">🗑️ Eliminar</button>'
+            : '')
         + '</div></div>';
     }).join('');
   }
@@ -6723,7 +6820,7 @@
     if (msg) clearMsg(msg);
 
     const full = [r.nombres, r.apellido_paterno, r.apellido_materno].filter(Boolean).join(' ').trim() || '(sin nombre)';
-    if (title) title.textContent = '✏️ Editar: ' + full;
+    if (title) title.textContent = '➕ Agregar puesto, sueldo y fecha de ingreso: ' + full;
 
     const fecha = r.fecha_de_ingreso ? String(r.fecha_de_ingreso).slice(0, 10) : '';
     const sal = r.salario_semanal != null ? String(r.salario_semanal) : '';
@@ -6738,7 +6835,7 @@
       '<div class="rv-row"><div class="rv-label">Sueldo semanal</div>' +
         '<div class="rv-value"><input type="number" id="ne-salario" step="0.01" min="0" value="' + escAttr(sal) + '" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" placeholder="Ej. 2500"></div></div>' +
       '<div class="rv-row"><div class="rv-label">Fecha de ingreso</div>' +
-        '<div class="rv-value"><input type="date" id="ne-fecha" value="' + escAttr(fecha) + '" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;"></div></div>';
+        '<div class="rv-value"><input type="date" id="ne-fecha" value="' + escAttr(fecha) + '" style="width:100%;"></div></div>';
 
     modal.classList.remove('hidden');
   }
@@ -6845,6 +6942,17 @@
     openNuevoEditor(row);
   });
 
+  // Open onboarding form in new tab for editing (DELIVERABLE 1b)
+  document.addEventListener('click', (e) => {
+    if (!e.target || !e.target.closest) return;
+    const btn = e.target.closest('[data-nuevo-onboarding]');
+    if (!btn) return;
+    e.preventDefault();
+    const id = btn.getAttribute('data-nuevo-onboarding');
+    if (!id) return;
+    window.open('./onboarding.html?onboarding_id=' + encodeURIComponent(id), '_blank');
+  });
+
   // Download contract PDF (revision / firma)
   document.addEventListener('click', async (e) => {
     if (!e.target || !e.target.closest) return;
@@ -6945,6 +7053,68 @@
     } finally {
       btn.disabled = false;
       btn.textContent = origText;
+    }
+  });
+
+  // Delete (soft delete / hide) handler for incomplete onboarding rows (DELIVERABLE 5)
+  document.addEventListener('click', async (e) => {
+    if (!e.target || !e.target.closest) return;
+    const btn = e.target.closest('[data-nuevo-delete]');
+    if (!btn || btn.disabled) return;
+    e.preventDefault();
+    const msgEl = $('nuevos-msg');
+    clearMsg(msgEl);
+    const id = btn.getAttribute('data-nuevo-delete');
+    const row = (window.__nuevos_cache || []).find(r => r.id === id);
+    if (!row) {
+      showMsg(msgEl, 'No se encontró el registro.', 'err');
+      return;
+    }
+    const full = [row.nombres, row.apellido_paterno, row.apellido_materno].filter(Boolean).join(' ').trim() || row.email || 'este registro';
+    if (!confirm('¿Deseas ocultar el registro de ' + full + '? El registro no se borrará definitivamente, pero ya no aparecerá en esta lista.')) {
+      return;
+    }
+    btn.disabled = true;
+    const origText = btn.textContent;
+    btn.textContent = 'Eliminando…';
+    try {
+      const nowIso = new Date().toISOString();
+      const { error: updateErr } = await supabase
+        .from('onboarding')
+        .update({ hidden_at: nowIso })
+        .eq('id', id);
+      if (updateErr) throw updateErr;
+
+      // 🔴 After the write, READ THE ROW BACK and confirm hidden_at is actually set
+      const { data: checkRow, error: checkErr } = await supabase
+        .from('onboarding')
+        .select('id, hidden_at')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (checkErr || !checkRow || !checkRow.hidden_at) {
+        throw new Error('No se pudo verificar la eliminación. Tu cuenta podría no tener permiso para modificar este registro.');
+      }
+
+      showMsg(msgEl, '✅ Registro eliminado correctamente.', 'ok');
+      await loadNuevos();
+    } catch (err) {
+      showMsg(msgEl, 'Error al eliminar: ' + esc((err && err.message) || 'error desconocido'), 'err');
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+  });
+
+  // Native date picker activation on click for desktop / touch (DELIVERABLE 7)
+  document.addEventListener('click', (e) => {
+    if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'date') {
+      if (typeof e.target.showPicker === 'function') {
+        try {
+          e.target.showPicker();
+        } catch (err) {
+          /* ignore if picker is already open or dismissed */
+        }
+      }
     }
   });
 
