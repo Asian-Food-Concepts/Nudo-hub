@@ -117,7 +117,13 @@
     margin: 0 0 4px;
     box-shadow: 0 1px 3px var(--shadow);
   }
-  header h1 { font-size: 1.15rem; font-weight: 700; }
+  header h1 { font-size: 1.15rem; font-weight: 700; line-height: 0; }
+  header h1 a { display: inline-flex; align-items: center; }
+  header h1 svg { color: var(--accent); }
+  :root[data-theme="dark"] header h1 svg { color: var(--accent2); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) header h1 svg { color: var(--accent2); }
+  }
   header h1 a { color: var(--accent); text-decoration: none; }
   :root[data-theme="dark"] header h1 a { color: var(--accent2); }
   @media (prefers-color-scheme: dark) {
@@ -684,7 +690,7 @@
 <body>
   <div class="wrap">
   <header>
-    <h1><a href="./">Nudo Hub</a></h1>
+    <h1><a href="./" aria-label="Nudo Hub — inicio"><svg role="img" aria-label="Nudo — Ramen y Boba" height="28" style="height:28px;width:auto;display:block;" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 777 185.289"><g><path fill="currentColor" d="M693.751,0c-48.744,0-82.791,37.573-82.791,91.371c0,53.644,34.047,91.11,82.791,91.11 c49.015,0,83.249-37.466,83.249-91.11C777,37.573,742.766,0,693.751,0z M693.75,167.018c-27.197,0-58.951-19.812-58.951-75.646 c0-56.024,31.754-75.904,58.951-75.904c27.41,0,59.415,19.88,59.415,75.904C753.165,147.207,721.16,167.018,693.75,167.018z"/><path fill="currentColor" d="M132.919,6.154h-1.3c-1.278,0-3.917-0.265-6.051-0.506c-1.747-0.196-3.163-0.375-3.163-0.375l0.716,0.881 h-0.013c1.765,3.003,2.46,6.701,2.46,12.377v106.024L73.502,62.738v-0.114L25.941,6.154h-4.504H0 c7.007,11.202,8.02,15.661,8.02,30.645v131.506c-0.015,6.112-0.91,9.639-2.444,12.244h0.013l-0.716,0.882 c0,0,6.889-0.882,9.214-0.882h1.3c1.278,0,3.917,0.266,6.051,0.506c1.747,0.196,3.163,0.376,3.163,0.376l-0.716-0.882h0.012 c-1.764-3.002-2.46-6.7-2.46-12.376V62.148V41.615l52.065,61.93l52.066,61.931l13.413,15.954V18.531 c0-6.203,0.903-9.75,2.448-12.377h-0.012l0.716-0.881C142.133,5.273,135.244,6.154,132.919,6.154z"/><path fill="currentColor" d="M329.235,6.154c-2.324,0-9.214-0.881-9.214-0.881l0.716,0.881l0.111,0.116 c1.608,2.978,2.332,6.672,2.332,12.261v101.121c0,31.664-15.951,49.101-41.612,49.101c-25.661,0-41.611-17.437-41.611-49.101 V18.531c0-5.589,0.724-9.283,2.331-12.261l0.111-0.116l0.716-0.881c0,0-6.889,0.881-9.215,0.881h-11.735 c-2.325,0-9.215-0.881-9.215-0.881l0.716,0.881l0.116,0.121c1.715,2.982,2.402,6.652,2.402,12.255v102.406 c0,38.492,27.369,64.352,65.383,64.352c38.015,0,65.383-25.86,65.383-64.352V18.531c0-5.604,0.686-9.273,2.403-12.255l0.116-0.121 l0.716-0.881c0,0-6.889,0.881-9.214,0.881H329.235z"/><path fill="currentColor" d="M483.113,3.603h-52.897c-2.324,0-9.214-0.882-9.214-0.882l0.716,0.882c1.765,3.002,2.46,6.701,2.46,12.377 V91.24v75.262c0,5.675-0.694,9.374-2.46,12.377l-0.716,0.881c0,0,6.889-0.881,9.214-0.881h52.897 c46.895,0,80.936-36.153,80.936-85.968c0-0.567-0.061-1.107-0.069-1.671c0.008-0.563,0.069-1.104,0.069-1.671 C564.05,39.756,530.008,3.603,483.113,3.603z M540.211,92.911c0,44.45-25.877,70.988-68.449,70.988 c-6.835,0-14.16-0.614-21.772-1.822l-2.845-0.201V91.24V20.605l2.845-0.201c7.612-1.208,14.937-1.822,21.772-1.822 c42.572,0,68.449,26.539,68.449,70.988c0,0.573-0.046,1.104-0.052,1.671C540.166,91.808,540.211,92.339,540.211,92.911z"/></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g></svg></a></h1>
     <p id="header-sub">Acceso del equipo</p>
     <!-- User row now lives INSIDE the header card (v0.116: unified shape) -->
     <div id="viewas-banner" class="hidden" style="position:sticky;top:0;z-index:70;background:#fff3cd;border-bottom:2px solid #e0a800;padding:8px 12px;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;gap:10px;">
@@ -1656,7 +1662,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.2";
+  const APP_VERSION = "v0.209.3";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
