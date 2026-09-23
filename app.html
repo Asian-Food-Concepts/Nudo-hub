@@ -414,8 +414,11 @@
 
   /* ---- Captain schedule planner ---- */
   .plan-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { flex: 1; border: none; background: transparent; color: var(--ink); padding: 8px 12px; font-size: 0.85rem; cursor: pointer; min-height: 44px; }
+  .seg button.on { background: var(--accent); color: #fff; }
   .plan-toolbar .seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .plan-toolbar .seg button { border: none; background: transparent; color: var(--ink); padding: 7px 12px; font-size: 0.85rem; cursor: pointer; }
+  .plan-toolbar .seg button { border: none; background: transparent; color: var(--ink); padding: 7px 12px; font-size: 0.85rem; cursor: pointer; min-height: 38px; }
   .plan-toolbar .seg button.on { background: var(--accent); color: #fff; }
   .plan-week-nav { display: flex; align-items: center; gap: 8px; }
   .plan-week-nav button { border: 1px solid var(--border); background: transparent; color: var(--ink); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 0.9rem; }
@@ -475,6 +478,27 @@
   .plan-modal input[type="time"] { flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg, transparent); color: var(--ink); }
   .plan-modal .actions { display: flex; gap: 8px; margin-top: 14px; }
   .plan-modal .actions button { flex: 1; }
+  .plan-cov-cell { padding: 4px 2px !important; text-align: center; }
+  .plan-cov-badge { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 2px 4px; border-radius: 4px; }
+  .plan-cov-badge.red { background: rgba(220,80,60,0.15); color: #c0392b; font-weight: 700; white-space: nowrap; }
+  .plan-cov-badge.ok { color: var(--muted); font-weight: 500; }
+  .plan-person-cards { display: flex; flex-direction: column; gap: 12px; }
+  .plan-person-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--card-bg, #fff); }
+  .plan-person-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--frame, #eee); padding-bottom: 8px; }
+  .plan-person-title { font-weight: 700; font-size: 0.95rem; }
+  .plan-person-role { font-weight: 400; color: var(--muted); font-size: 0.85rem; }
+  .plan-warn-chip { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+  .plan-warn-chip.yellow { background: rgba(220,160,40,0.15); color: #a70; border: 1px solid rgba(220,160,40,0.3); }
+  .plan-warn-chip.red { background: rgba(220,80,60,0.15); color: #b33; border: 1px solid rgba(220,80,60,0.3); }
+  .plan-warn-chip.ok { background: rgba(60,180,90,0.15); color: #2a7; border: 1px solid rgba(60,180,90,0.3); }
+  .plan-person-days { display: flex; flex-direction: column; gap: 6px; }
+  .plan-person-day-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; padding: 6px 0; border-bottom: 1px solid var(--frame, rgba(0,0,0,0.03)); }
+  .plan-person-day-row:last-child { border-bottom: none; }
+  .plan-person-day-name { min-width: 64px; font-weight: 600; color: var(--ink); }
+  .plan-person-day-name .d-num { font-weight: 400; color: var(--muted); font-size: 0.8rem; }
+  .plan-person-day-detail { flex: 1; text-align: right; }
+  .plan-person-time { font-weight: 600; color: var(--accent); margin-right: 6px; }
+  .plan-person-slot { font-weight: 500; color: var(--ink); }
 
 
   /* ===== v0.113 vocab.design patterns ===== */
@@ -1234,13 +1258,19 @@
             </div>
           </div>
           <div class="seg" id="plan-view-seg" style="margin-top:10px;">
-            <button data-view="week" class="on">Semana</button>
-            <button data-view="day">Día</button>
+            <button data-view="puesto" class="on">Por puesto</button>
+            <button data-view="persona">Por persona</button>
+          </div>
+          <div class="seg" id="plan-subview-seg" style="margin-top:10px;">
+            <button data-subview="week" class="on">Semana</button>
+            <button data-subview="day">Día</button>
           </div>
 
+          <div id="plan-errors"></div>
           <div id="plan-warnings"></div>
           <div class="plan-grid" id="plan-grid"></div>
           <div class="plan-dayview hidden" id="plan-dayview"></div>
+          <div class="plan-personview hidden" id="plan-personview"></div>
 
           <div id="plan-audit-section" class="hidden" style="margin-top:18px;">
             <button class="btn btn-secondary" id="plan-audit-toggle" style="width:100%;min-height:44px;">📜 Historial de cambios</button>
@@ -1560,7 +1590,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.205";
+  const APP_VERSION = "v0.206";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -3087,7 +3117,7 @@
     'Del Valle':  { 'Capitán':[1,1,1,1,2,2,2], 'Mesero':[2,2,2,2,3,4,3], 'Barra':[2,2,2,3,3,4,4], 'Cocina':[4,3,3,4,5,6,5], 'Producción':[1,1,1,1,0,0,0] }
   };
 
-  // Slot labels per role (the minimum positions shown by default).
+  // Base slot label templates per role (extended dynamically based on PLAN_MIN).
   const PLAN_SLOT_LABELS = {
     'Capitán':   ['Capitán 1'],
     'Mesero':    ['Piso 1', 'Piso 2'],
@@ -3096,7 +3126,26 @@
     'Producción':['Producción 1']
   };
 
-  let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [], extraSlots: {}, view: (window.innerWidth < 700 ? 'day' : 'week'), dayIdx: 0, auditRole: false, currentProfileId: null };
+  let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [], extraSlots: {}, tab: 'puesto', view: (window.innerWidth < 700 ? 'day' : 'week'), dayIdx: 0, auditRole: false, currentProfileId: null };
+  let planWarningsExpanded = false;
+
+  function planSlotsNeeded(role) {
+    const byBranch = PLAN_MIN[planState.branch] || {};
+    const mins = byBranch[role] || [];
+    return Math.max(1, ...mins.map(Number).filter(n => Number.isFinite(n)));
+  }
+
+  function planBaseSlotsForRole(role) {
+    const base = (PLAN_SLOT_LABELS[role] || []).slice();
+    const needed = planSlotsNeeded(role);
+    if (base.length >= needed) return base.slice(0, Math.max(base.length, needed));
+    const last = base[base.length - 1] || role;
+    const prefix = last.replace(/\s*\d+$/, '').trim() || role;
+    for (let n = base.length + 1; n <= needed; n++) {
+      base.push(`${prefix} ${n}`);
+    }
+    return base;
+  }
 
   // ---- AUDIT HELPERS (v0.106) ----
   // Every create/update/delete of a shift writes a row to shift_audit.
@@ -3149,8 +3198,16 @@
       b.classList.toggle('on', b.getAttribute('data-branch') === planState.branch);
     });
     document.querySelectorAll('#plan-view-seg button').forEach(b => {
-      b.classList.toggle('on', b.getAttribute('data-view') === planState.view);
+      b.classList.toggle('on', b.getAttribute('data-view') === (planState.tab || 'puesto'));
     });
+    const subSeg = $('plan-subview-seg');
+    if (subSeg) {
+      subSeg.querySelectorAll('button').forEach(b => {
+        b.classList.toggle('on', b.getAttribute('data-subview') === planState.view);
+      });
+      subSeg.classList.toggle('hidden', (planState.tab || 'puesto') !== 'puesto');
+    }
+    if ($('plan-errors')) $('plan-errors').innerHTML = '';
     $('plan-week-label').textContent = planWeekLabel();
     try { await requireUser(); } catch(e) { return; }
     const _planGateRole = (currentProfile && currentProfile.role) || '';
@@ -3172,7 +3229,7 @@
     // rebuild extraSlots from persisted shifts (v0.106 fix: extras survive reload)
     planState.extraSlots = {};
     (planState.shifts || []).forEach(sh => {
-      const base = (PLAN_SLOT_LABELS[sh.role] || []);
+      const base = planBaseSlotsForRole(sh.role);
       if (sh.slot && !base.includes(sh.slot)) {
         const ex = planState.extraSlots[sh.role] || [];
         if (!ex.includes(sh.slot)) ex.push(sh.slot);
@@ -3194,8 +3251,8 @@
 
   // Build the list of slots for a role: minimums + any extra slots added.
   function planSlotsForRole(role) {
-    const base = (PLAN_SLOT_LABELS[role] || []);
-    const extras = planState.extraSlots[role] || [];
+    const base = planBaseSlotsForRole(role);
+    const extras = (planState.extraSlots && planState.extraSlots[role]) || [];
     return base.concat(extras);
   }
 
@@ -3236,10 +3293,36 @@
   }
 
   function planRender() {
-    if (planState.view === 'day') { planRenderDay(); planRenderWarnings(); return; }
+    const isPersonaTab = (planState.tab === 'persona');
+    const personView = $('plan-personview');
+    const subSeg = $('plan-subview-seg');
     const grid = $('plan-grid');
-    grid.classList.remove('hidden');
-    $('plan-dayview').classList.add('hidden');
+    const dayView = $('plan-dayview');
+
+    if (subSeg) subSeg.classList.toggle('hidden', isPersonaTab);
+
+    if (isPersonaTab) {
+      if (grid) grid.classList.add('hidden');
+      if (dayView) dayView.classList.add('hidden');
+      if (personView) personView.classList.remove('hidden');
+      planRenderPersonView();
+      planRenderWarnings();
+      return;
+    }
+
+    if (personView) personView.classList.add('hidden');
+
+    if (planState.view === 'day') {
+      if (grid) grid.classList.add('hidden');
+      if (dayView) dayView.classList.remove('hidden');
+      planRenderDay();
+      planRenderWarnings();
+      return;
+    }
+
+    if (dayView) dayView.classList.add('hidden');
+    if (grid) grid.classList.remove('hidden');
+
     let html = '<table class="plan-table"><thead><tr><th>Puesto</th>';
     PLAN_DAYS.forEach((d,i) => {
       const dt = new Date(planState.weekStart.getTime() + i*86400000);
@@ -3251,7 +3334,25 @@
       if (role === 'Producción' && planState.branch !== 'Del Valle') return;
       const slots = planSlotsForRole(role);
       if (!slots.length) return;
-      html += `<tr><td class="plan-role-head" colspan="8">${role}</td></tr>`;
+
+      // Role header row with inline coverage status per day
+      html += `<tr><td class="plan-role-head">${role}</td>`;
+      for (let i = 0; i < 7; i++) {
+        const date = fmtDate(new Date(planState.weekStart.getTime() + i * 86400000));
+        const min = (PLAN_MIN[planState.branch] && PLAN_MIN[planState.branch][role]) ? PLAN_MIN[planState.branch][role][i] : 0;
+        const count = planState.shifts.filter(x => x.shift_date === date && x.role === role && x.status !== 'descanso').length;
+        let badge = '';
+        if (min > 0) {
+          if (count < min) {
+            badge = `<span class="plan-cov-badge red">faltan ${min - count}</span>`;
+          } else {
+            badge = `<span class="plan-cov-badge ok">${count}/${min}</span>`;
+          }
+        }
+        html += `<td class="plan-role-head plan-cov-cell">${badge}</td>`;
+      }
+      html += `</tr>`;
+
       slots.forEach(slot => {
         html += `<tr><td class="name">${slot}</td>`;
         for (let i=0;i<7;i++) {
@@ -3351,11 +3452,12 @@
       }
     } catch(e) { err = e; }
     if (err) {
-      const box = $('plan-warnings');
-      box.innerHTML = `<div class="plan-warn red">⚠️ No se pudo guardar: ${err.message || err}</div>` + box.innerHTML;
+      const errBox = $('plan-errors');
+      if (errBox) errBox.innerHTML = `<div class="plan-warn red">⚠️ No se pudo guardar: ${esc(err.message || err)}</div>`;
       planCloseModal();
       return;
     }
+    if ($('plan-errors')) $('plan-errors').innerHTML = '';
     if (saved) await planAudit(existing ? 'update' : 'create', saved, existing ? existing : null);
     await planLoadShifts();
     planRender();
@@ -3364,10 +3466,13 @@
 
   // Add an extra slot for a role (e.g. a 4th Cocina on a busy day).
   function planAddSlot(role) {
-    const extras = planState.extraSlots[role] || [];
-    const base = (PLAN_SLOT_LABELS[role] || []).length;
-    const n = base + extras.length + 1;
-    extras.push(`${role} ${n}`);
+    const base = planBaseSlotsForRole(role);
+    const extras = (planState.extraSlots && planState.extraSlots[role]) || [];
+    const n = base.length + extras.length + 1;
+    const last = base[base.length - 1] || role;
+    const prefix = last.replace(/\s*\d+$/, '').trim() || role;
+    extras.push(`${prefix} ${n}`);
+    if (!planState.extraSlots) planState.extraSlots = {};
     planState.extraSlots[role] = extras;
     planRender();
   }
@@ -3402,7 +3507,14 @@
         .sort((a,b) => (a.start_time||'99:99').localeCompare(b.start_time||'99:99'));
       const min = (PLAN_MIN[planState.branch] && PLAN_MIN[planState.branch][role]) ? PLAN_MIN[planState.branch][role][planState.dayIdx] : 0;
       const active = shiftsToday.filter(x => x.status !== 'descanso').length;
-      const cover = (min && active < min) ? ` <span style="color:var(--err,#c0392b);">(${active}/${min} ⚠️)</span>` : (min ? ` <span style="color:var(--muted);">(${active}/${min})</span>` : '');
+      let cover = '';
+      if (min) {
+        if (active < min) {
+          cover = ` <span class="plan-cov-badge red" style="font-size:0.75rem;margin-left:6px;">faltan ${min - active} (${active}/${min})</span>`;
+        } else {
+          cover = ` <span style="color:var(--muted);font-size:0.8rem;font-weight:400;margin-left:6px;">(${active}/${min})</span>`;
+        }
+      }
       html += `<div class="plan-day-area"><div class="plan-day-area-head">${role}${cover}</div>`;
       if (!shiftsToday.length) {
         html += `<div class="empty-state" style="padding:12px 10px;"><div class="es-title" style="font-size:0.85rem;">Nadie asignado</div><div class="es-sub" style="font-size:0.78rem;margin-bottom:8px;">Usa “+ Agregar ${role}” para cubrir este puesto.</div></div>`;
@@ -3472,15 +3584,24 @@
         if (r.error) err = r.error; else saved = Object.assign({}, old, { staff_id: staffId, start_time: start, end_time: end, status: 'programado' });
       } else {
         // find a free slot label for this role
-        const base = (PLAN_SLOT_LABELS[role] || []);
-        const extras = planState.extraSlots[role] || [];
+        const base = planBaseSlotsForRole(role);
+        const extras = (planState.extraSlots && planState.extraSlots[role]) || [];
         const allSlots = base.concat(extras);
         let slot = null;
         for (const s of allSlots) {
           const taken = planState.shifts.find(x => x.slot === s && x.shift_date === date && x.status !== 'descanso');
           if (!taken) { slot = s; break; }
         }
-        if (!slot) { slot = `${role} ${allSlots.length + 1}`; const ex = planState.extraSlots[role] || []; ex.push(slot); planState.extraSlots[role] = ex; }
+        if (!slot) {
+          const n = allSlots.length + 1;
+          const last = base[base.length - 1] || role;
+          const prefix = last.replace(/\s*\d+$/, '').trim() || role;
+          slot = `${prefix} ${n}`;
+          const ex = (planState.extraSlots && planState.extraSlots[role]) || [];
+          ex.push(slot);
+          if (!planState.extraSlots) planState.extraSlots = {};
+          planState.extraSlots[role] = ex;
+        }
         const r = await supabase.from('shifts').upsert({
           staff_id: staffId, shift_date: date, branch: planState.branch,
           role, slot, status: 'programado', start_time: start, end_time: end
@@ -3489,11 +3610,12 @@
       }
     } catch(e) { err = e; }
     if (err) {
-      const box = $('plan-warnings');
-      box.innerHTML = `<div class="plan-warn red">⚠️ No se pudo guardar: ${err.message || err}</div>` + box.innerHTML;
+      const errBox = $('plan-errors');
+      if (errBox) errBox.innerHTML = `<div class="plan-warn red">⚠️ No se pudo guardar: ${esc(err.message || err)}</div>`;
       planCloseDayModal();
       return;
     }
+    if ($('plan-errors')) $('plan-errors').innerHTML = '';
     if (saved) await planAudit(old ? 'update' : 'create', saved, old);
     planCloseDayModal();
     await planLoadShifts();
@@ -3509,11 +3631,12 @@
       if (r.error) err = r.error;
     } catch(e) { err = e; }
     if (err) {
-      const box = $('plan-warnings');
-      box.innerHTML = `<div class="plan-warn red">⚠️ No se pudo quitar: ${err.message || err}</div>` + box.innerHTML;
+      const errBox = $('plan-errors');
+      if (errBox) errBox.innerHTML = `<div class="plan-warn red">⚠️ No se pudo quitar: ${esc(err.message || err)}</div>`;
       planCloseDayModal();
       return;
     }
+    if ($('plan-errors')) $('plan-errors').innerHTML = '';
     await planAudit('delete', null, old);
     planCloseDayModal();
     await planLoadShifts();
@@ -3549,21 +3672,121 @@
     }).join('');
   }
 
+  function planRenderPersonViewHtml() {
+    const staffHours = {};
+    (planState.shifts || []).forEach(sh => {
+      if (sh.status === 'descanso' || !sh.staff_id || !sh.start_time || !sh.end_time) return;
+      const [sh_h, sh_m] = sh.start_time.split(':').map(Number);
+      const [eh_h, eh_m] = sh.end_time.split(':').map(Number);
+      let s_min = sh_h * 60 + sh_m;
+      let e_min = eh_h * 60 + eh_m;
+      if (e_min < s_min) e_min += 24 * 60;
+      const hours = (e_min - s_min) / 60;
+      staffHours[sh.staff_id] = (staffHours[sh.staff_id] || 0) + hours;
+    });
+
+    // Only people who have at least one shift that week appear; sort by name.
+    const staffWithShifts = [];
+    const seenStaffIds = new Set();
+    (planState.shifts || []).forEach(sh => {
+      if (sh.staff_id && !seenStaffIds.has(sh.staff_id)) {
+        seenStaffIds.add(sh.staff_id);
+        const s = planState.staff.find(x => x.id === sh.staff_id) || { id: sh.staff_id, name: planStaffName(sh.staff_id), role: sh.role || '' };
+        staffWithShifts.push(s);
+      }
+    });
+    staffWithShifts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    if (!staffWithShifts.length) {
+      return '<div class="empty-state"><div class="es-ico">👥</div><div class="es-title">Sin turnos asignados</div><div class="es-sub">Asigna turnos en la vista “Por puesto” para ver el horario por persona.</div></div>';
+    }
+
+    let html = '<div class="plan-person-cards">';
+    staffWithShifts.forEach(person => {
+      const hrs = staffHours[person.id] || 0;
+      let chip = '';
+      if (hrs > 0 || Object.prototype.hasOwnProperty.call(staffHours, person.id)) {
+        if (hrs < 48) {
+          chip = `<span class="plan-warn-chip yellow">🟡 ${hrs}h (esperado 48h)</span>`;
+        } else if (hrs > 48) {
+          chip = `<span class="plan-warn-chip red">🔴 ${hrs}h (excede 48h)</span>`;
+        } else {
+          chip = `<span class="plan-warn-chip ok">48h</span>`;
+        }
+      }
+
+      html += `<div class="plan-person-card">`;
+      html += `  <div class="plan-person-head">`;
+      html += `    <div class="plan-person-title">${esc(person.name)} <span class="plan-person-role">· ${esc(planRoleGroup(person.role))}</span></div>`;
+      if (chip) html += `    ${chip}`;
+      html += `  </div>`;
+      html += `  <div class="plan-person-days">`;
+
+      PLAN_DAYS.forEach((d, i) => {
+        const dt = new Date(planState.weekStart.getTime() + i * 86400000);
+        const dateStr = fmtDate(dt);
+        const dayShifts = planState.shifts.filter(x => x.shift_date === dateStr && x.staff_id === person.id);
+
+        let rowDetail = '';
+        if (!dayShifts.length) {
+          rowDetail = '<span style="color:var(--muted);">—</span>';
+        } else {
+          rowDetail = dayShifts.map(sh => {
+            if (sh.status === 'descanso') {
+              return '<span style="color:var(--muted);font-style:italic;">Descanso</span>';
+            }
+            const tm = (sh.start_time && sh.end_time) ? `${sh.start_time}–${sh.end_time}` : (sh.start_time || '—');
+            const slotName = sh.slot || sh.role || '';
+            return `<span class="plan-person-time">${esc(tm)}</span><span class="plan-person-slot">${esc(slotName)}</span>`;
+          }).join('<span style="margin:0 6px;color:var(--muted);">/</span>');
+        }
+
+        html += `    <div class="plan-person-day-row">`;
+        html += `      <span class="plan-person-day-name">${d} <span class="d-num">${dt.getDate()}</span></span>`;
+        html += `      <span class="plan-person-day-detail">${rowDetail}</span>`;
+        html += `    </div>`;
+      });
+
+      html += `  </div>`;
+      html += `</div>`;
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function planRenderPersonView() {
+    const wrap = $('plan-personview');
+    if (!wrap) return;
+    wrap.classList.remove('hidden');
+    wrap.innerHTML = planRenderPersonViewHtml();
+  }
+
   function planRenderWarnings() {
     const box = $('plan-warnings');
-    const warns = [];
-    PLAN_DAYS.forEach((d,i) => {
+    if (!box) return;
+
+    if (planState.tab === 'persona') {
+      box.innerHTML = '';
+      box.classList.add('hidden');
+      return;
+    }
+    box.classList.remove('hidden');
+
+    const coverageWarns = [];
+    PLAN_DAYS.forEach((d, i) => {
       const date = fmtDate(new Date(planState.weekStart.getTime() + i*86400000));
       PLAN_ROLES.forEach(role => {
+        if (role === 'Producción' && planState.branch !== 'Del Valle') return;
         const min = (PLAN_MIN[planState.branch] && PLAN_MIN[planState.branch][role]) ? PLAN_MIN[planState.branch][role][i] : 0;
         if (!min) return;
         const count = planState.shifts.filter(x => x.shift_date === date && x.role === role && x.status !== 'descanso').length;
-        if (count < min) warns.push({ type:'red', text:`🔴 ${d}: ${role} tiene ${count}/${min} (faltan ${min-count})` });
-        else if (count > min + 1) warns.push({ type:'yellow', text:`🟡 ${d}: ${role} tiene ${count} (mínimo ${min})` });
+        if (count < min) coverageWarns.push({ type:'red', text:`🔴 ${d}: ${role} tiene ${count}/${min} (faltan ${min-count})` });
+        else if (count > min + 1) coverageWarns.push({ type:'yellow', text:`🟡 ${d}: ${role} tiene ${count} (mínimo ${min})` });
       });
     });
 
     // 48 hours validation
+    const hoursWarns = [];
     const staffHours = {};
     planState.shifts.forEach(sh => {
       if (sh.status === 'descanso' || !sh.staff_id || !sh.start_time || !sh.end_time) return;
@@ -3580,15 +3803,33 @@
       const hrs = staffHours[sid];
       if (hrs !== 48) {
         const sname = planStaffName(sid);
-        if (hrs < 48) warns.push({ type:'yellow', text:`🟡 ${sname} tiene ${hrs}h (esperado 48h)` });
-        else warns.push({ type:'red', text:`🔴 ${sname} tiene ${hrs}h (excede 48h)` });
+        if (hrs < 48) hoursWarns.push({ type:'yellow', text:`🟡 ${sname} tiene ${hrs}h (esperado 48h)` });
+        else hoursWarns.push({ type:'red', text:`🔴 ${sname} tiene ${hrs}h (excede 48h)` });
       }
     });
 
-    if (!warns.length) {
+    const total = coverageWarns.length + hoursWarns.length;
+    if (!total) {
       box.innerHTML = '<div class="plan-warn ok">✅ Todo cubierto según mínimos y horarios de 48h.</div>';
     } else {
-      box.innerHTML = warns.map(w => `<div class="plan-warn ${w.type}">${w.text}</div>`).join('');
+      const allWarns = coverageWarns.concat(hoursWarns);
+      const detailsHtml = allWarns.map(w => `<div class="plan-warn ${w.type}" style="margin-bottom:6px;">${w.text}</div>`).join('');
+      box.innerHTML = `
+        <button type="button" id="plan-warn-toggle" class="plan-warn yellow" style="width:100%;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border:1px solid rgba(220,160,40,0.3);background:rgba(220,160,40,0.12);color:#a70;border-radius:8px;padding:8px 12px;font-size:0.82rem;font-family:inherit;min-height:44px;text-align:left;">
+          <span>⚠️ ${total} aviso${total === 1 ? '' : 's'}: ${coverageWarns.length} de cobertura · ${hoursWarns.length} de horas</span>
+          <span style="font-size:0.75rem;font-weight:600;color:var(--muted);white-space:nowrap;margin-left:8px;">${planWarningsExpanded ? '▲ Ocultar' : '▼ Ver'}</span>
+        </button>
+        <div id="plan-warn-details" class="${planWarningsExpanded ? '' : 'hidden'}" style="margin-top:6px;">
+          ${detailsHtml}
+        </div>
+      `;
+      const btn = $('plan-warn-toggle');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          planWarningsExpanded = !planWarningsExpanded;
+          planRenderWarnings();
+        });
+      }
     }
   }
 
@@ -3613,11 +3854,33 @@
   $('plan-audit-toggle').addEventListener('click', planToggleAudit);
   document.querySelectorAll('#plan-view-seg button').forEach(b => {
     b.addEventListener('click', () => {
-      planState.view = b.getAttribute('data-view');
-      if (planState.view === 'day') { const now = new Date(); const diff = (now.getDay() === 0 ? 6 : now.getDay() - 1); planState.dayIdx = Math.max(0, Math.min(6, diff)); }
+      planState.tab = b.getAttribute('data-view');
+      document.querySelectorAll('#plan-view-seg button').forEach(x => {
+        x.classList.toggle('on', x === b);
+      });
+      const subSeg = $('plan-subview-seg');
+      if (subSeg) subSeg.classList.toggle('hidden', planState.tab !== 'puesto');
       planRender();
     });
   });
+
+  const planSubSegEl = $('plan-subview-seg');
+  if (planSubSegEl) {
+    planSubSegEl.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        planState.view = b.getAttribute('data-subview');
+        planSubSegEl.querySelectorAll('button').forEach(x => {
+          x.classList.toggle('on', x === b);
+        });
+        if (planState.view === 'day') {
+          const now = new Date();
+          const diff = (now.getDay() === 0 ? 6 : now.getDay() - 1);
+          planState.dayIdx = Math.max(0, Math.min(6, diff));
+        }
+        planRender();
+      });
+    });
+  }
 
   // branch + week nav
   document.querySelectorAll('#plan-branch-seg button').forEach(b => {
