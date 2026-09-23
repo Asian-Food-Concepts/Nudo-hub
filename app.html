@@ -209,6 +209,8 @@
   .userbar .viewas-open { font-size:0.82rem; color:var(--accent); background:var(--card);
     border:1px solid var(--border); border-radius:8px; padding:5px 10px; cursor:pointer; }
   .userbar .viewas-open:hover { border-color:var(--accent); }
+  .userbar .viewas-open:disabled { opacity: 0.5; cursor: not-allowed; }
+  .userbar .viewas-open:disabled:hover { border-color: var(--border); }
   .userbar .logout { font-size: 0.85rem; color: var(--accent); background: none; border: none; cursor: pointer; padding: 6px 8px; }
   .userbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
   .theme-switch { display: flex; align-items: center; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 3px; }
@@ -1066,7 +1068,8 @@
           </div>
           <div class="field"><label>Artículo</label><input type="text" id="c-item" placeholder="¿Qué necesitas comprar?" style="width:100%"></div>
           <div class="field"><label>Proveedor / tienda</label><input type="text" id="c-vendor" placeholder="¿Dónde lo compramos?" style="width:100%"><div style="font-size:0.8rem;color:var(--muted);margin-top:4px;">Opcional — déjalo en blanco si no estás seguro</div></div>
-          <div class="field"><label>Monto aprox. (MXN)</label><input type="number" id="c-amount" placeholder="Ej. 350" style="width:100%"></div>
+          <div class="field"><label>Unidades</label><input type="number" id="c-units" min="1" step="1" value="1" placeholder="Ej. 2" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;"></div>
+          <div class="field"><label>Monto aprox. por unidad (MXN)</label><input type="number" id="c-amount" step="0.01" min="0" placeholder="Ej. 350" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;"><div id="c-total-hint" style="font-size:0.8rem;color:var(--muted);margin-top:4px;" class="hidden"></div></div>
           <div class="field"><label>Prioridad</label>
             <div class="radio-group">
               <label><input type="radio" name="c-prioridad" value="Urgente"><span>🔴 Urgente</span></label>
@@ -1516,8 +1519,21 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.202";
+  const APP_VERSION = "v0.203";
   document.getElementById('ver').textContent = APP_VERSION;
+
+  // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
+  // Flip VIEW_AS_ENABLED to true to re-enable "Visto como" for level 1 (Dueño).
+  const VIEW_AS_ENABLED = false;
+
+  // Formatting helper for currency amounts in MXN (v0.203).
+  // Returns '—' for null, undefined, NaN, or empty values; formatted currency otherwise.
+  function formatMxn(val) {
+    if (val == null || val === '') return '—';
+    const num = Number(val);
+    if (isNaN(num)) return '—';
+    return '$' + num.toLocaleString('es-MX') + ' MXN';
+  }
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
   // bottom-sheet layout + kept the dock at z50; equal z-index + later DOM
@@ -2052,12 +2068,26 @@
     const displayName = (currentProfile && currentProfile.name) || (user.email || 'Equipo');
     const role = (currentProfile && currentProfile.role) || '';
     $('user-name').textContent = displayName + (role ? ' · ' + role : '');
-    // Show the impersonation control to the real level 1 only. This MUST run here, after
-    // currentProfile is set above: in the earlier attempt it ran before that, realLevel()
-    // read null, and the button stayed hidden for everyone including dueños.
+    // Impersonation control (v0.203): Ben ordered that everyone should SEE it, but it is disabled for now.
+    // When VIEW_AS_ENABLED is false: visible to all signed-in users, but disabled.
+    // When VIEW_AS_ENABLED is true: restored to level 1 (Dueño) only.
     {
       const vo = $('viewas-open');
-      if (vo) vo.classList.toggle('hidden', realLevel() !== 1);
+      if (vo) {
+        if (!VIEW_AS_ENABLED) {
+          vo.classList.remove('hidden');
+          vo.disabled = true;
+          vo.style.opacity = '0.5';
+          vo.style.cursor = 'not-allowed';
+          vo.title = 'Temporalmente no disponible';
+        } else {
+          vo.disabled = false;
+          vo.style.opacity = '';
+          vo.style.cursor = '';
+          vo.title = 'Ver la app como otra persona (solo lectura)';
+          vo.classList.toggle('hidden', realLevel() !== 1);
+        }
+      }
     }
     $('header-sub').textContent = 'Bienvenido';
     // Role-gate the Bitácora card: only Dueño, Capitán, Gerente see it
@@ -3617,7 +3647,7 @@
       .order('created_at', { ascending: false });
     const { data: comp, error: ec } = await supabase
       .from('purchases')
-      .select('id, branch, item, vendor, amount, priority, link, notes, status, submitted_by, created_at, photo_urls, cancel_reason')
+      .select('id, branch, item, vendor, amount, units, amount_per_unit, priority, link, notes, status, submitted_by, created_at, photo_urls, cancel_reason')
       .order('created_at', { ascending: false });
     if (em || ec) {
       showMsg(msgEl, 'Error al cargar solicitudes: ' + (em ? em.message : ec.message), 'err');
@@ -3634,19 +3664,29 @@
       branch: r.branch, status: r.status, created_at: r.created_at,
       id: r.id, table: 'maintenance_requests', submitted_by: r.submitted_by,
       link: '', photo_urls: r.photo_urls || [], vendor: '', amount: null,
+      units: null, amount_per_unit: null,
       service_date: r.service_date || null,
       follow_ups: r.follow_ups || [],
       outcome: r.outcome || null,
       cancel_reason: r.cancel_reason || ''
     }));
-    (comp || []).forEach(r => rows.push({
-      kind: 'comp', typeLabel: '🛒 Compra', title: r.item || 'Compra',
-      detail: (r.vendor ? 'Proveedor: ' + r.vendor + ' · ' : '') + (r.amount ? '$' + Number(r.amount).toLocaleString('es-MX') + ' MXN' : ''),
-      priority: r.priority || 'Normal', branch: r.branch, status: r.status, created_at: r.created_at,
-      id: r.id, table: 'purchases', submitted_by: r.submitted_by, link: r.link || '',
-      photo_urls: r.photo_urls || [], vendor: r.vendor || '', amount: r.amount || null,
-      cancel_reason: r.cancel_reason || ''
-    }));
+    (comp || []).forEach(r => {
+      const amountDetail = (r.amount != null && !isNaN(Number(r.amount)))
+        ? ('$' + Number(r.amount).toLocaleString('es-MX') + ' MXN total' +
+           (r.units && r.amount_per_unit != null && !isNaN(Number(r.amount_per_unit))
+             ? ' · ' + r.units + ' × $' + Number(r.amount_per_unit).toLocaleString('es-MX')
+             : ''))
+        : '';
+      rows.push({
+        kind: 'comp', typeLabel: '🛒 Compra', title: r.item || 'Compra',
+        detail: (r.vendor ? 'Proveedor: ' + r.vendor + ' · ' : '') + amountDetail,
+        priority: r.priority || 'Normal', branch: r.branch, status: r.status, created_at: r.created_at,
+        id: r.id, table: 'purchases', submitted_by: r.submitted_by, link: r.link || '',
+        photo_urls: r.photo_urls || [], vendor: r.vendor || '', amount: r.amount || null,
+        units: r.units || null, amount_per_unit: r.amount_per_unit || null,
+        cancel_reason: r.cancel_reason || ''
+      });
+    });
     rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     // Resolve submitter NAMES in one batch (Ben: "for mantenimiento, cocina roma
@@ -3820,7 +3860,9 @@
         ['Tipo', '🛒 Compra'],
         ['Artículo', row.title],
         ['Proveedor', row.vendor || '—'],
-        ['Monto', row.amount ? '$' + Number(row.amount).toLocaleString('es-MX') + ' MXN' : '—'],
+        ...(row.units != null && row.units !== '' ? [['Unidades', row.units]] : []),
+        ...(row.amount_per_unit != null ? [['Monto por unidad', formatMxn(row.amount_per_unit)]] : []),
+        ['Monto total aprox.', formatMxn(row.amount)],
         ['Prioridad', prio],
         ['Sucursal', row.branch],
         ['Solicitante', submitter],
@@ -4132,8 +4174,11 @@
         <div class="field"><label>Proveedor</label>
           <input type="text" id="ee-vendor" value="${escAttr(row.vendor || '')}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
         </div>
-        <div class="field"><label>Monto</label>
-          <input type="number" id="ee-amount" value="${row.amount != null ? escAttr(String(row.amount)) : ''}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+        <div class="field"><label>Unidades</label>
+          <input type="number" id="ee-units" min="1" step="1" value="${row.units != null ? escAttr(String(row.units)) : '1'}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+        </div>
+        <div class="field"><label>Monto por unidad (MXN)</label>
+          <input type="number" id="ee-amount" step="0.01" min="0" value="${row.amount_per_unit != null ? escAttr(String(row.amount_per_unit)) : (row.amount != null ? escAttr(String(row.amount)) : '')}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
         </div>
         <div class="field"><label>Link</label>
           <input type="url" id="ee-link" value="${escAttr(row.link || '')}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
@@ -4178,13 +4223,20 @@
       } else {
         const itemVal = $('ee-title').value.trim();
         const vendorVal = $('ee-vendor').value.trim();
+        const unitsRaw = $('ee-units') ? $('ee-units').value.trim() : '';
+        let unitsVal = unitsRaw ? parseInt(unitsRaw, 10) : 1;
+        if (isNaN(unitsVal) || unitsVal < 1) unitsVal = 1;
         const amountRaw = $('ee-amount').value.trim();
+        const perUnitVal = amountRaw ? parseFloat(amountRaw) : null;
+        const totalVal = (perUnitVal != null && !isNaN(perUnitVal)) ? (unitsVal * perUnitVal) : null;
         const linkVal = $('ee-link').value.trim();
         if (!itemVal) { alert('El artículo es obligatorio.'); saveBtn.disabled = false; return; }
         payload = {
           item: itemVal,
           vendor: vendorVal,
-          amount: amountRaw ? parseFloat(amountRaw) : null,
+          units: unitsVal,
+          amount_per_unit: perUnitVal,
+          amount: totalVal,
           link: linkVal,
           notes: notesVal,
           priority: prioVal,
@@ -4200,7 +4252,7 @@
       }
 
       // Re-read row to confirm the values landed before reporting success
-      const verifyCols = isMant ? 'area, description, notes, priority, branch' : 'item, vendor, amount, link, notes, priority, branch';
+      const verifyCols = isMant ? 'area, description, notes, priority, branch' : 'item, vendor, amount, units, amount_per_unit, link, notes, priority, branch';
       const { data: updatedData, error: verifyErr } = await supabase.from(row.table).select(verifyCols).eq('id', row.id).maybeSingle();
       if (verifyErr || !updatedData) {
         showMsg($('estatus-msg'), 'Error al verificar la actualización.', 'err');
@@ -4214,7 +4266,10 @@
           return;
         }
       } else {
-        if (updatedData.item !== payload.item) {
+        const unitsMatch = (updatedData.units == null && payload.units == null) || (Number(updatedData.units) === Number(payload.units));
+        const amountPerUnitMatch = (updatedData.amount_per_unit == null && payload.amount_per_unit == null) || (Number(updatedData.amount_per_unit) === Number(payload.amount_per_unit));
+        const amountMatch = (updatedData.amount == null && payload.amount == null) || (Number(updatedData.amount) === Number(payload.amount));
+        if (updatedData.item !== payload.item || !unitsMatch || !amountPerUnitMatch || !amountMatch) {
           showMsg($('estatus-msg'), 'No se pudieron guardar los cambios.', 'err');
           saveBtn.disabled = false;
           return;
@@ -4281,7 +4336,7 @@
     const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
     if (!ADMIN_ROLES.includes(prof && prof.role)) { showMsg($('estatus-msg'), 'Solo el Dueño puede descargar PDFs', 'err'); return; }
     const q = table === 'purchases'
-      ? { cols: 'id, item, vendor, amount, link, notes, status, branch, submitted_by, created_at, photo_urls', titleField: 'item' }
+      ? { cols: 'id, item, vendor, amount, units, amount_per_unit, link, notes, status, branch, submitted_by, created_at, photo_urls', titleField: 'item' }
       : { cols: 'id, area, description, notes, priority, status, branch, submitted_by, created_at, photo_urls', titleField: 'area' };
     const { data, error } = await supabase.from(table).select(q.cols).eq('id', id).maybeSingle();
     if (error || !data) { showMsg($('estatus-msg'), 'No se pudo cargar la solicitud', 'err'); return; }
@@ -4322,8 +4377,13 @@
     const kind = table === 'purchases' ? 'Compra' : 'Reparación';
     const rows = table === 'purchases'
       ? [
-          ['Artículo', d.item], ['Proveedor', d.vendor], ['Monto', d.amount ? '$' + Number(d.amount).toLocaleString('es-MX') + ' MXN' : '—'],
-          ['Notas', d.notes], ['Enlace', d.link]
+          ['Artículo', d.item],
+          ['Proveedor', d.vendor],
+          ['Unidades', (d.units != null && d.units !== '') ? d.units : '—'],
+          ['Monto por unidad', formatMxn(d.amount_per_unit)],
+          ['Monto total aprox.', formatMxn(d.amount)],
+          ['Notas', d.notes],
+          ['Enlace', d.link]
         ]
       : [
           ['Área', d.area], ['Descripción', d.description], ['Prioridad', d.priority]
@@ -5149,11 +5209,51 @@
   });
 
   // ---- COMPRAS ----
+  function updateComprasTotalHint() {
+    const hint = $('c-total-hint');
+    if (!hint) return;
+    const amountRaw = $('c-amount') ? $('c-amount').value.trim() : '';
+    if (!amountRaw) {
+      hint.textContent = '';
+      hint.classList.add('hidden');
+      return;
+    }
+    const perUnit = parseFloat(amountRaw);
+    if (isNaN(perUnit) || perUnit < 0) {
+      hint.textContent = '';
+      hint.classList.add('hidden');
+      return;
+    }
+    const unitsRaw = $('c-units') ? $('c-units').value.trim() : '';
+    let units = unitsRaw ? parseInt(unitsRaw, 10) : 1;
+    if (isNaN(units) || units < 1) units = 1;
+    const total = units * perUnit;
+    hint.textContent = 'Total aproximado: $' + total.toLocaleString('es-MX') + ' MXN (' + units + ' × $' + perUnit.toLocaleString('es-MX') + ')';
+    hint.classList.remove('hidden');
+  }
+
+  if ($('c-units')) {
+    $('c-units').addEventListener('input', updateComprasTotalHint);
+    $('c-units').addEventListener('change', updateComprasTotalHint);
+  }
+  if ($('c-amount')) {
+    $('c-amount').addEventListener('input', updateComprasTotalHint);
+    $('c-amount').addEventListener('change', updateComprasTotalHint);
+  }
+
   $('c-submit').addEventListener('click', async () => {
     const sucursal = document.querySelector('input[name="c-sucursal"]:checked');
     const item = $('c-item').value.trim();
     if (!sucursal || !item) { showMsg($('c-msg'), 'Completa sucursal y artículo', 'err'); return; }
+
+    const unitsRaw = $('c-units') ? $('c-units').value.trim() : '';
+    let unitsVal = unitsRaw ? parseInt(unitsRaw, 10) : 1;
+    if (isNaN(unitsVal) || unitsVal < 1) unitsVal = 1;
+
     const amountVal = $('c-amount').value.trim();
+    const perUnitVal = amountVal ? parseFloat(amountVal) : null;
+    const totalVal = (perUnitVal != null && !isNaN(perUnitVal)) ? (unitsVal * perUnitVal) : null;
+
     const cPhoto = $('c-photo').files[0];
     const cPrioridad = document.querySelector('input[name="c-prioridad"]:checked');
     // v0.119: requester name + timestamp on the review modal (Ben)
@@ -5164,7 +5264,9 @@
       ['Sucursal', sucursal.value],
       ['Artículo', item],
       ['Proveedor / tienda', $('c-vendor').value.trim() || '—'],
-      ['Monto aprox.', amountVal ? '$' + Number(amountVal).toLocaleString('es-MX') + ' MXN' : '—'],
+      ['Unidades', unitsVal],
+      ['Monto por unidad', perUnitVal != null ? '$' + perUnitVal.toLocaleString('es-MX') + ' MXN' : '—'],
+      ['Monto total aprox.', totalVal != null ? '$' + totalVal.toLocaleString('es-MX') + ' MXN' : '—'],
       ['Prioridad', cPrioridad ? cPrioridad.value : 'Normal'],
       ['Link', $('c-link').value.trim() || '—'],
       ['Notas', $('c-notes').value.trim() || '—'],
@@ -5183,7 +5285,9 @@
         branch: sucursal.value,
         item,
         vendor: $('c-vendor').value.trim(),
-        amount: amountVal ? Number(amountVal) : null,
+        units: unitsVal,
+        amount_per_unit: perUnitVal,
+        amount: totalVal,
         priority: cPrioridad ? cPrioridad.value : 'Normal',
         link: $('c-link').value.trim(),
         notes: $('c-notes').value.trim(),
@@ -5193,7 +5297,10 @@
       if (error) { showMsg($('c-msg'), 'Error: ' + error.message, 'err'); $('c-submit').disabled = false; return; }
       $('c-msg').textContent = '✅ Solicitud de compra enviada'; $('c-msg').className = 'msg ok'; $('c-msg').classList.remove('hidden');
       setTimeout(() => {
-        resetForm('compras'); $('c-photo').value = '';
+        resetForm('compras');
+        if ($('c-units')) $('c-units').value = '1';
+        updateComprasTotalHint();
+        $('c-photo').value = '';
         clearMsg($('c-msg')); goHome();
       }, 1200);
     });
@@ -5988,6 +6095,7 @@
   }
 
   async function openViewAsPicker() {
+    if (!VIEW_AS_ENABLED) return;
     const modal = $('viewas-modal'), list = $('viewas-list');
     if (!modal || !list) return;
     list.innerHTML = '<div class="msg">Cargando…</div>';
@@ -6056,9 +6164,9 @@
                     pick.getAttribute('data-branch'), pick.getAttribute('data-level'));
       return;
     }
-    // Only level 1 (Dueño) may preview — nobody else, ever.
-    if (e.target.closest('#viewas-open')) { openViewAsPicker(); return; }
-    if (e.target.closest('#user-name')) { if (realLevel() === 1) openViewAsPicker(); }
+    // Only level 1 (Dueño) may preview — nobody else, ever (gated by VIEW_AS_ENABLED, v0.203).
+    if (e.target.closest('#viewas-open')) { if (VIEW_AS_ENABLED) openViewAsPicker(); return; }
+    if (e.target.closest('#user-name')) { if (VIEW_AS_ENABLED && realLevel() === 1) openViewAsPicker(); }
   });
 
   // ============ EQUIPO — org chart, read-only (v0.149) =========================

@@ -5,6 +5,18 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
+## [v0.203] - 2026-09-22
+
+### Modificado (Changed)
+- **Solicitud de compras y reposición**:
+  - Desglose no ambiguo del monto en dos campos: unidades (`c-units`, por defecto 1) y monto aproximado por unidad (`c-amount`), manteniendo `amount` como el total (`units * amount_per_unit`).
+  - Indicador dinámico en vivo bajo el formulario que muestra el cálculo del total aproximado (`Total aproximado: $X MXN (N × $Y)`).
+  - Actualización consistente en todos los puntos de visualización y exportación: modal de revisión previa, tarjetas de seguimiento (`loadEstatus`), modal de detalle (`estatus-detail`), modal de edición (`estatus-edit` con verificación read-back) y descarga de PDF (`downloadPdf`).
+- **Control "Visto como" (impersonación)**:
+  - Visible para todos los usuarios autenticados pero deshabilitado mediante constante centralizada (`VIEW_AS_ENABLED = false`), con estilo visual atenuado, atributo `disabled`, tooltip explicativo y guardia funcional para prevenir aperturas no deseadas.
+
+---
+
 ## [v0.202] - 2026-09-22
 
 ### Añadido (Added)
