@@ -5,7 +5,17 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
-## [v0.204] - 2026-09-22
+## [v0.209.4] - 2026-09-23
+
+### Cambiado (Changed)
+- **Íconos de la PWA reemplazados por el logotipo oficial de Nudo.** Los íconos anteriores eran marcadores de posición (659 B / 1.9 KB, un cuadro verde con una "N" diminuta) y eran lo que el equipo veía al instalar la app en su teléfono.
+
+### Corregido (Fixed)
+- **El ícono de notificación (`badge`) ahora es una silueta BLANCA.** Antes apuntaba al ícono a color; Android reduce el badge a una silueta, así que se veía como un bloque sólido en lugar del logotipo. Nuevo `badge-96.png` (blanco sobre transparente) en `app.html` y `sw.js`.
+- **Ícono *maskable* separado del ícono normal.** Los íconos declaraban `"purpose": "any maskable"`, lo cual es incorrecto: una imagen *maskable* se recorta a un círculo del ~80% del diámetro, por lo que necesita margen propio. Ahora `icon-192`/`icon-512` son `"any"` y el nuevo `icon-maskable-512.png` es `"maskable"`, verificado midiendo que el monograma cae dentro de la zona segura (390 px vs 480 px de radio disponible).
+
+---
+
 
 ### Añadido (Added)
 - **Nuevos ingresos — modos de edición, documentos y ocultación**:

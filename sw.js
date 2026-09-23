@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v108'; // v0.209.3: logo oficial Nudo en el header // v0.209.2: Seguimiento split into Compras & Mantenimiento tabs with tailored shapes, stepper pipeline & follow-up wiring // v0.209.1: proximo seguimiento wired; duration null fix // v0.209: Mantenimiento storyline: seguimiento por equipo, vista de abiertos, registro de costo y reparador // v0.208: Sobres category is optional // v0.207: Bitacora - new Sobres category // v0.206: Planear horario: slot rows derived from PLAN_MIN, Por puesto / Por persona tabs, inline coverage badges, collapsible warnings, separate error container // v0.205: AGF removed — management gate is dueño OR gerente (role only) // v0.204: Nuevos ingresos edit modes, document ticks, send-back & hide; Compras PDF removed; improved date pickers // v0.203: Solicitud de compras unidades + monto por unidad & Visto como deshabilitado para todos // v0.202: Nuevos ingresos contract PDFs (revisión y firma), quick-edit modal & send-back mode B // v0.201: CUTOVER — the repo now carries a CNAME file, so GitHub Pages
+const CACHE = 'nudo-hub-v109'; // v0.209.3: logo oficial Nudo en el header // v0.209.2: Seguimiento split into Compras & Mantenimiento tabs with tailored shapes, stepper pipeline & follow-up wiring // v0.209.1: proximo seguimiento wired; duration null fix // v0.209: Mantenimiento storyline: seguimiento por equipo, vista de abiertos, registro de costo y reparador // v0.208: Sobres category is optional // v0.207: Bitacora - new Sobres category // v0.206: Planear horario: slot rows derived from PLAN_MIN, Por puesto / Por persona tabs, inline coverage badges, collapsible warnings, separate error container // v0.205: AGF removed — management gate is dueño OR gerente (role only) // v0.204: Nuevos ingresos edit modes, document ticks, send-back & hide; Compras PDF removed; improved date pickers // v0.203: Solicitud de compras unidades + monto por unidad & Visto como deshabilitado para todos // v0.202: Nuevos ingresos contract PDFs (revisión y firma), quick-edit modal & send-back mode B // v0.201: CUTOVER — the repo now carries a CNAME file, so GitHub Pages
 // serves the app at https://hub.asianfoodconcepts.mx/ and the old project-site URL
 // (asian-food-concepts.github.io/Nudo-hub/) 301-redirects here. The version bump is what
 // moves EXISTING clients: a stale client detects the new version, reloads, follows the
@@ -21,7 +21,9 @@ const ASSETS = [
   './reglas.html',
   './guia.html',
   './contactos.html',
-  './onboarding.html'
+  './onboarding.html',
+  './icon-192.png',
+  './badge-96.png'
 ];
 
 self.addEventListener('install', e => {
@@ -107,7 +109,7 @@ self.addEventListener('push', e => {
     icon: './icon-192.png',
     // NOTE: this `badge` is the small monochrome icon drawn ON the notification
     // (Android status bar). It is NOT the home-screen app badge — that is setAppBadge.
-    badge: './icon-192.png',
+    badge: './badge-96.png',
     data: { url: data.url || './app.html' },
     vibrate: [100, 50, 100]
   };
