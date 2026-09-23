@@ -1652,7 +1652,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209";
+  const APP_VERSION = "v0.209.1";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -4461,7 +4461,7 @@
     // Fetch both request tables (newest first)
     const { data: mant, error: em } = await supabase
       .from('maintenance_requests')
-      .select('id, branch, area, description, notes, priority, status, submitted_by, created_at, photo_urls, service_date, follow_ups, outcome, cancel_reason, asset_id, cost, repairer_name, vendor_name, vendor_requested_at, started_at, completed_at, resolution_notes')
+      .select('id, branch, area, description, notes, priority, status, submitted_by, created_at, photo_urls, service_date, follow_ups, outcome, cancel_reason, asset_id, cost, repairer_name, vendor_name, vendor_requested_at, started_at, completed_at, resolution_notes, next_follow_up_at')
       .order('created_at', { ascending: false });
     const { data: comp, error: ec } = await supabase
       .from('purchases')
@@ -4528,7 +4528,8 @@
       vendor_requested_at: r.vendor_requested_at || null,
       started_at: r.started_at || null,
       completed_at: r.completed_at || null,
-      resolution_notes: r.resolution_notes || ''
+      resolution_notes: r.resolution_notes || '',
+      next_follow_up_at: r.next_follow_up_at || null
     }));
     (comp || []).forEach(r => {
       const amountDetail = (r.amount != null && !isNaN(Number(r.amount)))
@@ -4546,7 +4547,8 @@
         units: r.units || null, amount_per_unit: r.amount_per_unit || null,
         cancel_reason: r.cancel_reason || '',
         asset_id: null, asset_name: '', cost: null, repairer_name: '', vendor_name: r.vendor || '',
-        vendor_requested_at: null, started_at: null, completed_at: null, resolution_notes: ''
+        vendor_requested_at: null, started_at: null, completed_at: null, resolution_notes: '',
+        next_follow_up_at: null
       });
     });
     rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -4615,6 +4617,14 @@
         }
         if (isOpenRequestRow(r)) {
           parts.push(`⏳ ${formatDiasAbierto(r.created_at)}`);
+          if (r.next_follow_up_at) {
+            const _nf = new Date(r.next_follow_up_at).getTime();
+            if (!isNaN(_nf)) {
+              parts.push(_nf <= Date.now()
+                ? '<span style="background:#fce8e6;color:#d93025;font-weight:700;padding:1px 6px;border-radius:6px;">🔔 Toca seguimiento</span>'
+                : `🔔 Seguimiento: ${new Date(r.next_follow_up_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short'})}`);
+            }
+          }
         }
         if (parts.length) {
           mantMetaHtml = `<div style="font-size:0.8rem;color:var(--muted);margin:3px 0;">${parts.join(' · ')}</div>`;
@@ -4792,6 +4802,15 @@
             </div>
           </div>
           <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;">🔔 Próximo seguimiento</div>
+            <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;">Para mantenimiento que tarda: ponle fecha y te aparece marcado cuando toque insistir.</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="date" id="estatus-mant-next" value="${escAttr(row.next_follow_up_at ? String(row.next_follow_up_at).slice(0, 10) : '')}" style="flex:1;" />
+              <button class="btn" id="estatus-mant-next-save" style="width:auto;min-height:44px;padding:8px 14px;font-size:0.9rem;margin:0;">Guardar</button>
+              <button class="btn btn-outline" id="estatus-mant-next-clear" style="width:auto;min-height:44px;padding:8px 14px;font-size:0.9rem;margin:0;">Quitar</button>
+            </div>
+          </div>
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
             <div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;">📝 Agregar seguimiento</div>
             <textarea id="estatus-mant-note" placeholder="Escribe un seguimiento o nota..." style="width:100%;min-height:80px;font-size:16px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--input-bg);color:var(--ink);box-sizing:border-box;resize:vertical;"></textarea>
             <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
@@ -4840,6 +4859,34 @@
           if (error) { showMsg($('estatus-msg'), 'Error al guardar fecha: ' + error.message, 'err'); dateSaveBtn.disabled = false; return; }
           row.service_date = val;
           toast('✅ Fecha de servicio guardada');
+          loadEstatus();
+          openEstatusDetail(row.table, row.id);
+        });
+      }
+
+      const nextSaveBtn = $('estatus-mant-next-save');
+      if (nextSaveBtn) {
+        nextSaveBtn.addEventListener('click', async () => {
+          const raw = $('estatus-mant-next').value || '';
+          // a date input with nothing set would save '' -> store null, never an empty string
+          const val = raw ? new Date(raw + 'T12:00:00').toISOString() : null;
+          nextSaveBtn.disabled = true;
+          const { error } = await supabase.from(row.table).update({ next_follow_up_at: val }).eq('id', row.id);
+          if (error) { showMsg($('estatus-msg'), 'Error al guardar seguimiento: ' + error.message, 'err'); nextSaveBtn.disabled = false; return; }
+          row.next_follow_up_at = val;
+          toast(val ? '✅ Próximo seguimiento guardado' : '✅ Seguimiento quitado');
+          loadEstatus();
+          openEstatusDetail(row.table, row.id);
+        });
+      }
+      const nextClearBtn = $('estatus-mant-next-clear');
+      if (nextClearBtn) {
+        nextClearBtn.addEventListener('click', async () => {
+          nextClearBtn.disabled = true;
+          const { error } = await supabase.from(row.table).update({ next_follow_up_at: null }).eq('id', row.id);
+          if (error) { showMsg($('estatus-msg'), 'Error al quitar seguimiento: ' + error.message, 'err'); nextClearBtn.disabled = false; return; }
+          row.next_follow_up_at = null;
+          toast('✅ Seguimiento quitado');
           loadEstatus();
           openEstatusDetail(row.table, row.id);
         });
