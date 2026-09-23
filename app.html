@@ -577,6 +577,13 @@
                       font-size: 0.9rem; cursor: pointer; }
   .horas-add { min-height: 44px; width: 100%; margin-top: 10px; border: 1px dashed var(--border);
                border-radius: 10px; background: transparent; color: var(--ink); cursor: pointer; font-size: 0.95rem; }
+  /* Tardanza (Ben 2026-09-23) — reuses the .horas-* shell so it inherits the phone
+     ergonomics already proven on the Horas rows (44px taps, 16px controls). */
+  .tarde-row .horas-chips { margin-top: 8px; }
+  .tarde-row .tarde-val { min-width: 62px; }
+  .tarde-custom { min-height: 44px; font-size: 16px; border: 1px solid var(--border);
+                  border-radius: 10px; padding: 0 12px; background: var(--bg); color: var(--ink); }
+  .tarde-custom.hidden { display: none !important; }
   .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   /* [icon-button] tooltip */
   .ico-btn { position: relative; }
@@ -684,6 +691,12 @@
   .draft-bar .draft-note { color: var(--muted); flex: 1 1 140px; }
   .draft-bar .draft-clear { margin-left: auto; background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 5px 12px; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
   .draft-bar .draft-clear:active { opacity: 0.7; }
+  /* Brand lockup (Ben 2026-09-23): the Nudo wordmark SVG sits in <h1>, and "Hub"
+     reads as NORMAL text directly beneath it — together they read "Nudo Hub".
+     Deliberately NOT bold and NOT the logo weight: it is a wordmark suffix, not a
+     second logo. Replaces the old "Bienvenido" / "Acceso del equipo" subtitle. */
+  .brand-hub { font-size: 0.95rem; font-weight: 400; letter-spacing: 0.22em;
+               text-transform: uppercase; color: var(--muted); margin: 2px 0 0 2px; }
   .hidden { display: none !important; }
 </style>
 </head>
@@ -691,7 +704,7 @@
   <div class="wrap">
   <header>
     <h1><a href="./" aria-label="Nudo Hub — inicio"><svg role="img" aria-label="Nudo — Ramen y Boba" height="28" style="height:28px;width:auto;display:block;" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 777 185.289"><g><path fill="currentColor" d="M693.751,0c-48.744,0-82.791,37.573-82.791,91.371c0,53.644,34.047,91.11,82.791,91.11 c49.015,0,83.249-37.466,83.249-91.11C777,37.573,742.766,0,693.751,0z M693.75,167.018c-27.197,0-58.951-19.812-58.951-75.646 c0-56.024,31.754-75.904,58.951-75.904c27.41,0,59.415,19.88,59.415,75.904C753.165,147.207,721.16,167.018,693.75,167.018z"/><path fill="currentColor" d="M132.919,6.154h-1.3c-1.278,0-3.917-0.265-6.051-0.506c-1.747-0.196-3.163-0.375-3.163-0.375l0.716,0.881 h-0.013c1.765,3.003,2.46,6.701,2.46,12.377v106.024L73.502,62.738v-0.114L25.941,6.154h-4.504H0 c7.007,11.202,8.02,15.661,8.02,30.645v131.506c-0.015,6.112-0.91,9.639-2.444,12.244h0.013l-0.716,0.882 c0,0,6.889-0.882,9.214-0.882h1.3c1.278,0,3.917,0.266,6.051,0.506c1.747,0.196,3.163,0.376,3.163,0.376l-0.716-0.882h0.012 c-1.764-3.002-2.46-6.7-2.46-12.376V62.148V41.615l52.065,61.93l52.066,61.931l13.413,15.954V18.531 c0-6.203,0.903-9.75,2.448-12.377h-0.012l0.716-0.881C142.133,5.273,135.244,6.154,132.919,6.154z"/><path fill="currentColor" d="M329.235,6.154c-2.324,0-9.214-0.881-9.214-0.881l0.716,0.881l0.111,0.116 c1.608,2.978,2.332,6.672,2.332,12.261v101.121c0,31.664-15.951,49.101-41.612,49.101c-25.661,0-41.611-17.437-41.611-49.101 V18.531c0-5.589,0.724-9.283,2.331-12.261l0.111-0.116l0.716-0.881c0,0-6.889,0.881-9.215,0.881h-11.735 c-2.325,0-9.215-0.881-9.215-0.881l0.716,0.881l0.116,0.121c1.715,2.982,2.402,6.652,2.402,12.255v102.406 c0,38.492,27.369,64.352,65.383,64.352c38.015,0,65.383-25.86,65.383-64.352V18.531c0-5.604,0.686-9.273,2.403-12.255l0.116-0.121 l0.716-0.881c0,0-6.889,0.881-9.214,0.881H329.235z"/><path fill="currentColor" d="M483.113,3.603h-52.897c-2.324,0-9.214-0.882-9.214-0.882l0.716,0.882c1.765,3.002,2.46,6.701,2.46,12.377 V91.24v75.262c0,5.675-0.694,9.374-2.46,12.377l-0.716,0.881c0,0,6.889-0.881,9.214-0.881h52.897 c46.895,0,80.936-36.153,80.936-85.968c0-0.567-0.061-1.107-0.069-1.671c0.008-0.563,0.069-1.104,0.069-1.671 C564.05,39.756,530.008,3.603,483.113,3.603z M540.211,92.911c0,44.45-25.877,70.988-68.449,70.988 c-6.835,0-14.16-0.614-21.772-1.822l-2.845-0.201V91.24V20.605l2.845-0.201c7.612-1.208,14.937-1.822,21.772-1.822 c42.572,0,68.449,26.539,68.449,70.988c0,0.573-0.046,1.104-0.052,1.671C540.166,91.808,540.211,92.339,540.211,92.911z"/></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g></svg></a></h1>
-    <p id="header-sub">Acceso del equipo</p>
+    <p id="header-sub" class="brand-hub">Hub</p>
     <!-- User row now lives INSIDE the header card (v0.116: unified shape) -->
     <div id="viewas-banner" class="hidden" style="position:sticky;top:0;z-index:70;background:#fff3cd;border-bottom:2px solid #e0a800;padding:8px 12px;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;gap:10px;">
       <span id="viewas-label">👁 Visto como</span>
@@ -811,6 +824,22 @@
           </a>
         </div>
 
+        <div class="section-title">Seguimiento</div>
+        <div class="card-list">
+          <a class="card" href="#" data-form="estatus">
+            <div class="icon icon-form">🛒</div>
+            <div class="text"><div class="title">Compras</div><div class="sub">Seguimiento a tus solicitudes de compra</div></div>
+            <div class="arrow">›</div>
+            <span id="estatus-badge" class="hidden" style="position:absolute;top:8px;right:34px;display:flex;gap:4px;align-items:center;"></span>
+          </a>
+          <a class="card" href="#" data-form="mantestatus">
+            <div class="icon icon-form">🔧</div>
+            <div class="text"><div class="title">Mantenimiento</div><div class="sub">Etapas, seguimiento e historial</div></div>
+            <div class="arrow">›</div>
+            <span id="mantestatus-badge" class="hidden" style="position:absolute;top:8px;right:34px;display:flex;gap:4px;align-items:center;"></span>
+          </a>
+        </div>
+
         <div class="section-title">Guía</div>
         <div class="card-list">
           <!-- Cross-guide search: searches all guide content at once -->
@@ -837,22 +866,6 @@
             <div class="icon icon-sheet">📞</div>
             <div class="text"><div class="title">Contactos de servicios</div><div class="sub">Electricista, plomero y más</div></div>
             <div class="arrow">›</div>
-          </a>
-        </div>
-
-        <div class="section-title">Seguimiento</div>
-        <div class="card-list">
-          <a class="card" href="#" data-form="estatus">
-            <div class="icon icon-form">🛒</div>
-            <div class="text"><div class="title">Compras</div><div class="sub">Seguimiento a tus solicitudes de compra</div></div>
-            <div class="arrow">›</div>
-            <span id="estatus-badge" class="hidden" style="position:absolute;top:8px;right:34px;display:flex;gap:4px;align-items:center;"></span>
-          </a>
-          <a class="card" href="#" data-form="mantestatus">
-            <div class="icon icon-form">🔧</div>
-            <div class="text"><div class="title">Mantenimiento</div><div class="sub">Etapas, seguimiento e historial</div></div>
-            <div class="arrow">›</div>
-            <span id="mantestatus-badge" class="hidden" style="position:absolute;top:8px;right:34px;display:flex;gap:4px;align-items:center;"></span>
           </a>
         </div>
 
@@ -1003,6 +1016,21 @@
             </div>
             <textarea class="t-detail hidden" data-for="t-personal" data-ph-ok="Faltas, tardanzas, horas extra — quién, qué, por qué (opcional)" data-ph-problema="Describe faltas, tardanzas, horas extra, cambios — quién, qué, por qué" placeholder="Faltas, tardanzas, horas extra — quién, qué, por qué"></textarea>
           </div>
+          <!-- Horas y faltas sits DIRECTLY under Personal (Ben 2026-09-23) so attendance
+               adjustments group with the person they concern, ahead of Servicio. -->
+          <div class="form-subhead">Horas y faltas</div>
+          <div class="field">
+            <div class="horas-rows" id="b-horas-rows"></div>
+            <button type="button" class="horas-add" id="b-horas-add">＋ Agregar persona</button>
+          </div>
+          <!-- Tardanza (Ben 2026-09-23): pick the person, tap the minutes they were late,
+               and give the reason. Minutes are a CHOICE, not free text, so captains do not
+               have to type them on a phone; "Otra" reveals a custom number. -->
+          <div class="field">
+            <label>Tardanza <span style="color:var(--muted);font-size:0.8rem;">(minutos de retraso)</span></label>
+            <div class="horas-rows" id="b-tarde-rows"></div>
+            <button type="button" class="horas-add" id="b-tarde-add">＋ Agregar persona</button>
+          </div>
           <div class="field"><label>Servicio <span style="color:var(--muted);font-size:0.8rem;">(atención, tiempos de mesa)</span></label>
             <div class="radio-group">
               <label><input type="radio" name="t-servicio" value="ok"><span>✅</span></label>
@@ -1010,12 +1038,6 @@
               <label><input type="radio" name="t-servicio" value="problema"><span>⚠️ + nota</span></label>
             </div>
             <textarea class="t-detail hidden" data-for="t-servicio" data-ph-ok="Servicio, atención, tiempos de mesa — nota (opcional)" data-ph-problema="Problema de servicio — qué pasó, quién, cómo se resolvió" placeholder="Servicio, atención, tiempos de mesa"></textarea>
-          </div>
-          <div class="form-subhead">Horas y faltas</div>
-          <div class="field">
-            <label>Horas <span style="color:var(--muted);font-size:0.8rem;">(opcional — ajustes o extras por persona)</span></label>
-            <div class="horas-rows" id="b-horas-rows"></div>
-            <button type="button" class="horas-add" id="b-horas-add">＋ Agregar persona</button>
           </div>
           <div class="form-subhead">Producto</div>
           <div class="field"><label>Comida <span style="color:var(--muted);font-size:0.8rem;">(calidad, faltantes, cocina)</span></label>
@@ -1679,7 +1701,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.5";
+  const APP_VERSION = "v0.209.6";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -2058,10 +2080,19 @@
   }
   initTheme();
 
+  // ── Brand lockup: the Nudo wordmark SVG (in <h1>) + "Hub" beneath it = "Nudo Hub"
+  // (Ben 2026-09-23). Centralised so NOTHING can leave the header saying "Bienvenido".
+  function brandHub() {
+    const el = $('header-sub');
+    if (!el) return;
+    el.textContent = 'Hub';
+    el.classList.add('brand-hub');
+  }
+
   function showLogin() {
     views.login.classList.remove('hidden'); views.app.classList.add('hidden'); showBottomTabs(false);
     const ub = $('userbar'); if (ub) ub.classList.add('hidden'); // header card back to pre-login shape
-    const hs = $('header-sub'); if (hs) hs.textContent = 'Acceso del equipo';
+    const hs = $('header-sub'); if (hs) brandHub();
     currentProfile = null;
     const un = $('user-name'); if (un) un.textContent = 'Equipo';
     // v0.134: scrub the access codes out of the DOM on logout — these are shared
@@ -2470,7 +2501,10 @@
         }
       }
     }
-    $('header-sub').textContent = 'Bienvenido';
+    // The header subtitle is now the brand suffix "Hub" (Ben 2026-09-23). It no longer
+    // changes per state — do NOT overwrite it with 'Bienvenido'. `brandHub()` re-asserts
+    // it so a stale client or an earlier writer cannot leave the header inconsistent.
+    brandHub();
     // Role-gate the Bitácora card: only Dueño, Capitán, Gerente see it
     const allowed = ['Dueño', 'Capitán', 'Gerente'];
     const roleGroup = planRoleGroup(role);
@@ -2728,6 +2762,7 @@
       propinas_detalle: (pdet && pdet.value) || '',
       temas: temas,
       horas: readHoras(),        // v0.173 — sobrevive recarga como el resto del borrador
+      tardanzas: readTardanzas(),  // v0.209.6 — misma garantía que horas
       notas: (($('b-notas') || {}).value) || ''
     };
   }
@@ -2777,6 +2812,17 @@
         if (mb) mb.value = h.motivo;
       }
     });
+    // Tardanzas: rebuilt through the SAME addTardeRow()/helpers the form uses, so a
+    // restored draft cannot diverge from a freshly-typed one.
+    clearTardanzas();
+    (d.tardanzas || []).forEach(t => {
+      if (!t || !t.nombre) return;
+      const row = addTardeRow(t.nombre, t.minutos);
+      if (row && t.motivo) {
+        const mb = row.querySelector('.horas-motivo');
+        if (mb) mb.value = t.motivo;
+      }
+    });
     const pbox = document.querySelector('#form-bitacora textarea[data-for="b-propinas"]');
     if (pbox) {
       pbox.value = d.propinas_detalle || '';
@@ -2801,6 +2847,7 @@
     const pn = document.querySelector('#form-bitacora input[name="b-propinas"][value="normal"]');
     if (pn) pn.checked = true;
     clearHoras();   // v0.173
+    clearTardanzas();   // v0.209.6 — same reset guarantee
     const conf = $('b-confirm'); if (conf) conf.checked = false;
     if (typeof bitacoraReadiness === 'function') bitacoraReadiness();
   }
@@ -5919,6 +5966,17 @@
     const _horas = readHoras();
     if (_horas.length) { temas.personal.horas = _horas; }
 
+    // Tardanza validation before anything is written: minutes AND reason are required,
+    // and the captain is told exactly which person is missing which (same contract as
+    // the Horas motivo check above).
+    const _tardeFalta = tardanzaFaltantes();
+    if (_tardeFalta.length) {
+      showMsg($('b-msg'), 'Tardanza incompleta: ' + _tardeFalta.join(', '), 'err');
+      return;
+    }
+    const _tardanzas = readTardanzas();
+    if (_tardanzas.length) { temas.personal.tardanzas = _tardanzas; }
+
     const isSunday = new Date().getDay() === 0;
     const montoEl = $('b-empleados-monto');
     const montoVal = montoEl && montoEl.value !== '' ? parseFloat(montoEl.value) : null;
@@ -5952,6 +6010,13 @@
       // Last item is the detail so a long reason wraps rather than crowding the hours.
       return [h.nombre, parts.join(' · ')];
     });
+    // Tardanzas in the review modal — Ben's rule: the captain confirms what they typed
+    // BEFORE it is sent, so a tardanza must be visible here like every other field.
+    const _tardeReview = readTardanzas().map(t => {
+      const parts = [t.minutos + ' min'];
+      if (t.motivo) parts.push(t.motivo);
+      return [t.nombre, parts.join(' · ')];
+    });
     const rows = [
       ['Sucursal', sucursal.value],
       ['Afluencia', afluencia.value],
@@ -5959,6 +6024,7 @@
       ...themeRows,
       ...reviewRowsExtra,
       ..._horasReview,
+      ..._tardeReview,
       ['Propinas', propinas === 'normal' ? '✅ Normales' : (propinasDetalle ? `⚠️ Irregulares — ${propinasDetalle}` : '⚠️ Irregulares')],
       ['Notas', notas || '—'],
       ['Foto', bPhoto ? bPhoto.name : '—'],
@@ -6217,6 +6283,142 @@
   // picking a name must not spawn the next person automatically).
   const _horasAdd = $('b-horas-add');
   if (_horasAdd) _horasAdd.addEventListener('click', () => addHorasRow());
+
+  // ── TARDANZA (Ben 2026-09-23) ────────────────────────────────────────────────
+  // "so they can select someone and indicate how many minutes they were late for,
+  //  5, 10, 15, 30, custom, and reason"
+  // Minutes are CHIPS (not a free-text field) so a captain on a phone taps instead of
+  // typing; "Otra" reveals a number box for anything else. Reason is required, matching
+  // the Horas rule — a tardanza with no reason is not actionable.
+  const TARDE_CHIPS = [5, 10, 15, 30];
+  const TARDE_MAX = 1440;                  // 24h — a guard, not a business rule
+
+  function tardeRowHTML(sel, minutos) {
+    const v = (typeof minutos === 'number' && !isNaN(minutos)) ? Math.trunc(minutos) : 0;
+    const custom = v > 0 && TARDE_CHIPS.indexOf(v) === -1;
+    return `
+      <div class="horas-row tarde-row" data-min="${v}" data-custom="${custom ? 1 : 0}">
+        <div class="horas-top">
+          <select class="horas-who">${horasOptions(sel, currentBitacoraSucursal())}</select>
+          <button type="button" class="horas-del" title="Quitar">✕</button>
+        </div>
+        <div class="horas-chips">
+          ${TARDE_CHIPS.map(c => `<button type="button" class="horas-chip" data-min="${c}">${c} min</button>`).join('')}
+          <button type="button" class="horas-chip" data-min="otra">Otra</button>
+          <span class="horas-val tarde-val"></span>
+        </div>
+        <input type="number" class="tarde-custom ${custom ? '' : 'hidden'}" inputmode="numeric"
+               min="1" max="${TARDE_MAX}" step="1" placeholder="Minutos (ej. 7)"
+               value="${custom ? v : ''}" style="margin-top:8px;width:100%;min-height:44px;">
+        <textarea class="horas-motivo" placeholder="Motivo (obligatorio)" style="margin-top:8px;min-height:52px;"></textarea>
+      </div>`;
+  }
+
+  function addTardeRow(sel, minutos) {
+    const wrap = $('b-tarde-rows');
+    if (!wrap) return;
+    const div = document.createElement('div');
+    div.innerHTML = tardeRowHTML(sel || '', minutos);
+    const row = div.firstElementChild;
+    wrap.appendChild(row);
+    wireTardeRow(row);
+    tardeSetDisplay(row);
+    return row;
+  }
+
+  function wireTardeRow(row) {
+    row.querySelectorAll('.horas-chip').forEach(b => {
+      b.addEventListener('click', () => {
+        if (b.getAttribute('data-min') === 'otra') {
+          row.setAttribute('data-custom', '1');
+          const inp = row.querySelector('.tarde-custom');
+          if (inp) { inp.classList.remove('hidden'); if (!inp.value) inp.focus(); }
+          // A custom row has no value until the number is typed — clear any chip pick.
+          row.setAttribute('data-min', '0');
+          tardeSetDisplay(row);
+          return;
+        }
+        const n = parseInt(b.getAttribute('data-min'), 10);
+        if (isNaN(n)) return;
+        row.setAttribute('data-min', String(n));
+        row.removeAttribute('data-custom');
+        const inp = row.querySelector('.tarde-custom');
+        if (inp) { inp.value = ''; inp.classList.add('hidden'); }
+        tardeSetDisplay(row);
+      });
+    });
+    const inp = row.querySelector('.tarde-custom');
+    if (inp) {
+      inp.addEventListener('input', () => {
+        const n = parseInt(inp.value, 10);
+        row.setAttribute('data-min', (isNaN(n) || n < 1) ? '0' : String(Math.min(n, TARDE_MAX)));
+        tardeSetDisplay(row);
+      });
+      // A blank custom box must not silently read as "on time".
+      inp.addEventListener('blur', () => {
+        if (inp.value === '') { row.setAttribute('data-custom', '1'); row.setAttribute('data-min', '0'); tardeSetDisplay(row); }
+      });
+    }
+    const del = row.querySelector('.horas-del');
+    if (del) del.addEventListener('click', () => row.remove());
+  }
+
+  function tardeSetDisplay(row) {
+    const v = Math.trunc(parseFloat(row.getAttribute('data-min')) || 0);
+    const span = row.querySelector('.tarde-val');
+    if (span) span.textContent = v > 0 ? v + ' min' : '—';
+    row.querySelectorAll('.horas-chip').forEach(c => {
+      const isCustom = c.getAttribute('data-min') === 'otra';
+      const n = parseInt(c.getAttribute('data-min'), 10);
+      c.classList.toggle('sel', isCustom
+        ? row.getAttribute('data-custom') === '1'
+        : (n === v && v > 0));
+    });
+  }
+
+  function readTardanzas() {
+    const wrap = $('b-tarde-rows');
+    if (!wrap) return [];
+    const out = [];
+    wrap.querySelectorAll('.tarde-row').forEach(row => {
+      const nombre = (row.querySelector('.horas-who') || {}).value || '';
+      if (!nombre) return;
+      const minutos = Math.trunc(parseFloat(row.getAttribute('data-min')) || 0);
+      const motivo = ((row.querySelector('.horas-motivo') || {}).value || '').trim();
+      if (!minutos && !motivo) return;          // untouched row is not an entry
+      const e = { nombre };
+      if (minutos) e.minutos = minutos;
+      if (motivo) e.motivo = motivo;
+      out.push(e);
+    });
+    return out;
+  }
+
+  // Tardanza always needs a reason AND a number — a delay you cannot action is noise.
+  function tardanzaFaltantes() {
+    const wrap = $('b-tarde-rows');
+    if (!wrap) return [];
+    const out = [];
+    wrap.querySelectorAll('.tarde-row').forEach(row => {
+      const nombre = (row.querySelector('.horas-who') || {}).value || '';
+      if (!nombre) return;
+      const minutos = Math.trunc(parseFloat(row.getAttribute('data-min')) || 0);
+      const motivo = ((row.querySelector('.horas-motivo') || {}).value || '').trim();
+      if (!minutos) { out.push(`${nombre} (minutos)`); return; }
+      if (!motivo) out.push(`${nombre} (motivo)`);
+    });
+    return out;
+  }
+
+  function clearTardanzas() {
+    const wrap = $('b-tarde-rows');
+    if (wrap) wrap.innerHTML = '';
+  }
+
+  // Same rule as Horas: a row appears only on tap, so choosing a name never spawns
+  // the next person automatically.
+  const _tardeAdd = $('b-tarde-add');
+  if (_tardeAdd) _tardeAdd.addEventListener('click', () => addTardeRow());
 
   // ---- ENTREVISTAS ----
   $('i-submit').addEventListener('click', async () => {

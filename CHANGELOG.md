@@ -5,6 +5,21 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
+## [v0.209.6] - 2026-09-23
+
+### Añadido (Added)
+- **Tardanza** en Bitácora: elige a la persona y toca los minutos de retraso — **5, 10, 15, 30 u Otra** (esta última abre un campo para escribir los minutos). El **motivo es obligatorio**, igual que en Horas y faltas.
+  - La tardanza capturada aparece en la revisión previa al envío y en el resumen (WhatsApp y correo). Antes de este cambio, las horas y faltas se guardaban pero **nunca se mostraban en el resumen** — ahora sí.
+
+### Cambiado (Changed)
+- **Orden de la Bitácora**: *Horas y faltas* y *Tardanza* ahora van **justo debajo de Personal**, antes de Servicio, para que los temas de asistencia queden agrupados con la persona a la que se refieren.
+- **Se quitó el rótulo "Horas (opcional — ajustes o extras por persona)"**; la sección queda solo con el botón *＋ Agregar persona*.
+- **Encabezado**: el logotipo oficial *Nudo* ahora se lee junto con **Hub** en texto normal debajo, formando "Nudo Hub". Reemplaza a "Bienvenido" (y a "Acceso del equipo" antes de iniciar sesión).
+- **Inicio**: el bloque **Guía** se movió **debajo** del bloque **Seguimiento**.
+
+---
+
+
 ## [v0.209.5] - 2026-09-23
 
 ### Cambiado (Changed)
