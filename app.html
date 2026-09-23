@@ -575,6 +575,7 @@
   /* [icon-button] tooltip */
   .ico-btn { position: relative; }
   .ico-btn:hover::after { content: attr(aria-label); position: absolute; top: -34px; left: 50%; transform: translateX(-50%); background: #222; color: #fff; font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 99; }
+  .estatus-filter-btn.active { background: var(--ink) !important; color: var(--card) !important; font-weight: 700 !important; }
 
   /* Review-before-submit modal */
   .review-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
@@ -1110,6 +1111,13 @@
             </div>
           </div>
           <div class="field hidden" id="m-sucursal-otra-wrap"><input type="text" id="m-sucursal-otra" placeholder="¿Cuál sucursal? Ej. Reforma" style="width:100%;font-size:16px;"></div>
+          <div class="field">
+            <label>¿Qué es? (equipo / punto)</label>
+            <select id="m-asset" style="width:100%;font-size:16px;min-height:44px;">
+              <option value="new">➕ Nuevo — describir</option>
+            </select>
+            <input type="text" id="m-asset-new" placeholder="Nombre del equipo o punto (ej. Extractor, Freidora)" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;margin-top:8px;">
+          </div>
           <div class="field"><label>Área / equipo</label><input type="text" id="m-area" placeholder="Ej. Barra, Caja, Terminales, Cocina, Baño…" style="width:100%"></div>
           <div class="field"><label>Describe el problema <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label><textarea id="m-desc" placeholder="¿Qué se descompuso? ¿Desde cuándo?"></textarea></div>
           <div class="field"><label>Notas / comentarios <span style="color:var(--muted);font-size:0.8rem;">(opcional)</span></label><textarea id="m-notes" placeholder="Detalles extra: refacción tentativa, proveedor, costos…"></textarea></div>
@@ -1126,6 +1134,7 @@
           <button class="btn" id="m-submit">Revisar antes de enviar</button>
           <div class="msg hidden" id="m-msg"></div>
         </div>
+        <div id="m-assets-list"></div>
       </div>
 
       <div id="form-compras" class="form-page">
@@ -1333,6 +1342,10 @@
         <div class="form-card">
           <h2>📋 Seguimiento de solicitudes</h2>
           <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">Mantenimiento y compras enviadas desde la app.</p>
+          <div id="estatus-filter-bar" style="display:flex;gap:8px;margin-bottom:14px;">
+            <button type="button" class="btn btn-secondary estatus-filter-btn active" data-estatus-filter="todos" style="flex:1;min-height:44px;font-size:16px;margin:0;">Todos</button>
+            <button type="button" class="btn btn-secondary estatus-filter-btn" data-estatus-filter="abiertos" style="flex:1;min-height:44px;font-size:16px;margin:0;">🔴 Abiertos</button>
+          </div>
           <div id="estatus-msg" class="msg hidden"></div>
           <div id="estatus-list"></div>
         </div>
@@ -1572,6 +1585,48 @@
         </div>
       </div>
 
+      <!-- MANTENIMIENTO ASSET STORYLINE MODAL (v0.209) -->
+      <div class="review-modal hidden" id="maint-asset-modal" style="z-index:75;">
+        <div class="review-box" style="max-height:85vh;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <h3 id="maint-asset-title" style="margin:0;font-size:1.05rem;">🔧 Historial de equipo</h3>
+            <button type="button" class="btn btn-outline" id="maint-asset-close-top" style="margin:0;padding:4px 10px;font-size:0.8rem;min-height:36px;min-width:36px;">✕</button>
+          </div>
+          <div class="review-body" id="maint-asset-body" style="overflow-y:auto;flex:1;"></div>
+          <div class="review-actions" style="margin-top:12px;">
+            <button type="button" class="btn btn-outline" id="maint-asset-close" style="margin:0;min-height:44px;font-size:16px;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANTENIMIENTO COMPLETION MODAL (v0.209) -->
+      <div class="review-modal hidden" id="maint-complete-modal" style="z-index:80;">
+        <div class="review-box">
+          <h3>✅ Completar mantenimiento</h3>
+          <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">Registra el costo y quién realizó la reparación (opcional).</p>
+          <div class="field">
+            <label>Costo (MXN)</label>
+            <input id="mc-cost" type="number" min="0" step="0.01" placeholder="Ej. 1500" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+          </div>
+          <div class="field">
+            <label>Quién lo reparó</label>
+            <input id="mc-repairer" type="text" placeholder="Nombre del técnico o persona" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+          </div>
+          <div class="field">
+            <label>Proveedor / taller</label>
+            <input id="mc-vendor" type="text" placeholder="Taller, empresa o tienda" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+          </div>
+          <div class="field">
+            <label>Qué se hizo</label>
+            <textarea id="mc-resolution" placeholder="Detalle de la reparación o solución aplicada" style="width:100%;font-size:16px;min-height:80px;box-sizing:border-box;"></textarea>
+          </div>
+          <div class="review-actions" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+            <button type="button" class="btn" id="mc-save" style="margin:0;min-height:44px;font-size:16px;width:100%;">Guardar y completar</button>
+            <button type="button" class="btn btn-outline" id="mc-dismiss" style="margin:0;min-height:44px;font-size:16px;width:100%;">Completar sin datos</button>
+          </div>
+        </div>
+      </div>
+
       <!-- CHANGELOG / NOVEDADES MODAL (v0.138) -->
       <div class="review-modal hidden" id="changelog-modal">
         <div class="review-box" style="max-height:85vh;display:flex;flex-direction:column;">
@@ -1597,7 +1652,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.208";
+  const APP_VERSION = "v0.209";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -1611,6 +1666,56 @@
     const num = Number(val);
     if (isNaN(num)) return '—';
     return '$' + num.toLocaleString('es-MX') + ' MXN';
+  }
+
+  // Pure helpers for maintenance tracking (v0.209)
+  function formatAvgGapDays(val, totalRequests) {
+    if (val == null || val === '' || isNaN(Number(val))) return '—';
+    if (totalRequests != null && totalRequests < 2) return '—';
+    const num = Number(val);
+    if (num <= 0) return '—';
+    const displayNum = Math.round(num * 10) / 10;
+    return `cada ~${displayNum} ${displayNum === 1 ? 'día' : 'días'}`;
+  }
+
+  function formatDiasAbierto(createdAt, now = Date.now()) {
+    if (!createdAt) return '—';
+    const t = new Date(createdAt).getTime();
+    if (isNaN(t)) return '—';
+    const nowMs = typeof now === 'number' ? now : new Date(now).getTime();
+    const ms = Math.max(0, nowMs - t);
+    const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+    return days === 1 ? '1 día abierto' : `${days} días abierto`;
+  }
+
+  function formatDuration(createdAt, completedAt) {
+    if (!completedAt) return 'abierto';
+    // new Date(null).getTime() === 0 (epoch), NOT NaN — so the isNaN guard below would
+    // miss a null createdAt and render ~20720 días. Guard the falsy value explicitly.
+    if (!createdAt) return '—';
+    const tStart = new Date(createdAt).getTime();
+    const tEnd = new Date(completedAt).getTime();
+    if (isNaN(tStart) || isNaN(tEnd)) return '—';
+    const ms = Math.max(0, tEnd - tStart);
+    const days = Math.round(ms / (1000 * 60 * 60 * 24));
+    return `${days} ${days === 1 ? 'día' : 'días'}`;
+  }
+
+  function formatDaysToFix(val) {
+    if (val == null || val === '' || isNaN(Number(val))) return '—';
+    const num = Number(val);
+    if (num < 0) return '—';
+    const rounded = Math.round(num * 10) / 10;
+    const displayNum = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+    return `~${displayNum} ${displayNum === 1 ? 'día' : 'días'} en reparar`;
+  }
+
+  const TERMINAL_STATUSES = ['Entregado', 'Completado', 'Resuelto', 'Cancelado'];
+  function isOpenRequestRow(r) {
+    if (!r) return false;
+    if (TERMINAL_STATUSES.includes(r.status)) return false;
+    if (r.completed_at != null && r.completed_at !== '') return false;
+    return true;
   }
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -2722,6 +2827,7 @@
       $('form-' + f).classList.add('active');
       if (f === 'horario') loadSchedule();
       if (f === 'estatus') loadEstatus();
+      if (f === 'mantenimiento') loadMaintenanceAssets();
       if (f === 'entrevistas') { loadEntrevistas(); loadPanelistRoster(); if (window.__slidePuestoReposition) window.__slidePuestoReposition(); }
       if (f === 'entrevistados') { loadEntrevistados(); }
       if (f === 'usuarios') { loadUsuarios(); loadRoleOptions(); }
@@ -3944,6 +4050,401 @@
     return r.kind === 'comp' ? r.status === 'Entregado' : r.status === 'Completado';
   }
 
+  const resolveCurrentUserName = async () => {
+    let name = (currentProfile && currentProfile.name) || '';
+    let uid = (currentProfile && currentProfile.id) || null;
+    if (!name || !uid) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          uid = uid || user.id;
+          const { data: p } = await supabase.from('profiles').select('name').eq('id', user.id).maybeSingle();
+          name = (p && p.name) || user.email || '';
+        }
+      } catch (err) { nudoWarn('attribution', err); }
+    }
+    if (!name) {
+      nudoWarn('attribution', 'no name resolvable — entry will read as unattributed');
+    }
+    return {
+      by: uid || '00000000-0000-0000-0000-000000000000',
+      by_name: name || '— sin identificar —'
+    };
+  };
+
+  // ---- MANTENIMIENTO ASSETS & STORYLINE (v0.209) ----
+  let allAssetsCache = [];
+  let allAssetHistoryCache = [];
+  async function loadMaintenanceAssets() {
+    try {
+      const { data: histData, error: hErr } = await supabase
+        .from('maintenance_asset_history')
+        .select('*')
+        .order('name');
+      if (!hErr && histData && histData.length) {
+        allAssetHistoryCache = histData;
+        allAssetsCache = histData.map(h => ({
+          id: h.asset_id,
+          branch: h.branch,
+          name: h.name,
+          area: h.area,
+          active: h.active,
+          total_requests: h.total_requests,
+          open_requests: h.open_requests,
+          avg_gap_days: h.avg_gap_days,
+          avg_days_to_fix: h.avg_days_to_fix,
+          total_cost: h.total_cost,
+          avg_cost: h.avg_cost
+        }));
+      } else {
+        const { data: assetsData } = await supabase
+          .from('maintenance_assets')
+          .select('*')
+          .order('name');
+        if (assetsData) {
+          allAssetsCache = assetsData;
+        }
+      }
+    } catch (err) {
+      nudoWarn('loadMaintenanceAssets', err);
+    }
+    updateMaintenanceAssetPicker();
+    renderMaintenanceAssetsList();
+  }
+
+  function updateMaintenanceAssetPicker() {
+    const assetSel = $('m-asset');
+    const assetNew = $('m-asset-new');
+    if (!assetSel) return;
+    const sucursalRadio = document.querySelector('input[name="m-sucursal"]:checked');
+    const branch = sucursalRadio ? sucursalRadio.value : '';
+
+    if (!branch || branch === 'Otra') {
+      assetSel.innerHTML = '<option value="new">➕ Nuevo — describir</option>';
+      assetSel.value = 'new';
+      if (assetNew) assetNew.classList.remove('hidden');
+      return;
+    }
+
+    const branchAssets = allAssetsCache.filter(a => a.branch === branch && (a.active !== false));
+    let html = '<option value="new">➕ Nuevo — describir</option>';
+    branchAssets.forEach(a => {
+      const areaSuffix = a.area ? ` (${esc(a.area)})` : '';
+      html += `<option value="${escAttr(a.id)}">${esc(a.name)}${areaSuffix}</option>`;
+    });
+    assetSel.innerHTML = html;
+
+    if (assetSel.value === 'new') {
+      if (assetNew) assetNew.classList.remove('hidden');
+    } else {
+      if (assetNew) assetNew.classList.add('hidden');
+    }
+  }
+
+  function renderMaintenanceAssetsList() {
+    const container = $('m-assets-list');
+    if (!container) return;
+    const sucursalRadio = document.querySelector('input[name="m-sucursal"]:checked');
+    const branch = sucursalRadio ? sucursalRadio.value : '';
+    if (!branch || branch === 'Otra') {
+      container.innerHTML = '';
+      return;
+    }
+    const branchAssets = allAssetsCache.filter(a => a.branch === branch && (a.active !== false));
+    if (!branchAssets.length) {
+      container.innerHTML = '';
+      return;
+    }
+    let html = `
+      <div class="section-title" style="margin-top:24px;">🔧 Equipos y puntos</div>
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">Equipos y puntos con mantenimiento en ${esc(branch)}. Toca para ver su historial.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+    `;
+    branchAssets.forEach(a => {
+      const total = a.total_requests || 0;
+      const vecesStr = total === 1 ? '1 vez' : `${total} veces`;
+      const gapStr = formatAvgGapDays(a.avg_gap_days, total);
+      const openBadge = (a.open_requests > 0)
+        ? `<span style="background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">🔴 ${a.open_requests} abierto${a.open_requests === 1 ? '' : 's'}</span>`
+        : '';
+      html += `
+        <div class="asset-card" data-open-asset="${escAttr(a.id)}" style="border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--card);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:0.95rem;color:var(--ink);">${esc(a.name)}</div>
+            <div style="font-size:0.82rem;color:var(--muted);margin-top:2px;">
+              ${esc(a.area || 'General')} · ${vecesStr} · ${gapStr}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${openBadge}
+            <span style="color:var(--accent);font-size:1.1rem;font-weight:600;">›</span>
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // ---- MANTENIMIENTO COMPLETION MODAL LOGIC ----
+  const maintCompleteModal = $('maint-complete-modal');
+  let _maintCompleteReqId = null;
+  let _maintCompleteOnDone = null;
+  let _maintCompleteResolved = false;
+
+  async function finishMaintComplete(data) {
+    if (_maintCompleteResolved || !_maintCompleteReqId) return;
+    _maintCompleteResolved = true;
+    const reqId = _maintCompleteReqId;
+    const onDone = _maintCompleteOnDone;
+    _maintCompleteReqId = null;
+    _maintCompleteOnDone = null;
+    if (maintCompleteModal) maintCompleteModal.classList.add('hidden');
+
+    let authorName = 'Personal';
+    let authorId = null;
+    try {
+      const { by, by_name } = await resolveCurrentUserName();
+      authorId = by; authorName = by_name;
+    } catch (e) {
+      nudoWarn('finishMaintComplete', e);
+    }
+
+    const nowIso = new Date().toISOString();
+    const updatePayload = {
+      status: 'Completado',
+      outcome: 'completado',
+      completed_at: nowIso
+    };
+    if (data && data.cost != null && !isNaN(Number(data.cost))) {
+      updatePayload.cost = Number(data.cost);
+    }
+    if (data && data.repairer_name) updatePayload.repairer_name = data.repairer_name;
+    if (data && data.vendor_name) updatePayload.vendor_name = data.vendor_name;
+    if (data && data.resolution_notes) updatePayload.resolution_notes = data.resolution_notes;
+
+    try {
+      const { data: curRow } = await supabase.from('maintenance_requests').select('follow_ups').eq('id', reqId).maybeSingle();
+      const cur = (curRow && curRow.follow_ups) || [];
+      const noteText = data && data.resolution_notes
+        ? `Marcado como Completado: ${data.resolution_notes}`
+        : 'Marcado como Completado';
+      updatePayload.follow_ups = [...cur, { at: nowIso, by: authorId, by_name: authorName, text: noteText, kind: 'followup' }];
+    } catch (e) {
+      nudoWarn('finishMaintComplete:follow_ups', e);
+    }
+
+    const { error } = await supabase.from('maintenance_requests').update(updatePayload).eq('id', reqId);
+    if (error) {
+      showMsg($('estatus-msg'), 'Error al completar: ' + error.message, 'err');
+      return;
+    }
+    toast('✅ Mantenimiento completado');
+    if (onDone) onDone();
+    else loadEstatus();
+  }
+
+  function openMaintCompletionModal(requestId, onDone) {
+    if (!maintCompleteModal) return;
+    _maintCompleteReqId = requestId;
+    _maintCompleteOnDone = onDone;
+    _maintCompleteResolved = false;
+    $('mc-cost').value = '';
+    $('mc-repairer').value = '';
+    $('mc-vendor').value = '';
+    $('mc-resolution').value = '';
+    maintCompleteModal.classList.remove('hidden');
+  }
+
+  if ($('mc-save')) {
+    $('mc-save').addEventListener('click', () => {
+      const costRaw = $('mc-cost').value.trim();
+      const numCost = costRaw ? parseFloat(costRaw) : null;
+      finishMaintComplete({
+        cost: (numCost != null && !isNaN(numCost)) ? numCost : null,
+        repairer_name: $('mc-repairer').value.trim() || null,
+        vendor_name: $('mc-vendor').value.trim() || null,
+        resolution_notes: $('mc-resolution').value.trim() || null
+      });
+    });
+  }
+
+  if ($('mc-dismiss')) {
+    $('mc-dismiss').addEventListener('click', () => {
+      finishMaintComplete(null);
+    });
+  }
+
+  if (maintCompleteModal) {
+    maintCompleteModal.addEventListener('click', e => {
+      if (e.target === maintCompleteModal) {
+        finishMaintComplete(null);
+      }
+    });
+  }
+
+  // ---- MANTENIMIENTO ASSET STORYLINE MODAL LOGIC ----
+  const maintAssetModal = $('maint-asset-modal');
+  function closeAssetStoryline() {
+    if (maintAssetModal) maintAssetModal.classList.add('hidden');
+  }
+  if ($('maint-asset-close')) $('maint-asset-close').addEventListener('click', closeAssetStoryline);
+  if ($('maint-asset-close-top')) $('maint-asset-close-top').addEventListener('click', closeAssetStoryline);
+  if (maintAssetModal) {
+    maintAssetModal.addEventListener('click', e => {
+      if (e.target === maintAssetModal) closeAssetStoryline();
+    });
+  }
+
+  async function openAssetStoryline(assetId) {
+    if (!assetId || !maintAssetModal) return;
+    maintAssetModal.classList.remove('hidden');
+    const bodyEl = $('maint-asset-body');
+    const titleEl = $('maint-asset-title');
+    titleEl.textContent = '🔧 Historial de equipo';
+    bodyEl.innerHTML = '<p style="color:var(--muted);padding:16px;">Cargando historial…</p>';
+
+    let hist = null;
+    try {
+      const { data: hData } = await supabase
+        .from('maintenance_asset_history')
+        .select('*')
+        .eq('asset_id', assetId)
+        .maybeSingle();
+      hist = hData;
+    } catch (e) {
+      nudoWarn('openAssetStoryline:history', e);
+    }
+
+    let asset = null;
+    try {
+      const { data: aData } = await supabase
+        .from('maintenance_assets')
+        .select('*')
+        .eq('id', assetId)
+        .maybeSingle();
+      asset = aData;
+    } catch (e) {
+      nudoWarn('openAssetStoryline:asset', e);
+    }
+
+    const { data: reqs, error: rErr } = await supabase
+      .from('maintenance_requests')
+      .select('*')
+      .eq('asset_id', assetId)
+      .order('created_at', { ascending: false });
+
+    if (rErr) {
+      bodyEl.innerHTML = `<p style="color:var(--red);padding:16px;">Error al cargar solicitudes: ${esc(rErr.message)}</p>`;
+      return;
+    }
+
+    const submitterIds = [...new Set((reqs || []).map(r => r.submitted_by).filter(Boolean))];
+    let nameById = {};
+    if (submitterIds.length) {
+      const { data: people } = await supabase
+        .from('profiles').select('id, name').in('id', submitterIds);
+      (people || []).forEach(p => { nameById[p.id] = p.name; });
+    }
+
+    const assetName = (hist && hist.name) || (asset && asset.name) || 'Equipo';
+    const assetBranch = (hist && hist.branch) || (asset && asset.branch) || '—';
+    const assetArea = (hist && hist.area) || (asset && asset.area) || '—';
+    titleEl.textContent = `🔧 ${assetName}`;
+
+    const totalRequests = (hist && hist.total_requests != null) ? hist.total_requests : (reqs ? reqs.length : 0);
+    const avgGapStr = formatAvgGapDays(hist ? hist.avg_gap_days : null, totalRequests);
+    const avgFixStr = formatDaysToFix(hist ? hist.avg_days_to_fix : null);
+    const totalCostStr = formatMxn(hist ? hist.total_cost : null);
+    const avgCostStr = formatMxn(hist ? hist.avg_cost : null);
+    const openCount = (hist && hist.open_requests != null) ? hist.open_requests : (reqs ? reqs.filter(isOpenRequestRow).length : 0);
+
+    let summaryHtml = `
+      <div style="background:var(--card-bg, #f8f9fa);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <div style="font-weight:700;font-size:1.1rem;color:var(--ink);">${esc(assetName)}</div>
+            <div style="font-size:0.85rem;color:var(--muted);">${esc(assetBranch)} · ${esc(assetArea)}</div>
+          </div>
+          ${openCount > 0 ? `<span style="background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:3px 8px;border-radius:999px;">🔴 ${openCount} abierta${openCount === 1 ? '' : 's'}</span>` : '<span style="background:#e6f4ea;color:#188038;font-weight:700;font-size:0.75rem;padding:3px 8px;border-radius:999px;">🟢 Sin pendientes</span>'}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.82rem;">
+          <div style="background:var(--input-bg, #fff);padding:8px 10px;border-radius:8px;border:1px solid var(--border);">
+            <div style="color:var(--muted);font-size:0.75rem;">Total solicitudes</div>
+            <div style="font-weight:700;font-size:1rem;color:var(--ink);">${totalRequests}</div>
+          </div>
+          <div style="background:var(--input-bg, #fff);padding:8px 10px;border-radius:8px;border:1px solid var(--border);">
+            <div style="color:var(--muted);font-size:0.75rem;">Frecuencia</div>
+            <div style="font-weight:700;font-size:0.95rem;color:var(--ink);">${avgGapStr}</div>
+          </div>
+          <div style="background:var(--input-bg, #fff);padding:8px 10px;border-radius:8px;border:1px solid var(--border);">
+            <div style="color:var(--muted);font-size:0.75rem;">Tiempo en reparar</div>
+            <div style="font-weight:700;font-size:0.95rem;color:var(--ink);">${avgFixStr}</div>
+          </div>
+          <div style="background:var(--input-bg, #fff);padding:8px 10px;border-radius:8px;border:1px solid var(--border);">
+            <div style="color:var(--muted);font-size:0.75rem;">Costo total / prom.</div>
+            <div style="font-weight:700;font-size:0.95rem;color:var(--ink);">${totalCostStr} <span style="font-weight:400;font-size:0.75rem;color:var(--muted);">(${avgCostStr})</span></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (!reqs || !reqs.length) {
+      bodyEl.innerHTML = summaryHtml + '<p style="color:var(--muted);text-align:center;padding:16px;">Sin historial de solicitudes registradas.</p>';
+      return;
+    }
+
+    let timelineHtml = `
+      <div style="font-weight:700;font-size:0.95rem;margin:16px 0 12px;color:var(--ink);">📜 Línea de tiempo (${reqs.length})</div>
+      <div style="position:relative;margin-left:10px;border-left:2px solid var(--border);padding-left:16px;">
+    `;
+
+    reqs.forEach((r) => {
+      const isTerminal = ['Entregado','Completado','Resuelto','Cancelado'].includes(r.status);
+      const dotColor = isTerminal ? '#188038' : '#d93025';
+      const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+      const durStr = formatDuration(r.created_at, r.completed_at);
+      const submitterName = nameById[r.submitted_by] || '—';
+      const statusMetaObj = STATUS_META.mant[r.status] || { label: r.status };
+
+      const photosHtml = (r.photo_urls && r.photo_urls.length)
+        ? `<div style="display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;">${r.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;" onclick="window.open('${escAttr(u)}','_blank')" />`).join('')}</div>`
+        : '';
+
+      const costAndRepairer = [];
+      if (r.cost != null && !isNaN(Number(r.cost))) costAndRepairer.push('💰 ' + formatMxn(r.cost));
+      if (r.repairer_name) costAndRepairer.push('🔧 ' + esc(r.repairer_name));
+      if (r.vendor_name) costAndRepairer.push('🏢 ' + esc(r.vendor_name));
+
+      timelineHtml += `
+        <div style="position:relative;margin-bottom:20px;">
+          <div style="position:absolute;left:-23px;top:4px;width:12px;height:12px;border-radius:50%;background:${dotColor};border:2px solid var(--card);"></div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+              <span style="font-weight:700;font-size:0.9rem;">${esc(dateStr)}</span>
+              <span style="font-size:0.75rem;padding:2px 8px;border-radius:999px;font-weight:700;background:${isTerminal ? '#e6f4ea' : '#fce8e6'};color:${isTerminal ? '#188038' : '#d93025'};">
+                ${esc(statusMetaObj.label)}
+              </span>
+            </div>
+            <div style="font-size:0.8rem;color:var(--muted);margin-bottom:4px;">
+              ⏱️ Duración: <b>${esc(durStr)}</b> ${durStr === 'abierto' ? `(${formatDiasAbierto(r.created_at)})` : ''}
+            </div>
+            ${costAndRepairer.length ? `<div style="font-size:0.82rem;color:var(--ink);font-weight:600;margin-bottom:4px;">${costAndRepairer.join(' · ')}</div>` : ''}
+            ${r.description ? `<div style="font-size:0.85rem;color:var(--ink);margin:4px 0;"><span style="color:var(--muted);">Problema:</span> ${esc(r.description)}</div>` : ''}
+            ${r.resolution_notes ? `<div style="font-size:0.85rem;color:var(--ink);background:var(--frame-bg, rgba(0,0,0,0.03));padding:6px 8px;border-radius:6px;margin:4px 0;"><span style="color:var(--muted);font-weight:600;">Qué se hizo:</span> ${esc(r.resolution_notes)}</div>` : ''}
+            ${photosHtml}
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:6px;">👤 Solicitado por: ${esc(submitterName)}</div>
+          </div>
+        </div>
+      `;
+    });
+    timelineHtml += '</div>';
+
+    bodyEl.innerHTML = summaryHtml + timelineHtml;
+  }
+
+  let estatusFilter = 'todos'; // 'todos' | 'abiertos'
+
   async function loadEstatus() {
     const listEl = $('estatus-list');
     const msgEl = $('estatus-msg');
@@ -3960,7 +4461,7 @@
     // Fetch both request tables (newest first)
     const { data: mant, error: em } = await supabase
       .from('maintenance_requests')
-      .select('id, branch, area, description, notes, priority, status, submitted_by, created_at, photo_urls, service_date, follow_ups, outcome, cancel_reason')
+      .select('id, branch, area, description, notes, priority, status, submitted_by, created_at, photo_urls, service_date, follow_ups, outcome, cancel_reason, asset_id, cost, repairer_name, vendor_name, vendor_requested_at, started_at, completed_at, resolution_notes')
       .order('created_at', { ascending: false });
     const { data: comp, error: ec } = await supabase
       .from('purchases')
@@ -3971,6 +4472,39 @@
       listEl.innerHTML = '';
       return;
     }
+
+    // Also load maintenance assets / history so cards and storyline can use them
+    try {
+      const { data: ahData } = await supabase.from('maintenance_asset_history').select('*');
+      if (ahData && ahData.length) {
+        allAssetHistoryCache = ahData;
+        allAssetsCache = ahData.map(h => ({
+          id: h.asset_id,
+          branch: h.branch,
+          name: h.name,
+          area: h.area,
+          active: h.active,
+          total_requests: h.total_requests,
+          open_requests: h.open_requests,
+          avg_gap_days: h.avg_gap_days,
+          avg_days_to_fix: h.avg_days_to_fix,
+          total_cost: h.total_cost,
+          avg_cost: h.avg_cost
+        }));
+      }
+    } catch (e) {
+      nudoWarn('loadEstatus:asset_history', e);
+    }
+    if (!allAssetsCache.length) {
+      try {
+        const { data: maData } = await supabase.from('maintenance_assets').select('*');
+        if (maData) allAssetsCache = maData;
+      } catch (e) {
+        nudoWarn('loadEstatus:assets', e);
+      }
+    }
+    const assetById = {};
+    (allAssetsCache || []).forEach(a => { assetById[a.id] = a; });
 
     // Normalize to a single array [{kind,label,data,...}]
     const rows = [];
@@ -3985,7 +4519,16 @@
       service_date: r.service_date || null,
       follow_ups: r.follow_ups || [],
       outcome: r.outcome || null,
-      cancel_reason: r.cancel_reason || ''
+      cancel_reason: r.cancel_reason || '',
+      asset_id: r.asset_id || null,
+      asset_name: (r.asset_id && assetById[r.asset_id]) ? assetById[r.asset_id].name : '',
+      cost: (r.cost != null && !isNaN(Number(r.cost))) ? Number(r.cost) : null,
+      repairer_name: r.repairer_name || '',
+      vendor_name: r.vendor_name || '',
+      vendor_requested_at: r.vendor_requested_at || null,
+      started_at: r.started_at || null,
+      completed_at: r.completed_at || null,
+      resolution_notes: r.resolution_notes || ''
     }));
     (comp || []).forEach(r => {
       const amountDetail = (r.amount != null && !isNaN(Number(r.amount)))
@@ -4001,23 +4544,15 @@
         id: r.id, table: 'purchases', submitted_by: r.submitted_by, link: r.link || '',
         photo_urls: r.photo_urls || [], vendor: r.vendor || '', amount: r.amount || null,
         units: r.units || null, amount_per_unit: r.amount_per_unit || null,
-        cancel_reason: r.cancel_reason || ''
+        cancel_reason: r.cancel_reason || '',
+        asset_id: null, asset_name: '', cost: null, repairer_name: '', vendor_name: r.vendor || '',
+        vendor_requested_at: null, started_at: null, completed_at: null, resolution_notes: ''
       });
     });
     rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     // Resolve submitter NAMES in one batch (Ben: "for mantenimiento, cocina roma
     // norte, i can't see who submitted it?").
-    //
-    // The list already selected submitted_by but nothing ever rendered it, and the
-    // name could not be embedded either: maintenance_requests.submitted_by and
-    // purchases.submitted_by carry NO foreign key, and PostgREST can only embed a
-    // related table when it can detect the relationship. So we fetch the profiles
-    // explicitly and map id -> name here.
-    //
-    // Ids that no longer resolve (deactivated profiles, or rows written before
-    // profiles existed) fall back to '—' rather than showing a raw uuid, which
-    // would be worse than nothing.
     const submitterIds = [...new Set(rows.map(r => r.submitted_by).filter(Boolean))];
     let nameById = {};
     if (submitterIds.length) {
@@ -4029,34 +4564,26 @@
 
     // Everyone sees ALL requests (requester visibility); only admins can flip status inline
     const visible = rows;
-    // Cache for the detail modal (no re-fetch on tap)
     estatusRowsCache = visible;
     estatusAdminFlag = isAdmin;
 
+    renderEstatusView();
+  }
+
+  function renderEstatusView() {
+    const listEl = $('estatus-list');
+    if (!listEl) return;
+    const isAdmin = estatusAdminFlag;
+
+    document.querySelectorAll('.estatus-filter-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-estatus-filter') === estatusFilter);
+    });
+
+    const visible = estatusRowsCache;
     if (!visible.length) {
       listEl.innerHTML = '<p style="color:var(--muted);">No hay solicitudes todavía.</p>';
       return;
     }
-
-    // Group by OUTLET (Roma Norte / Del Valle), so the owner sees the
-    // clustering around each branch at a glance. Within each outlet, keep
-    // newest-first. Urgency is shown as a colored badge on every card.
-    // v0.121: completed requests (Compras Entregado / Mantenimiento Completado)
-    // are pulled OUT of the per-outlet groups and rendered in a separate
-    // "Completadas" section at the very bottom (Ben 2026-09-15).
-    const doneRows = visible.filter(isDoneRow);
-    const liveRows = visible.filter(r => !isDoneRow(r));
-    const branchOrder = ['Roma Norte', 'Del Valle'];
-    const groups = {};
-    liveRows.forEach(r => {
-      const key = r.branch || 'Sin sucursal';
-      (groups[key] = groups[key] || []).push(r);
-    });
-    // v0.119: requests with OTHER branches (Mantenimiento 'Otra' free text)
-    // must still render — known branches first, then any other values
-    // alphabetically (Ben). 'Sin sucursal' legacy rows render last if present.
-    Object.keys(groups).filter(b => !branchOrder.includes(b) && b !== 'Sin sucursal').sort().forEach(b => branchOrder.push(b));
-    if (groups['Sin sucursal']) branchOrder.push('Sin sucursal');
 
     // Priority badge color + label (uses the shared PRIO_META map)
     function prioBadge(p) {
@@ -4064,34 +4591,48 @@
       return `<span style="display:inline-block;background:${m.bg};color:${m.c};font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">${m.label}</span>`;
     }
 
-    // v0.121: single card builder shared by per-outlet lists AND the bottom
-    // Completadas section — identical layout/behavior, one source of truth.
-    function estatusCard(r, done) {
+    function estatusCard(r, done, isOpenView) {
       const linkHtml = r.link ? `<div style="margin:6px 0 4px;"><a href="${escAttr(r.link)}" target="_blank" rel="noopener" style="color:var(--accent);font-size:0.9rem;font-weight:600;">🔗 Abrir enlace</a></div>` : '';
       const photosHtml = (r.photo_urls && r.photo_urls.length) ? `<div style="display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;">${r.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" />`).join('')}</div>` : '';
       const statusLabel = statusMeta(r)[r.status] ? statusMeta(r)[r.status].label : esc(r.status);
-      // Strip the leading colored-dot emoji from the status label on the card —
-      // the priority badge already carries the color, so a second colored dot
-      // reads as duplicate status info (Ben 2026-09-09). Only strip when there
-      // IS an emoji prefix (legacy statuses like "Pendiente" have none).
       const statusPlain = /^[^\s]+\s/.test(statusLabel) ? statusLabel.replace(/^[^\s]+\s/, '') : statusLabel;
-      // v0.121: completed cards swap the urgency-colored priority badge for a
-      // neutral green "✓ <status>" pill — a red Urgente badge on a finished
-      // request still reads as alarming (Ben 2026-09-15). Live cards keep the
-      // priority badge + plain status text exactly as before.
       const badgeHtml = done
         ? `<span style="display:inline-block;background:#e6f4ea;color:#188038;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">✓ ${esc(statusPlain)}</span>`
         : prioBadge(r.priority) + `<span style="font-size:0.8rem;color:var(--muted);">${statusPlain}</span>`;
-      // Whole card is tappable -> opens the detail modal
+
+      let assetTagHtml = '';
+      let mantMetaHtml = '';
+      if (r.kind === 'mant') {
+        if (r.asset_id && r.asset_name) {
+          assetTagHtml = ` · <span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer;">🔧 ${esc(r.asset_name)}</span>`;
+        }
+        const parts = [];
+        if (r.cost != null && !isNaN(Number(r.cost))) {
+          parts.push('💰 ' + formatMxn(r.cost));
+        }
+        if (r.repairer_name) {
+          parts.push('🔧 ' + esc(r.repairer_name));
+        }
+        if (isOpenRequestRow(r)) {
+          parts.push(`⏳ ${formatDiasAbierto(r.created_at)}`);
+        }
+        if (parts.length) {
+          mantMetaHtml = `<div style="font-size:0.8rem;color:var(--muted);margin:3px 0;">${parts.join(' · ')}</div>`;
+        }
+      }
+
+      const branchTag = isOpenView ? `<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--input-bg);border:1px solid var(--border);color:var(--ink);font-weight:600;margin-left:6px;">📍 ${esc(r.branch)}</span>` : '';
+
       return `<div class="estatus-card" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card);cursor:pointer;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-            <div style="font-weight:600;flex:1;">${r.typeLabel} · ${esc(r.title)}</div>
+            <div style="font-weight:600;flex:1;">${r.typeLabel} · ${esc(r.title)}${assetTagHtml}${branchTag}</div>
             <div style="font-size:0.8rem;color:var(--muted);white-space:nowrap;">${fmtAgo(r.created_at)}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px;flex-wrap:wrap;">
             ${badgeHtml}
           </div>
           ${r.detail ? `<div style="font-size:0.9rem;color:var(--muted);margin:4px 0;">${esc(r.detail)}</div>` : ''}
+          ${mantMetaHtml}
           ${r.submitter_name ? `<div style="font-size:0.8rem;color:var(--muted);margin:2px 0;">👤 ${esc(r.submitter_name)}</div>` : ''}
           ${linkHtml}
           ${photosHtml}
@@ -4105,19 +4646,57 @@
         </div>`;
     }
 
+    if (estatusFilter === 'abiertos') {
+      const openRows = visible.filter(isOpenRequestRow);
+      openRows.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      const openMant = openRows.filter(r => r.kind === 'mant');
+      const openComp = openRows.filter(r => r.kind === 'comp');
+
+      let html = `
+        <div style="background:var(--frame-bg, rgba(0,0,0,0.03));border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-weight:700;font-size:1rem;color:var(--ink);margin-bottom:4px;">
+            🔴 Solicitudes abiertas (${openRows.length})
+          </div>
+          <div style="font-size:0.85rem;color:var(--muted);">
+            🔧 ${openMant.length} mantenimiento · 🛒 ${openComp.length} compras · ambas sucursales (más antiguas primero)
+          </div>
+        </div>
+      `;
+
+      if (!openRows.length) {
+        html += '<p style="color:var(--muted);text-align:center;padding:16px;">🎉 ¡No hay solicitudes abiertas pendientes!</p>';
+      } else {
+        openRows.forEach(r => {
+          html += estatusCard(r, false, true);
+        });
+      }
+      listEl.innerHTML = html;
+      return;
+    }
+
+    // Default 'todos' view
+    const doneRows = visible.filter(isDoneRow);
+    const liveRows = visible.filter(r => !isDoneRow(r));
+    const branchOrder = ['Roma Norte', 'Del Valle'];
+    const groups = {};
+    liveRows.forEach(r => {
+      const key = r.branch || 'Sin sucursal';
+      (groups[key] = groups[key] || []).push(r);
+    });
+    Object.keys(groups).filter(b => !branchOrder.includes(b) && b !== 'Sin sucursal').sort().forEach(b => branchOrder.push(b));
+    if (groups['Sin sucursal']) branchOrder.push('Sin sucursal');
+
     let html = '';
     branchOrder.forEach(br => {
       const list = groups[br];
       if (!list || !list.length) return;
       html += `<div class="section-title" style="margin-top:6px;">📍 ${esc(br)} <span style="color:var(--muted);font-weight:400;">(${list.length})</span></div>`;
-      list.forEach(r => { html += estatusCard(r, false); });
+      list.forEach(r => { html += estatusCard(r, false, false); });
     });
-    // v0.121: completed requests sit in their own section at the very bottom
     if (doneRows.length) {
       html += `<div class="section-title" style="margin-top:6px;">✅ Completadas <span style="color:var(--muted);font-weight:400;">(${doneRows.length})</span></div>`;
-      doneRows.forEach(r => { html += estatusCard(r, true); });
+      doneRows.forEach(r => { html += estatusCard(r, true, false); });
     }
-
     listEl.innerHTML = html;
   }
 
@@ -4158,8 +4737,12 @@
       if (row.outcome) {
         outcomeFormatted = row.outcome === 'completado' ? 'Completado' : (row.outcome === 'resuelto' ? 'Resuelto' : esc(row.outcome));
       }
+      const assetRowValue = row.asset_id && row.asset_name
+        ? `<span class="mant-asset-tag" data-asset-id="${escAttr(row.asset_id)}" style="color:var(--accent);text-decoration:underline;cursor:pointer;font-weight:600;">${esc(row.asset_name)} (ver historial ›)</span>`
+        : (row.asset_name || '—');
       detailRows.push(
         ['Tipo', '🔧 Mantenimiento'],
+        ['Equipo / punto', assetRowValue],
         ['Área / equipo', row.title],
         ['Descripción', row.detail],
         ['Notas', row.notes || '—'],
@@ -4167,6 +4750,11 @@
         ['Sucursal', row.branch],
         ['Solicitante', submitter],
         ['Status', statusLabel],
+        ['Duración', formatDuration(row.created_at, row.completed_at)],
+        ...(row.cost != null && !isNaN(Number(row.cost)) ? [['Costo', formatMxn(row.cost)]] : []),
+        ...(row.repairer_name ? [['Quién lo reparó', esc(row.repairer_name)]] : []),
+        ...(row.vendor_name ? [['Proveedor / taller', esc(row.vendor_name)]] : []),
+        ...(row.resolution_notes ? [['Qué se hizo / solución', esc(row.resolution_notes)]] : []),
         ['Fecha de servicio (TBC)', serviceDateFormatted],
         ['Resultado', outcomeFormatted],
         ...(row.status === 'Cancelado' && row.cancel_reason ? [['Motivo de cancelación', row.cancel_reason]] : []),
@@ -4242,34 +4830,6 @@
 
     $('estatus-detail-body').innerHTML = detailRows.map(r => `<div class="rv-row"><div class="rv-label">${esc(r[0])}</div><div class="rv-value">${r[1] || '—'}</div></div>`).join('') + linkHtml + photosHtml + mantControlsHtml + followUpsHtml;
 
-    const resolveCurrentUserName = async () => {
-      let name = (currentProfile && currentProfile.name) || '';
-      let uid = (currentProfile && currentProfile.id) || null;
-      if (!name || !uid) {
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            uid = uid || user.id;
-            const { data: p } = await supabase.from('profiles').select('name').eq('id', user.id).maybeSingle();
-            name = (p && p.name) || user.email || '';
-          }
-        } catch (err) { nudoWarn('attribution', err); }
-      }
-      // Attribution must never be invented. An entry recorded against the
-      // all-zero UUID with the name "Equipo" is indistinguishable from a real
-      // record, so it silently corrupts the audit trail. Fall back to the email
-      // (a real identifier), and if there is genuinely nothing, say so — the
-      // caller renders this string, so the gap is visible on screen instead of
-      // being papered over.
-      if (!name) {
-        nudoWarn('attribution', 'no name resolvable — entry will read as unattributed');
-      }
-      return {
-        by: uid || '00000000-0000-0000-0000-000000000000',
-        by_name: name || '— sin identificar —'
-      };
-    };
-
     if (row.kind === 'mant' && isAdmin) {
       const dateSaveBtn = $('estatus-mant-date-save');
       if (dateSaveBtn) {
@@ -4333,10 +4893,23 @@
     if (isAdmin && statusMeta(row)[row.status] && statusMeta(row)[row.status].next) {
       const adv = document.createElement('button');
       adv.className = 'btn'; adv.style.margin = '0';
-      adv.textContent = 'Marcar ' + statusMeta(row)[row.status].next;
+      const nextSt = statusMeta(row)[row.status].next;
+      adv.textContent = 'Marcar ' + nextSt;
       adv.addEventListener('click', async () => {
+        if (row.kind === 'mant' && nextSt === 'Completado') {
+          openMaintCompletionModal(row.id, () => {
+            closeEstatusDetail();
+            loadEstatus();
+          });
+          return;
+        }
         adv.disabled = true;
-        const { error } = await supabase.from(row.table).update({ status: statusMeta(row)[row.status].next }).eq('id', row.id);
+        const payload = { status: nextSt };
+        if (row.kind === 'mant') {
+          if (nextSt === 'Comunicado con proveedor') payload.vendor_requested_at = new Date().toISOString();
+          if (nextSt === 'Completado' || nextSt === 'Resuelto') payload.completed_at = new Date().toISOString();
+        }
+        const { error } = await supabase.from(row.table).update(payload).eq('id', row.id);
         if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); adv.disabled = false; return; }
         closeEstatusDetail(); loadEstatus();
       });
@@ -4347,17 +4920,11 @@
       const btnComp = document.createElement('button');
       btnComp.className = 'btn'; btnComp.style.margin = '0';
       btnComp.textContent = 'Completado';
-      btnComp.addEventListener('click', async () => {
-        btnComp.disabled = true;
-        const author = await resolveCurrentUserName();
-        const cur = row.follow_ups || [];
-        const entry = { at: new Date().toISOString(), by: author.by, by_name: author.by_name, text: 'Marcado como Completado', kind: 'followup' };
-        const updated = [...cur, entry];
-        const { error } = await supabase.from(row.table).update({ status: 'Completado', outcome: 'completado', follow_ups: updated }).eq('id', row.id);
-        if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); btnComp.disabled = false; return; }
-        row.status = 'Completado'; row.outcome = 'completado'; row.follow_ups = updated;
-        toast('✅ Mantenimiento completado');
-        closeEstatusDetail(); loadEstatus();
+      btnComp.addEventListener('click', () => {
+        openMaintCompletionModal(row.id, () => {
+          closeEstatusDetail();
+          loadEstatus();
+        });
       });
       actions.appendChild(btnComp);
 
@@ -4370,9 +4937,9 @@
         const cur = row.follow_ups || [];
         const entry = { at: new Date().toISOString(), by: author.by, by_name: author.by_name, text: 'Marcado como Resuelto', kind: 'followup' };
         const updated = [...cur, entry];
-        const { error } = await supabase.from(row.table).update({ outcome: 'resuelto', follow_ups: updated }).eq('id', row.id);
+        const { error } = await supabase.from(row.table).update({ outcome: 'resuelto', completed_at: new Date().toISOString(), follow_ups: updated }).eq('id', row.id);
         if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); btnRes.disabled = false; return; }
-        row.outcome = 'resuelto'; row.follow_ups = updated;
+        row.outcome = 'resuelto'; row.completed_at = new Date().toISOString(); row.follow_ups = updated;
         toast('✅ Marcado como resuelto');
         closeEstatusDetail(); loadEstatus();
       });
@@ -4470,6 +5037,18 @@
         <div class="field"><label>Descripción</label>
           <textarea id="ee-detail" style="width:100%;font-size:16px;min-height:80px;box-sizing:border-box;">${esc(row.detail || '')}</textarea>
         </div>
+        <div class="field"><label>Costo (MXN)</label>
+          <input type="number" id="ee-cost" step="0.01" min="0" value="${row.cost != null ? escAttr(String(row.cost)) : ''}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+        </div>
+        <div class="field"><label>Quién lo reparó</label>
+          <input type="text" id="ee-repairer" value="${escAttr(row.repairer_name || '')}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+        </div>
+        <div class="field"><label>Proveedor / taller</label>
+          <input type="text" id="ee-vendor" value="${escAttr(row.vendor_name || '')}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+        </div>
+        <div class="field"><label>Qué se hizo</label>
+          <textarea id="ee-resolution" style="width:100%;font-size:16px;min-height:60px;box-sizing:border-box;">${esc(row.resolution_notes || '')}</textarea>
+        </div>
         <div class="field"><label>Notas</label>
           <textarea id="ee-notes" style="width:100%;font-size:16px;min-height:60px;box-sizing:border-box;">${esc(row.notes || '')}</textarea>
         </div>
@@ -4531,12 +5110,21 @@
         const areaVal = $('ee-title').value.trim();
         const descVal = $('ee-detail').value.trim();
         if (!areaVal) { alert('El área / equipo es obligatorio.'); saveBtn.disabled = false; return; }
+        const costRaw = $('ee-cost') ? $('ee-cost').value.trim() : '';
+        const costVal = costRaw ? parseFloat(costRaw) : null;
+        const repairerVal = $('ee-repairer') ? $('ee-repairer').value.trim() : '';
+        const vendorVal = $('ee-vendor') ? $('ee-vendor').value.trim() : '';
+        const resVal = $('ee-resolution') ? $('ee-resolution').value.trim() : '';
         payload = {
           area: areaVal,
           description: descVal,
           notes: notesVal,
           priority: prioVal,
-          branch: branchVal
+          branch: branchVal,
+          cost: (costVal != null && !isNaN(costVal)) ? costVal : null,
+          repairer_name: repairerVal || null,
+          vendor_name: vendorVal || null,
+          resolution_notes: resVal || null
         };
       } else {
         const itemVal = $('ee-title').value.trim();
@@ -4570,7 +5158,9 @@
       }
 
       // Re-read row to confirm the values landed before reporting success
-      const verifyCols = isMant ? 'area, description, notes, priority, branch' : 'item, vendor, amount, units, amount_per_unit, link, notes, priority, branch';
+      const verifyCols = isMant
+        ? 'area, description, notes, priority, branch, cost, repairer_name, vendor_name, resolution_notes'
+        : 'item, vendor, amount, units, amount_per_unit, link, notes, priority, branch';
       const { data: updatedData, error: verifyErr } = await supabase.from(row.table).select(verifyCols).eq('id', row.id).maybeSingle();
       if (verifyErr || !updatedData) {
         showMsg($('estatus-msg'), 'Error al verificar la actualización.', 'err');
@@ -4578,7 +5168,8 @@
         return;
       }
       if (isMant) {
-        if (updatedData.area !== payload.area) {
+        const costMatch = (updatedData.cost == null && payload.cost == null) || (Number(updatedData.cost) === Number(payload.cost));
+        if (updatedData.area !== payload.area || !costMatch) {
           showMsg($('estatus-msg'), 'No se pudieron guardar los cambios.', 'err');
           saveBtn.disabled = false;
           return;
@@ -4613,6 +5204,25 @@
   // Tap a request card -> open its detail modal (but not when tapping the
   // inline advance button or inline edit button, which have their own handlers).
   document.addEventListener('click', (e) => {
+    const filterBtn = e.target.closest('.estatus-filter-btn');
+    if (filterBtn) {
+      const mode = filterBtn.getAttribute('data-estatus-filter');
+      if (mode && (mode === 'todos' || mode === 'abiertos')) {
+        estatusFilter = mode;
+        renderEstatusView();
+      }
+      return;
+    }
+
+    const assetBtn = e.target.closest('[data-asset-id]') || e.target.closest('[data-open-asset]');
+    if (assetBtn) {
+      const aid = assetBtn.getAttribute('data-asset-id') || assetBtn.getAttribute('data-open-asset');
+      if (aid) {
+        openAssetStoryline(aid);
+        return;
+      }
+    }
+
     if (e.target.closest('[data-advance]')) return;
     const editBtn = e.target.closest('[data-edit]');
     if (editBtn) {
@@ -4632,12 +5242,27 @@
     const btn = e.target.closest('[data-advance]');
     if (!btn) return;
     const [table, id, newStatus] = btn.getAttribute('data-advance').split('|');
+
+    if (table === 'maintenance_requests' && newStatus === 'Completado') {
+      openMaintCompletionModal(id, () => loadEstatus());
+      return;
+    }
+
     btn.disabled = true;
+    const updatePayload = { status: newStatus };
+    if (table === 'maintenance_requests') {
+      if (newStatus === 'Comunicado con proveedor') {
+        updatePayload.vendor_requested_at = new Date().toISOString();
+      } else if (newStatus === 'Completado' || newStatus === 'Resuelto') {
+        updatePayload.completed_at = new Date().toISOString();
+      }
+    }
+
     // v0.195 — a blocked UPDATE does NOT raise: RLS silently filters the row, so the
     // call "succeeds" while changing nothing. Read the row back before reporting success
     // (this is exactly how a Gerente Regional clicking "Marcar Entregado" failed
     // silently on purchases). Never trust the absence of an error.
-    const { error } = await supabase.from(table).update({ status: newStatus }).eq('id', id);
+    const { error } = await supabase.from(table).update(updatePayload).eq('id', id);
     if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); btn.disabled = false; return; }
     const { data: chk } = await supabase.from(table).select('status').eq('id', id).maybeSingle();
     if (!chk || chk.status !== newStatus) {
@@ -5473,8 +6098,26 @@
       const otra = $('m-sucursal-otra');
       if (r.value === 'Otra' && r.checked) { wrap.classList.remove('hidden'); otra.focus(); }
       else { wrap.classList.add('hidden'); otra.value = ''; }
+      updateMaintenanceAssetPicker();
+      renderMaintenanceAssetsList();
     });
   });
+
+  if ($('m-asset')) {
+    $('m-asset').addEventListener('change', () => {
+      const isNew = $('m-asset').value === 'new';
+      if ($('m-asset-new')) {
+        $('m-asset-new').classList.toggle('hidden', !isNew);
+        if (isNew) $('m-asset-new').focus();
+      }
+      if (!isNew) {
+        const chosen = (allAssetsCache || []).find(a => a.id === $('m-asset').value);
+        if (chosen && chosen.area && !$('m-area').value) {
+          $('m-area').value = chosen.area;
+        }
+      }
+    });
+  }
 
   $('m-submit').addEventListener('click', async () => {
     const sucursal = document.querySelector('input[name="m-sucursal"]:checked');
@@ -5487,6 +6130,20 @@
     const branch = sucursal.value === 'Otra' ? $('m-sucursal-otra').value.trim() : sucursal.value;
     if (!branch) { showMsg($('m-msg'), 'Especifica la sucursal', 'err'); return; }
     const mPhoto = $('m-photo').files[0];
+
+    // DELIVERABLE 1: Resolve asset name for review
+    let resolvedAssetId = null;
+    let resolvedAssetName = '';
+    const assetChoice = $('m-asset') ? $('m-asset').value : 'new';
+    if (assetChoice && assetChoice !== 'new') {
+      resolvedAssetId = assetChoice;
+      const found = (allAssetsCache || []).find(a => a.id === assetChoice);
+      resolvedAssetName = found ? found.name : '';
+    } else {
+      const newName = $('m-asset-new') ? $('m-asset-new').value.trim() : '';
+      if (newName) resolvedAssetName = newName;
+    }
+
     // v0.119: requester name + timestamp on the review modal (Ben); branch
     // shows 'Otra — <name>' when the free-text path is used.
     const requesterName = (currentProfile && currentProfile.name) ? currentProfile.name : '—';
@@ -5495,6 +6152,7 @@
       ['Solicitante', esc(requesterName)],
       ['Fecha y hora', new Date().toLocaleString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })],
       ['Sucursal', esc(branchLabel)],
+      ['Equipo / punto', resolvedAssetName ? esc(resolvedAssetName) : '—'],
       ['Área / equipo', area],
       ['Descripción', desc || '—'],
       ['Notas', $('m-notes').value.trim() || '—'],
@@ -5504,6 +6162,39 @@
     openReview('🔧 Revisa tu solicitud', rows, async () => {
       let user; try { user = await requireUser(); } catch(e) { return; }
       $('m-submit').disabled = true;
+
+      // DELIVERABLE 1: if "Nuevo" was picked, INSERT into maintenance_assets with unique index fallback
+      if (assetChoice === 'new') {
+        const newName = $('m-asset-new') ? $('m-asset-new').value.trim() : '';
+        if (newName) {
+          const { data: insData, error: insErr } = await supabase
+            .from('maintenance_assets')
+            .insert({
+              branch: branch,
+              name: newName,
+              area: area || null,
+              created_by: user.id
+            })
+            .select('id, name')
+            .maybeSingle();
+
+          if (insData && insData.id) {
+            resolvedAssetId = insData.id;
+          } else {
+            // Fall back to selecting the existing row by (branch, lower(name))
+            const { data: existRow } = await supabase
+              .from('maintenance_assets')
+              .select('id, name')
+              .eq('branch', branch)
+              .ilike('name', newName)
+              .maybeSingle();
+            if (existRow && existRow.id) {
+              resolvedAssetId = existRow.id;
+            }
+          }
+        }
+      }
+
       let photoUrls = [];
       try {
         const f = $('m-photo').files[0];
@@ -5518,12 +6209,14 @@
         priority: prioridad ? prioridad.value : 'Normal',
         photo_url: photoUrls[0] || '',
         photo_urls: photoUrls,
-        status: 'Solicitado'
+        status: 'Solicitado',
+        asset_id: resolvedAssetId
       });
       if (error) { showMsg($('m-msg'), 'Error: ' + error.message, 'err'); $('m-submit').disabled = false; return; }
       $('m-msg').textContent = '✅ Solicitud de mantenimiento enviada'; $('m-msg').className = 'msg ok'; $('m-msg').classList.remove('hidden');
       setTimeout(() => {
         resetForm('mantenimiento'); $('m-photo').value = '';
+        if ($('m-asset-new')) $('m-asset-new').value = '';
         clearMsg($('m-msg')); goHome();
       }, 1200);
     });
