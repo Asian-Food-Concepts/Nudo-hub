@@ -1341,10 +1341,14 @@
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card">
           <h2>📋 Seguimiento de solicitudes</h2>
-          <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">Mantenimiento y compras enviadas desde la app.</p>
-          <div id="estatus-filter-bar" style="display:flex;gap:8px;margin-bottom:14px;">
-            <button type="button" class="btn btn-secondary estatus-filter-btn active" data-estatus-filter="todos" style="flex:1;min-height:44px;font-size:16px;margin:0;">Todos</button>
-            <button type="button" class="btn btn-secondary estatus-filter-btn" data-estatus-filter="abiertos" style="flex:1;min-height:44px;font-size:16px;margin:0;">🔴 Abiertos</button>
+          <p id="estatus-subhead" style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">Compras enviadas desde la app.</p>
+          <div class="seg" id="estatus-seg" style="margin-bottom:10px;">
+            <button type="button" data-est="comp" class="on" style="font-size:15px;font-weight:600;">🛒 Compras</button>
+            <button type="button" data-est="mant" style="font-size:15px;font-weight:600;">🔧 Mantenimiento</button>
+          </div>
+          <div class="seg" id="estatus-open-seg" style="margin-bottom:14px;">
+            <button type="button" data-open="open" class="on" style="font-size:15px;font-weight:600;">🔴 Abiertos</button>
+            <button type="button" data-open="all" style="font-size:15px;font-weight:600;">Todas</button>
           </div>
           <div id="estatus-msg" class="msg hidden"></div>
           <div id="estatus-list"></div>
@@ -1652,7 +1656,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.1";
+  const APP_VERSION = "v0.209.2";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -1668,7 +1672,7 @@
     return '$' + num.toLocaleString('es-MX') + ' MXN';
   }
 
-  // Pure helpers for maintenance tracking (v0.209)
+  // Pure helpers for maintenance tracking (v0.209, v0.209.2)
   function formatAvgGapDays(val, totalRequests) {
     if (val == null || val === '' || isNaN(Number(val))) return '—';
     if (totalRequests != null && totalRequests < 2) return '—';
@@ -1679,13 +1683,119 @@
   }
 
   function formatDiasAbierto(createdAt, now = Date.now()) {
-    if (!createdAt) return '—';
-    const t = new Date(createdAt).getTime();
-    if (isNaN(t)) return '—';
-    const nowMs = typeof now === 'number' ? now : new Date(now).getTime();
-    const ms = Math.max(0, nowMs - t);
-    const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+    if (createdAt == null || createdAt === '') return '—';
+    let days;
+    if (typeof createdAt === 'number') {
+      if (createdAt < 50000) {
+        days = Math.max(0, Math.floor(createdAt));
+      } else {
+        const nowMs = typeof now === 'number' ? now : new Date(now).getTime();
+        const ms = Math.max(0, nowMs - createdAt);
+        days = Math.floor(ms / (1000 * 60 * 60 * 24));
+      }
+    } else {
+      const t = new Date(createdAt).getTime();
+      if (isNaN(t)) {
+        const num = Number(createdAt);
+        if (!isNaN(num) && num < 50000) {
+          days = Math.max(0, Math.floor(num));
+        } else {
+          return '—';
+        }
+      } else {
+        const nowMs = typeof now === 'number' ? now : new Date(now).getTime();
+        const ms = Math.max(0, nowMs - t);
+        days = Math.floor(ms / (1000 * 60 * 60 * 24));
+      }
+    }
+    if (isNaN(days) || days < 0) return '—';
     return days === 1 ? '1 día abierto' : `${days} días abierto`;
+  }
+
+  function getDiasAbiertoNum(createdAt, now = Date.now()) {
+    if (createdAt == null || createdAt === '') return 0;
+    if (typeof createdAt === 'number') {
+      if (createdAt < 50000) return Math.max(0, Math.floor(createdAt));
+      const nowMs = typeof now === 'number' ? now : new Date(now).getTime();
+      return Math.max(0, Math.floor((nowMs - createdAt) / (1000 * 60 * 60 * 24)));
+    }
+    const t = new Date(createdAt).getTime();
+    if (isNaN(t)) {
+      const num = Number(createdAt);
+      return (!isNaN(num) && num < 50000) ? Math.max(0, Math.floor(num)) : 0;
+    }
+    const nowMs = typeof now === 'number' ? now : new Date(now).getTime();
+    return Math.max(0, Math.floor((nowMs - t) / (1000 * 60 * 60 * 24)));
+  }
+
+  function formatUltimaActividad(val, now = Date.now()) {
+    if (val == null || val === '') return '—';
+    let days;
+    if (typeof val === 'number') {
+      if (val < 50000) {
+        days = Math.max(0, Math.floor(val));
+      } else {
+        const nowMs = typeof now === 'number' ? now : new Date(now).getTime();
+        const ms = Math.max(0, nowMs - val);
+        days = Math.floor(ms / (1000 * 60 * 60 * 24));
+      }
+    } else {
+      const t = new Date(val).getTime();
+      if (isNaN(t)) {
+        const num = Number(val);
+        if (!isNaN(num) && num < 50000) {
+          days = Math.max(0, Math.floor(num));
+        } else {
+          return '—';
+        }
+      } else {
+        const nowMs = typeof now === 'number' ? now : new Date(now).getTime();
+        const ms = Math.max(0, nowMs - t);
+        days = Math.floor(ms / (1000 * 60 * 60 * 24));
+      }
+    }
+    if (isNaN(days) || days < 0) return '—';
+    if (days === 0) return 'hoy';
+    if (days === 1) return 'hace 1 día';
+    return `hace ${days} días`;
+  }
+
+  function formatProximoSeguimiento(val, now = Date.now()) {
+    if (val == null || val === '') return '—';
+    const nowMs = typeof now === 'number' ? now : new Date(now).getTime();
+    let targetMs;
+    if (typeof val === 'number') {
+      if (val < 50000) {
+        if (val <= 0) return '🔔 Toca seguimiento';
+        targetMs = nowMs + val * 86400000;
+      } else {
+        targetMs = val;
+      }
+    } else {
+      const t = new Date(val).getTime();
+      if (isNaN(t)) {
+        const num = Number(val);
+        if (!isNaN(num) && num < 50000) {
+          if (num <= 0) return '🔔 Toca seguimiento';
+          targetMs = nowMs + num * 86400000;
+        } else {
+          return '—';
+        }
+      } else {
+        targetMs = t;
+      }
+    }
+    if (isNaN(targetMs)) return '—';
+    if (targetMs <= nowMs) {
+      return '🔔 Toca seguimiento';
+    }
+    const d = new Date(targetMs);
+    try {
+      const formatted = d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+      return (formatted || '—').replace('-', ' ');
+    } catch (_) {
+      return '—';
+    }
   }
 
   function formatDuration(createdAt, completedAt) {
@@ -1711,11 +1821,76 @@
   }
 
   const TERMINAL_STATUSES = ['Entregado', 'Completado', 'Resuelto', 'Cancelado'];
-  function isOpenRequestRow(r) {
+  function isDoneRow(r) {
     if (!r) return false;
-    if (TERMINAL_STATUSES.includes(r.status)) return false;
-    if (r.completed_at != null && r.completed_at !== '') return false;
-    return true;
+    if (TERMINAL_STATUSES.includes(r.status)) return true;
+    if (r.kind === 'mant' && r.completed_at != null && r.completed_at !== '') return true;
+    return false;
+  }
+  function isOpenRequestRow(r) {
+    return !!r && !isDoneRow(r);
+  }
+
+  const MANT_PIPELINE_STEPS = [
+    { key: 'Solicitado', label: 'Solicitado' },
+    { key: 'Comunicado con proveedor', label: 'Con proveedor' },
+    { key: 'Completado', label: 'Completado' }
+  ];
+
+  function getMantStepIndex(status) {
+    if (!status) return -1;
+    if (status === 'Solicitado') return 0;
+    if (status === 'Comunicado con proveedor') return 1;
+    if (status === 'Completado' || status === 'Resuelto') return 2;
+    return -1;
+  }
+
+  function renderMantStepper(status) {
+    const activeIdx = getMantStepIndex(status);
+    const isCancelled = status === 'Cancelado';
+    const isLegacyUnknown = activeIdx === -1 && !isCancelled;
+
+    let stepsHtml = MANT_PIPELINE_STEPS.map((step, idx) => {
+      const isCurrent = (idx === activeIdx);
+      const isPast = (activeIdx !== -1 && idx < activeIdx);
+
+      let stepStyle = 'flex:1;text-align:center;padding:5px 6px;border-radius:6px;font-size:0.75rem;line-height:1.2;box-sizing:border-box;';
+      if (isCurrent) {
+        if (step.key === 'Solicitado') {
+          stepStyle += 'background:#fce8e6;color:#d93025;border:1px solid rgba(217,48,37,0.35);font-weight:700;';
+        } else if (step.key === 'Comunicado con proveedor') {
+          stepStyle += 'background:#fef7e0;color:#b06000;border:1px solid rgba(176,96,0,0.35);font-weight:700;';
+        } else {
+          stepStyle += 'background:#e6f4ea;color:#188038;border:1px solid rgba(24,128,56,0.35);font-weight:700;';
+        }
+      } else if (isPast) {
+        stepStyle += 'background:var(--frame-bg, rgba(0,0,0,0.03));color:var(--ink);border:1px solid var(--border);font-weight:600;';
+      } else {
+        stepStyle += 'background:var(--input-bg, #fff);color:var(--muted);border:1px dashed var(--border);';
+      }
+
+      const prefix = isPast ? '✓ ' : (isCurrent ? '▶ ' : '');
+      return `<div class="mant-step-item" data-step-idx="${idx}" data-active="${isCurrent}" style="${stepStyle}">${prefix}${esc(step.label)}</div>`;
+    }).join('<span style="color:var(--border);font-size:0.75rem;flex-shrink:0;user-select:none;">›</span>');
+
+    let extraTag = '';
+    if (isCancelled) {
+      extraTag = '<div style="margin-top:4px;"><span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;">⛔ Cancelado</span></div>';
+    } else if (isLegacyUnknown && status) {
+      extraTag = `<div style="margin-top:4px;"><span style="display:inline-block;background:var(--frame-bg);color:var(--muted);font-weight:600;font-size:0.75rem;padding:2px 8px;border-radius:999px;border:1px solid var(--border);">Estado: ${esc(status)}</span></div>`;
+    }
+
+    return `<div class="mant-stepper-wrap" style="margin:6px 0;"><div style="display:flex;align-items:center;gap:4px;width:100%;">${stepsHtml}</div>${extraTag}</div>`;
+  }
+
+  function sortOpenMaintenance(rows, now = Date.now()) {
+    return rows.sort((a, b) => {
+      const aOverdue = !!(a.next_follow_up_at && new Date(a.next_follow_up_at).getTime() <= now);
+      const bOverdue = !!(b.next_follow_up_at && new Date(b.next_follow_up_at).getTime() <= now);
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+      return new Date(a.created_at) - new Date(b.created_at);
+    });
   }
   // v0.114: floating dock must never cover sheet action buttons. Toggle
   // body.modal-open whenever any modal's .hidden state changes (v0.113 added
@@ -4043,11 +4218,10 @@
   };
   function prioMeta(p) { return PRIO_META[p] || PRIO_META['Normal']; }
 
-  // v0.121: 'done' = terminal status per request kind (Entregado for Compras,
-  // Completado for Mantenimiento). Done cards drop the red/urgency priority
-  // badge and move to a separate Completadas section at the bottom (Ben).
-  function isDoneRow(r) {
-    return r.kind === 'comp' ? r.status === 'Entregado' : r.status === 'Completado';
+  // Priority badge color + label (uses the shared PRIO_META map)
+  function prioBadge(p) {
+    const m = prioMeta(p);
+    return `<span style="display:inline-block;background:${m.bg};color:${m.c};font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">${m.label}</span>`;
   }
 
   const resolveCurrentUserName = async () => {
@@ -4443,7 +4617,12 @@
     bodyEl.innerHTML = summaryHtml + timelineHtml;
   }
 
-  let estatusFilter = 'todos'; // 'todos' | 'abiertos'
+  let estatusTab = 'comp'; // 'comp' | 'mant'
+  if (typeof localStorage !== 'undefined') {
+    const savedTab = localStorage.getItem('nudo_estatus_tab');
+    if (savedTab === 'mant' || savedTab === 'comp') estatusTab = savedTab;
+  }
+  let estatusOpenOnly = true; // DEFAULT true (Abiertos)
 
   async function loadEstatus() {
     const listEl = $('estatus-list');
@@ -4461,7 +4640,7 @@
     // Fetch both request tables (newest first)
     const { data: mant, error: em } = await supabase
       .from('maintenance_requests')
-      .select('id, branch, area, description, notes, priority, status, submitted_by, created_at, photo_urls, service_date, follow_ups, outcome, cancel_reason, asset_id, cost, repairer_name, vendor_name, vendor_requested_at, started_at, completed_at, resolution_notes, next_follow_up_at')
+      .select('id, branch, area, description, notes, priority, status, submitted_by, created_at, updated_at, photo_urls, service_date, follow_ups, outcome, cancel_reason, asset_id, cost, repairer_name, vendor_name, vendor_requested_at, started_at, completed_at, resolution_notes, next_follow_up_at')
       .order('created_at', { ascending: false });
     const { data: comp, error: ec } = await supabase
       .from('purchases')
@@ -4513,6 +4692,7 @@
       detail: r.description || '', notes: r.notes || '',
       priority: r.priority || 'Normal',
       branch: r.branch, status: r.status, created_at: r.created_at,
+      updated_at: r.updated_at || null,
       id: r.id, table: 'maintenance_requests', submitted_by: r.submitted_by,
       link: '', photo_urls: r.photo_urls || [], vendor: '', amount: null,
       units: null, amount_per_unit: null,
@@ -4542,6 +4722,7 @@
         kind: 'comp', typeLabel: '🛒 Compra', title: r.item || 'Compra',
         detail: (r.vendor ? 'Proveedor: ' + r.vendor + ' · ' : '') + amountDetail,
         priority: r.priority || 'Normal', branch: r.branch, status: r.status, created_at: r.created_at,
+        updated_at: null,
         id: r.id, table: 'purchases', submitted_by: r.submitted_by, link: r.link || '',
         photo_urls: r.photo_urls || [], vendor: r.vendor || '', amount: r.amount || null,
         units: r.units || null, amount_per_unit: r.amount_per_unit || null,
@@ -4572,121 +4753,289 @@
     renderEstatusView();
   }
 
+  function renderComprasCard(r, done, isOpenView) {
+    const isAdmin = estatusAdminFlag;
+    const isMine = !!r.submitted_by && r.submitted_by === __currentUserId;
+    const statusLabel = statusMeta(r)[r.status] ? statusMeta(r)[r.status].label : esc(r.status);
+    const statusPlain = /^[^\s]+\s/.test(statusLabel) ? statusLabel.replace(/^[^\s]+\s/, '') : statusLabel;
+
+    if (done) {
+      const isCancelled = r.status === 'Cancelado';
+      const badge = isCancelled
+        ? `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;">⛔ Cancelado</span>`
+        : `<span style="display:inline-block;background:#e6f4ea;color:#188038;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;">✓ ${esc(statusPlain)}</span>`;
+      const amtStr = (r.amount != null && !isNaN(Number(r.amount))) ? formatMxn(r.amount) : '';
+
+      return `
+        <div class="estatus-card estatus-comp-card done" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--card);cursor:pointer;opacity:0.85;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div style="font-weight:600;font-size:0.92rem;color:var(--ink);">${esc(r.title)}</div>
+            <div>${badge}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:var(--muted);margin-top:4px;">
+            <span>${amtStr ? `💰 ${amtStr}` : ''} ${r.vendor ? `· ${esc(r.vendor)}` : ''}</span>
+            <span>${fmtAgo(r.created_at)}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // Open Compras row (fast, dense, scan-and-clear)
+    const daysNum = getDiasAbiertoNum(r.created_at);
+    const ageBadge = daysNum >= 3
+      ? `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 7px;border-radius:6px;white-space:nowrap;">⚠️ ${formatDiasAbierto(r.created_at)}</span>`
+      : `<span style="font-size:0.78rem;color:var(--muted);white-space:nowrap;">⏳ ${formatDiasAbierto(r.created_at)}</span>`;
+
+    const branchBadge = isOpenView
+      ? `<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--input-bg);border:1px solid var(--border);color:var(--ink);font-weight:600;">📍 ${esc(r.branch)}</span>`
+      : '';
+
+    const prio = prioBadge(r.priority);
+
+    let amountStr = '';
+    if (r.amount != null && !isNaN(Number(r.amount))) {
+      amountStr = `<span style="font-weight:700;font-size:0.95rem;color:var(--ink);">💰 ${formatMxn(r.amount)}</span>`;
+      if (r.units && r.units > 1 && r.amount_per_unit != null) {
+        amountStr += ` <span style="font-size:0.78rem;color:var(--muted);">(${r.units} × ${formatMxn(r.amount_per_unit)})</span>`;
+      }
+    }
+
+    const vendorStr = r.vendor ? `<span style="font-size:0.82rem;color:var(--muted);">🏢 ${esc(r.vendor)}</span>` : '';
+    const submitterStr = r.submitter_name ? `<span style="font-size:0.78rem;color:var(--muted);">👤 ${esc(r.submitter_name)}</span>` : '';
+
+    const nextStep = statusMeta(r)[r.status] ? statusMeta(r)[r.status].next : null;
+    const canAdvance = (isAdmin && nextStep);
+    const canEdit = (isAdmin || (isMine && r.status === 'Solicitado'));
+
+    return `
+      <div class="estatus-card estatus-comp-card open" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card);cursor:pointer;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="font-weight:700;font-size:1rem;color:var(--ink);flex:1;">
+            ${esc(r.title)}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${branchBadge}
+            ${prio}
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0;flex-wrap:wrap;gap:8px;">
+          <div>${amountStr} ${vendorStr ? (amountStr ? ' · ' : '') + vendorStr : ''}</div>
+          <div>${ageBadge}</div>
+        </div>
+        ${submitterStr ? `<div style="margin-bottom:6px;">${submitterStr}</div>` : ''}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);" onclick="event.stopPropagation();">
+          <div style="font-size:0.8rem;color:var(--accent);cursor:pointer;" onclick="openEstatusDetail('${r.table}','${r.id}')">Ver detalles ›</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            ${canEdit ? `<button type="button" class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
+            ${canAdvance ? `<button type="button" class="btn" style="min-height:44px;padding:8px 16px;font-size:0.9rem;margin:0;font-weight:600;" data-advance="${r.table}|${r.id}|${nextStep}">Marcar ${nextStep}</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderMantenimientoCard(r, done, isOpenView) {
+    const isAdmin = estatusAdminFlag;
+    const isMine = !!r.submitted_by && r.submitted_by === __currentUserId;
+    const statusLabel = statusMeta(r)[r.status] ? statusMeta(r)[r.status].label : esc(r.status);
+    const statusPlain = /^[^\s]+\s/.test(statusLabel) ? statusLabel.replace(/^[^\s]+\s/, '') : statusLabel;
+
+    if (done) {
+      const isCancelled = r.status === 'Cancelado';
+      const badge = isCancelled
+        ? `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;">⛔ Cancelado</span>`
+        : `<span style="display:inline-block;background:#e6f4ea;color:#188038;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;">✓ ${esc(statusPlain)}</span>`;
+      const durStr = formatDuration(r.created_at, r.completed_at);
+      const assetTag = (r.asset_id && r.asset_name)
+        ? `<span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="color:var(--accent);font-weight:600;text-decoration:underline;cursor:pointer;">🔧 ${esc(r.asset_name)}</span> · `
+        : '';
+
+      return `
+        <div class="estatus-card estatus-mant-card done" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--card);cursor:pointer;opacity:0.85;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div style="font-weight:600;font-size:0.92rem;color:var(--ink);">${esc(r.title)}</div>
+            <div>${badge}</div>
+          </div>
+          <div style="font-size:0.8rem;color:var(--muted);margin-top:4px;">
+            ${assetTag}⏱️ Duración: <b>${esc(durStr)}</b> ${r.cost ? `· 💰 ${formatMxn(r.cost)}` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // Open Mantenimiento row (patient, per-item dossier)
+    const branchBadge = isOpenView
+      ? `<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--input-bg);border:1px solid var(--border);color:var(--ink);font-weight:600;">📍 ${esc(r.branch)}</span>`
+      : '';
+
+    const prio = prioBadge(r.priority);
+
+    // Asset name when asset_id resolves
+    const assetTagHtml = (r.asset_id && r.asset_name)
+      ? `<div style="margin:4px 0;"><span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="display:inline-block;color:var(--accent);font-weight:700;font-size:0.85rem;text-decoration:underline;cursor:pointer;">🔧 ${esc(r.asset_name)} (ver historial ›)</span></div>`
+      : '';
+
+    // Stepper for pipeline: Solicitado -> Comunicado con proveedor -> Completado
+    const stepperHtml = renderMantStepper(r.status);
+
+    // Age badge: "🔴 N días abierto"
+    const ageBadge = `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;">🔴 ${formatDiasAbierto(r.created_at)}</span>`;
+
+    // Last activity: "Última actividad hace N días" (or "Última actividad hoy")
+    const lastActStr = formatUltimaActividad(r.updated_at || r.created_at);
+    const lastActHtml = `<span style="font-size:0.8rem;color:var(--muted);">⏱️ Última actividad: <b>${esc(lastActStr)}</b></span>`;
+
+    // Próximo seguimiento
+    let nextFollowUpBadge = '';
+    if (r.next_follow_up_at) {
+      const _nf = new Date(r.next_follow_up_at).getTime();
+      if (!isNaN(_nf)) {
+        if (_nf <= Date.now()) {
+          nextFollowUpBadge = `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:6px;border:1px solid rgba(217,48,37,0.3);">🔔 Toca seguimiento</span>`;
+        } else {
+          nextFollowUpBadge = `<span style="display:inline-block;background:var(--frame-bg);color:var(--ink);font-weight:600;font-size:0.75rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);">🔔 Próximo seguimiento: ${esc(formatProximoSeguimiento(r.next_follow_up_at))}</span>`;
+        }
+      }
+    }
+
+    const nextStep = statusMeta(r)[r.status] ? statusMeta(r)[r.status].next : null;
+    const canAdvance = (isAdmin && nextStep);
+    const canEdit = (isAdmin || (isMine && r.status === 'Solicitado'));
+
+    const photosHtml = (r.photo_urls && r.photo_urls.length)
+      ? `<div style="display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;">${r.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid var(--border);" />`).join('')}</div>`
+      : '';
+
+    const costAndRepairer = [];
+    if (r.cost != null && !isNaN(Number(r.cost))) costAndRepairer.push('💰 ' + formatMxn(r.cost));
+    if (r.repairer_name) costAndRepairer.push('🔧 ' + esc(r.repairer_name));
+    if (r.vendor_name) costAndRepairer.push('🏢 ' + esc(r.vendor_name));
+    const costRepairerHtml = costAndRepairer.length
+      ? `<div style="font-size:0.82rem;color:var(--ink);font-weight:600;margin:4px 0;">${costAndRepairer.join(' · ')}</div>`
+      : '';
+
+    return `
+      <div class="estatus-card estatus-mant-card open" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--card);cursor:pointer;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="font-weight:700;font-size:1.02rem;color:var(--ink);flex:1;">
+            🔧 ${esc(r.title)}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${branchBadge}
+            ${prio}
+          </div>
+        </div>
+        ${assetTagHtml}
+        ${stepperHtml}
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0;flex-wrap:wrap;">
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            ${ageBadge}
+            ${nextFollowUpBadge}
+          </div>
+          ${lastActHtml}
+        </div>
+        ${r.detail ? `<div style="font-size:0.88rem;color:var(--ink);margin:6px 0;">${esc(r.detail)}</div>` : ''}
+        ${costRepairerHtml}
+        ${photosHtml}
+        ${r.submitter_name ? `<div style="font-size:0.78rem;color:var(--muted);margin:4px 0;">👤 Solicitado por: ${esc(r.submitter_name)}</div>` : ''}
+
+        <!-- Próximo seguimiento date control on card -->
+        <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);flex-wrap:wrap;" onclick="event.stopPropagation();">
+          <label for="estatus-mant-next-card-${r.id}" style="font-size:0.8rem;font-weight:600;color:var(--muted);white-space:nowrap;">🔔 Próximo seguimiento:</label>
+          <input type="date" id="estatus-mant-next-card-${r.id}" class="estatus-mant-card-date" data-id="${r.id}" value="${escAttr(r.next_follow_up_at ? String(r.next_follow_up_at).slice(0, 10) : '')}" style="flex:1;min-width:140px;min-height:44px;font-size:16px;padding:6px 8px;border-radius:8px;border:1px solid var(--border);box-sizing:border-box;">
+          <button type="button" class="btn btn-secondary estatus-mant-card-date-save" data-id="${r.id}" style="min-height:44px;padding:8px 14px;font-size:0.85rem;margin:0;">Guardar</button>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap;" onclick="event.stopPropagation();">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            ${canEdit ? `<button type="button" class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
+            <button type="button" class="btn btn-outline estatus-mant-card-note-btn" data-id="${r.id}" style="min-height:44px;padding:8px 12px;font-size:0.85rem;margin:0;">📝 Anotar seguimiento</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            ${canAdvance ? `<button type="button" class="btn" style="min-height:44px;padding:8px 14px;font-size:0.85rem;margin:0;font-weight:600;" data-advance="${r.table}|${r.id}|${nextStep}">Marcar ${nextStep}</button>` : ''}
+            <div style="font-size:0.8rem;color:var(--accent);cursor:pointer;padding:4px;" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function renderEstatusView() {
     const listEl = $('estatus-list');
     if (!listEl) return;
-    const isAdmin = estatusAdminFlag;
 
-    document.querySelectorAll('.estatus-filter-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-estatus-filter') === estatusFilter);
+    // Update segmented controls state
+    document.querySelectorAll('#estatus-seg button').forEach(b => {
+      b.classList.toggle('on', b.getAttribute('data-est') === estatusTab);
+    });
+    document.querySelectorAll('#estatus-open-seg button').forEach(b => {
+      const mode = b.getAttribute('data-open');
+      b.classList.toggle('on', estatusOpenOnly ? mode === 'open' : mode === 'all');
     });
 
-    const visible = estatusRowsCache;
-    if (!visible.length) {
-      listEl.innerHTML = '<p style="color:var(--muted);">No hay solicitudes todavía.</p>';
+    // Update subtitle
+    const subhead = $('estatus-subhead') || document.querySelector('#form-estatus p');
+    if (subhead) {
+      subhead.textContent = estatusTab === 'comp'
+        ? 'Compras enviadas desde la app.'
+        : 'Solicitudes de mantenimiento: etapas, seguimiento e historial.';
+    }
+
+    const tabRows = estatusRowsCache.filter(r => r.kind === estatusTab);
+    if (!tabRows.length) {
+      const tabName = estatusTab === 'comp' ? 'compras' : 'mantenimiento';
+      listEl.innerHTML = `<p style="color:var(--muted);text-align:center;padding:24px 16px;">No hay solicitudes de ${tabName} todavía.</p>`;
       return;
     }
 
-    // Priority badge color + label (uses the shared PRIO_META map)
-    function prioBadge(p) {
-      const m = prioMeta(p);
-      return `<span style="display:inline-block;background:${m.bg};color:${m.c};font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">${m.label}</span>`;
-    }
-
-    function estatusCard(r, done, isOpenView) {
-      const linkHtml = r.link ? `<div style="margin:6px 0 4px;"><a href="${escAttr(r.link)}" target="_blank" rel="noopener" style="color:var(--accent);font-size:0.9rem;font-weight:600;">🔗 Abrir enlace</a></div>` : '';
-      const photosHtml = (r.photo_urls && r.photo_urls.length) ? `<div style="display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;">${r.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" />`).join('')}</div>` : '';
-      const statusLabel = statusMeta(r)[r.status] ? statusMeta(r)[r.status].label : esc(r.status);
-      const statusPlain = /^[^\s]+\s/.test(statusLabel) ? statusLabel.replace(/^[^\s]+\s/, '') : statusLabel;
-      const badgeHtml = done
-        ? `<span style="display:inline-block;background:#e6f4ea;color:#188038;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">✓ ${esc(statusPlain)}</span>`
-        : prioBadge(r.priority) + `<span style="font-size:0.8rem;color:var(--muted);">${statusPlain}</span>`;
-
-      let assetTagHtml = '';
-      let mantMetaHtml = '';
-      if (r.kind === 'mant') {
-        if (r.asset_id && r.asset_name) {
-          assetTagHtml = ` · <span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer;">🔧 ${esc(r.asset_name)}</span>`;
-        }
-        const parts = [];
-        if (r.cost != null && !isNaN(Number(r.cost))) {
-          parts.push('💰 ' + formatMxn(r.cost));
-        }
-        if (r.repairer_name) {
-          parts.push('🔧 ' + esc(r.repairer_name));
-        }
-        if (isOpenRequestRow(r)) {
-          parts.push(`⏳ ${formatDiasAbierto(r.created_at)}`);
-          if (r.next_follow_up_at) {
-            const _nf = new Date(r.next_follow_up_at).getTime();
-            if (!isNaN(_nf)) {
-              parts.push(_nf <= Date.now()
-                ? '<span style="background:#fce8e6;color:#d93025;font-weight:700;padding:1px 6px;border-radius:6px;">🔔 Toca seguimiento</span>'
-                : `🔔 Seguimiento: ${new Date(r.next_follow_up_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short'})}`);
-            }
-          }
-        }
-        if (parts.length) {
-          mantMetaHtml = `<div style="font-size:0.8rem;color:var(--muted);margin:3px 0;">${parts.join(' · ')}</div>`;
-        }
+    if (estatusOpenOnly) {
+      const openRows = tabRows.filter(isOpenRequestRow);
+      if (estatusTab === 'mant') {
+        sortOpenMaintenance(openRows);
+      } else {
+        openRows.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
       }
 
-      const branchTag = isOpenView ? `<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--input-bg);border:1px solid var(--border);color:var(--ink);font-weight:600;margin-left:6px;">📍 ${esc(r.branch)}</span>` : '';
-
-      return `<div class="estatus-card" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card);cursor:pointer;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-            <div style="font-weight:600;flex:1;">${r.typeLabel} · ${esc(r.title)}${assetTagHtml}${branchTag}</div>
-            <div style="font-size:0.8rem;color:var(--muted);white-space:nowrap;">${fmtAgo(r.created_at)}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px;flex-wrap:wrap;">
-            ${badgeHtml}
-          </div>
-          ${r.detail ? `<div style="font-size:0.9rem;color:var(--muted);margin:4px 0;">${esc(r.detail)}</div>` : ''}
-          ${mantMetaHtml}
-          ${r.submitter_name ? `<div style="font-size:0.8rem;color:var(--muted);margin:2px 0;">👤 ${esc(r.submitter_name)}</div>` : ''}
-          ${linkHtml}
-          ${photosHtml}
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:8px;flex-wrap:wrap;">
-            <div style="font-size:0.8rem;color:var(--accent);">Ver detalles ›</div>
-            <div style="display:flex;gap:8px;align-items:center;">
-              ${(isAdmin || (r.submitted_by && r.submitted_by === __currentUserId && r.status === 'Solicitado')) && !['Entregado','Completado','Resuelto','Cancelado'].includes(r.status) ? `<button class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
-              ${(isAdmin && statusMeta(r)[r.status] && statusMeta(r)[r.status].next) ? `<button class="btn" style="padding:6px 12px;font-size:0.85rem;margin:0;" data-advance="${r.table}|${r.id}|${statusMeta(r)[r.status].next}">Marcar ${statusMeta(r)[r.status].next}</button>` : ''}
-            </div>
-          </div>
-        </div>`;
-    }
-
-    if (estatusFilter === 'abiertos') {
-      const openRows = visible.filter(isOpenRequestRow);
-      openRows.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-      const openMant = openRows.filter(r => r.kind === 'mant');
-      const openComp = openRows.filter(r => r.kind === 'comp');
+      const countLabel = estatusTab === 'comp'
+        ? `🔴 ${openRows.length} abierta${openRows.length === 1 ? '' : 's'} · Compras`
+        : `🔴 ${openRows.length} abierto${openRows.length === 1 ? '' : 's'} · Mantenimiento`;
+      const subLabel = estatusTab === 'comp'
+        ? 'Ambas sucursales (más antiguas primero)'
+        : 'Ambas sucursales (seguimiento pendiente primero)';
 
       let html = `
         <div style="background:var(--frame-bg, rgba(0,0,0,0.03));border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
           <div style="font-weight:700;font-size:1rem;color:var(--ink);margin-bottom:4px;">
-            🔴 Solicitudes abiertas (${openRows.length})
+            ${countLabel}
           </div>
           <div style="font-size:0.85rem;color:var(--muted);">
-            🔧 ${openMant.length} mantenimiento · 🛒 ${openComp.length} compras · ambas sucursales (más antiguas primero)
+            ${subLabel}
           </div>
         </div>
       `;
 
       if (!openRows.length) {
-        html += '<p style="color:var(--muted);text-align:center;padding:16px;">🎉 ¡No hay solicitudes abiertas pendientes!</p>';
+        html += `
+          <p style="color:var(--muted);text-align:center;padding:24px 16px;">
+            ${estatusTab === 'comp'
+              ? '🎉 ¡No hay compras abiertas pendientes!'
+              : '🎉 ¡No hay solicitudes de mantenimiento abiertas pendientes!'}
+          </p>`;
       } else {
         openRows.forEach(r => {
-          html += estatusCard(r, false, true);
+          html += (estatusTab === 'comp')
+            ? renderComprasCard(r, false, true)
+            : renderMantenimientoCard(r, false, true);
         });
       }
       listEl.innerHTML = html;
       return;
     }
 
-    // Default 'todos' view
-    const doneRows = visible.filter(isDoneRow);
-    const liveRows = visible.filter(r => !isDoneRow(r));
+    // Todas view (branch grouped, done at bottom)
+    const doneRows = tabRows.filter(isDoneRow);
+    const liveRows = tabRows.filter(r => !isDoneRow(r));
     const branchOrder = ['Roma Norte', 'Del Valle'];
     const groups = {};
     liveRows.forEach(r => {
@@ -4701,11 +5050,19 @@
       const list = groups[br];
       if (!list || !list.length) return;
       html += `<div class="section-title" style="margin-top:6px;">📍 ${esc(br)} <span style="color:var(--muted);font-weight:400;">(${list.length})</span></div>`;
-      list.forEach(r => { html += estatusCard(r, false, false); });
+      list.forEach(r => {
+        html += (estatusTab === 'comp')
+          ? renderComprasCard(r, false, false)
+          : renderMantenimientoCard(r, false, false);
+      });
     });
     if (doneRows.length) {
-      html += `<div class="section-title" style="margin-top:6px;">✅ Completadas <span style="color:var(--muted);font-weight:400;">(${doneRows.length})</span></div>`;
-      doneRows.forEach(r => { html += estatusCard(r, true, false); });
+      html += `<div class="section-title" style="margin-top:14px;">✅ Completadas <span style="color:var(--muted);font-weight:400;">(${doneRows.length})</span></div>`;
+      doneRows.forEach(r => {
+        html += (estatusTab === 'comp')
+          ? renderComprasCard(r, true, false)
+          : renderMantenimientoCard(r, true, false);
+      });
     }
     listEl.innerHTML = html;
   }
@@ -4760,6 +5117,10 @@
         ['Sucursal', row.branch],
         ['Solicitante', submitter],
         ['Status', statusLabel],
+        ['Etapa actual', statusLabel],
+        ['Tiempo abierto', formatDiasAbierto(row.created_at)],
+        ['Última actividad', formatUltimaActividad(row.updated_at || row.created_at)],
+        ['Próximo seguimiento', formatProximoSeguimiento(row.next_follow_up_at)],
         ['Duración', formatDuration(row.created_at, row.completed_at)],
         ...(row.cost != null && !isNaN(Number(row.cost)) ? [['Costo', formatMxn(row.cost)]] : []),
         ...(row.repairer_name ? [['Quién lo reparó', esc(row.repairer_name)]] : []),
@@ -5251,13 +5612,73 @@
   // Tap a request card -> open its detail modal (but not when tapping the
   // inline advance button or inline edit button, which have their own handlers).
   document.addEventListener('click', (e) => {
-    const filterBtn = e.target.closest('.estatus-filter-btn');
-    if (filterBtn) {
-      const mode = filterBtn.getAttribute('data-estatus-filter');
-      if (mode && (mode === 'todos' || mode === 'abiertos')) {
-        estatusFilter = mode;
+    const segBtn = e.target.closest('#estatus-seg button');
+    if (segBtn) {
+      const tab = segBtn.getAttribute('data-est');
+      if (tab && (tab === 'comp' || tab === 'mant')) {
+        estatusTab = tab;
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('nudo_estatus_tab', tab);
+        }
         renderEstatusView();
       }
+      return;
+    }
+
+    const openBtn = e.target.closest('#estatus-open-seg button');
+    if (openBtn) {
+      const mode = openBtn.getAttribute('data-open');
+      if (mode === 'open') estatusOpenOnly = true;
+      else if (mode === 'all') estatusOpenOnly = false;
+      renderEstatusView();
+      return;
+    }
+
+    const cardDateSave = e.target.closest('.estatus-mant-card-date-save');
+    if (cardDateSave) {
+      const id = cardDateSave.getAttribute('data-id');
+      const input = document.getElementById('estatus-mant-next-card-' + id) || document.querySelector(`.estatus-mant-card-date[data-id="${id}"]`);
+      const raw = (input && input.value) ? input.value : '';
+      const val = raw ? new Date(raw + 'T12:00:00').toISOString() : null;
+      cardDateSave.disabled = true;
+      (async () => {
+        const { error } = await supabase.from('maintenance_requests').update({ next_follow_up_at: val }).eq('id', id);
+        if (error) {
+          showMsg($('estatus-msg'), 'Error al guardar seguimiento: ' + error.message, 'err');
+          cardDateSave.disabled = false;
+          return;
+        }
+        const cached = estatusRowsCache.find(r => r.table === 'maintenance_requests' && r.id === id);
+        if (cached) cached.next_follow_up_at = val;
+        toast(val ? '✅ Próximo seguimiento guardado' : '✅ Seguimiento quitado');
+        renderEstatusView();
+      })();
+      return;
+    }
+
+    const cardNoteBtn = e.target.closest('.estatus-mant-card-note-btn');
+    if (cardNoteBtn) {
+      const id = cardNoteBtn.getAttribute('data-id');
+      const row = estatusRowsCache.find(r => r.table === 'maintenance_requests' && r.id === id);
+      if (!row) return;
+      const text = (prompt('Anotar seguimiento para esta solicitud:') || '').trim();
+      if (!text) return;
+      cardNoteBtn.disabled = true;
+      (async () => {
+        const author = await resolveCurrentUserName();
+        const cur = row.follow_ups || [];
+        const entry = { at: new Date().toISOString(), by: author.by, by_name: author.by_name, text, kind: 'followup' };
+        const updated = [...cur, entry];
+        const { error } = await supabase.from('maintenance_requests').update({ follow_ups: updated }).eq('id', id);
+        if (error) {
+          showMsg($('estatus-msg'), 'Error al guardar seguimiento: ' + error.message, 'err');
+          cardNoteBtn.disabled = false;
+          return;
+        }
+        row.follow_ups = updated;
+        toast('✅ Seguimiento agregado');
+        renderEstatusView();
+      })();
       return;
     }
 
