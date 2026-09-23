@@ -1069,6 +1069,13 @@
             </div>
             <textarea class="t-detail hidden" data-for="b-propinas" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)" placeholder="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)"></textarea>
           </div>
+          <div class="field"><label>Sobres <span style="color:var(--muted);font-size:0.8rem;">(¿se entregaron?)</span></label>
+            <div class="radio-group">
+              <label><input type="radio" name="t-sobres" value="ok"><span>✅</span></label>
+              <label><input type="radio" name="t-sobres" value="problema"><span>⚠️</span></label>
+            </div>
+            <textarea class="t-detail hidden" data-for="t-sobres" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué pasó con los sobres? (quién los recibió, o si quedaron en caja)" placeholder="¿Se entregaron los sobres?"></textarea>
+          </div>
           <div class="field"><label>Descuentos y Cortesías <span style="color:var(--muted);font-size:0.8rem;">(qué, a quién, por qué)</span></label>
             <div class="radio-group">
               <label><input type="radio" name="t-promos" value="ok"><span>✅</span></label>
@@ -1590,7 +1597,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.206";
+  const APP_VERSION = "v0.207";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -2371,7 +2378,7 @@
   // La llave incluye el id del usuario: en un teléfono COMPARTIDO el borrador de un
   // capitán no debe aparecerle a otro. Se resuelve al abrir el formulario, no al cargar
   // la página (todavía no hay sesión entonces).
-  const BITACORA_THEMES = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','corte','promos'];
+  const BITACORA_THEMES = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','corte','promos','sobres'];
   let __draftUserId = null;
   async function draftUserId() {
     if (__draftUserId) return __draftUserId;
@@ -4752,10 +4759,10 @@
     const sucursal = document.querySelector('input[name="b-sucursal"]:checked');
     if (!sucursal || !corte || !afluencia) { showMsg($('b-msg'), 'Selecciona sucursal, corte y afluencia', 'err'); return; }
     // All theme toggles + propinas are mandatory (Ben 2026-09-08)
-    const requiredThemes = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','corte','promos'];
+    const requiredThemes = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','corte','promos','sobres'];
     const missingTheme = requiredThemes.find(t => !document.querySelector(`input[name="t-${t}"]:checked`));
     if (missingTheme) {
-      const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', reservaciones:'Reservaciones', corte:'Corte', promos:'Descuentos y cortesías' };
+      const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', reservaciones:'Reservaciones', corte:'Corte', promos:'Descuentos y cortesías', sobres:'Sobres' };
       showMsg($('b-msg'), `Falta calificar: ${themeLabels[missingTheme]}`, 'err'); return;
     }
     const propinasSel = document.querySelector('input[name="b-propinas"]:checked');
@@ -4796,7 +4803,7 @@
     const bPhoto = $('b-photo').files[0];
 
     // Build a read-only summary for the review modal
-    const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', reservaciones:'Reservaciones', corte:'Corte', promos:'Descuentos y cortesías' };
+    const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', reservaciones:'Reservaciones', corte:'Corte', promos:'Descuentos y cortesías', sobres:'Sobres' };
     const themeRows = Object.keys(themeLabels).map(t => {
       const v = temas[t];
       if (!v || v.ok === null) return null;
@@ -6174,7 +6181,7 @@
   // ---- [sticky-submit] live readiness for Bitácora (v0.113) ----
   function missingBitacoraCount() {
     let n = 0;
-    ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','corte','promos'].forEach(t => { if (!document.querySelector(`input[name="t-${t}"]:checked`)) n++; });
+    ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','corte','promos','sobres'].forEach(t => { if (!document.querySelector(`input[name="t-${t}"]:checked`)) n++; });
     ['b-corte','b-afluencia','b-sucursal','b-propinas'].forEach(nm => { if (!document.querySelector(`input[name="${nm}"]:checked`)) n++; });
     if ($('b-confirm') && !$('b-confirm').checked) n++;
     return n;
