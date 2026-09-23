@@ -482,6 +482,11 @@
   .plan-modal .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
   .plan-modal label { font-size: 0.8rem; color: var(--muted); min-width: 52px; }
   .plan-modal input[type="time"] { flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg, transparent); color: var(--ink); }
+  /* Whole-hour selects (Ben 2026-09-23) — 24h labels, thumb-friendly. Replaces
+     <input type="time"> so minutes are not expressible. */
+  .plan-modal .plan-hour, .plan-add .plan-hour { flex: 1; padding: 8px; border: 1px solid var(--border);
+    border-radius: 6px; background: var(--input-bg, transparent); color: var(--ink);
+    font-size: 16px; min-height: 44px; font-variant-numeric: tabular-nums; }
   .plan-modal .actions { display: flex; gap: 8px; margin-top: 14px; }
   .plan-modal .actions button { flex: 1; }
   .plan-cov-cell { padding: 4px 2px !important; text-align: center; }
@@ -1334,14 +1339,9 @@
         <div class="box">
           <h3 id="plan-day-modal-title"></h3>
           <div class="row"><label>Persona</label><select id="plan-day-staff" class="panelist-select"></select></div>
-          <div class="row"><label>Entra</label><input type="time" id="plan-day-start"></div>
-          <div class="row"><label>Sale</label><input type="time" id="plan-day-end"></div>
-          <div class="plan-quick-times" style="display:flex;gap:6px;justify-content:center;margin:12px 0;">
-            <button class="btn btn-secondary plan-qt-btn" data-s="09:00" data-e="18:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">9 a 6</button>
-            <button class="btn btn-secondary plan-qt-btn" data-s="11:00" data-e="20:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">11 a 8</button>
-            <button class="btn btn-secondary plan-qt-btn" data-s="12:00" data-e="22:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">12 a 10</button>
-            <button class="btn btn-secondary plan-qt-btn" data-s="13:00" data-e="23:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">1 a 11</button>
-          </div>
+          <div class="row"><label>Entra</label><select id="plan-day-start" class="plan-hour"></select></div>
+          <div class="row"><label>Sale</label><select id="plan-day-end" class="plan-hour"></select></div>
+          <div class="plan-quick-times" id="plan-day-quick" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:12px 0;"></div>
           <div class="actions">
             <button class="btn btn-secondary" id="plan-day-delete">Quitar</button>
             <button class="btn" id="plan-day-save">Guardar</button>
@@ -1354,14 +1354,9 @@
         <div class="box">
           <h3 id="plan-modal-title"></h3>
           <div class="row"><label>Persona</label><select id="plan-staff" class="panelist-select"></select></div>
-          <div class="row"><label>Entra</label><input type="time" id="plan-start"></div>
-          <div class="row"><label>Sale</label><input type="time" id="plan-end"></div>
-          <div class="plan-quick-times" style="display:flex;gap:6px;justify-content:center;margin:12px 0;">
-            <button class="btn btn-secondary plan-qt-btn" data-s="09:00" data-e="18:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">9 a 6</button>
-            <button class="btn btn-secondary plan-qt-btn" data-s="11:00" data-e="20:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">11 a 8</button>
-            <button class="btn btn-secondary plan-qt-btn" data-s="12:00" data-e="22:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">12 a 10</button>
-            <button class="btn btn-secondary plan-qt-btn" data-s="13:00" data-e="23:00" style="padding:4px 8px;font-size:0.8rem;min-height:30px;">1 a 11</button>
-          </div>
+          <div class="row"><label>Entra</label><select id="plan-start" class="plan-hour"></select></div>
+          <div class="row"><label>Sale</label><select id="plan-end" class="plan-hour"></select></div>
+          <div class="plan-quick-times" id="plan-quick" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:12px 0;"></div>
           <div class="actions">
             <button class="btn btn-secondary" id="plan-descanso">Descanso</button>
             <button class="btn btn-secondary" id="plan-clear">Quitar</button>
@@ -1701,7 +1696,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.6";
+  const APP_VERSION = "v0.209.7";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -3779,8 +3774,12 @@
     });
     $('plan-staff').innerHTML = opts;
     const def = PLAN_DEFAULT_TIMES[role] || { start: '11:00', end: '21:00' };
-    $('plan-start').value = sh && sh.start_time ? sh.start_time : def.start;
-    $('plan-end').value = sh && sh.end_time ? sh.end_time : def.end;
+    // Whole-hour selects + role-specific presets (Ben 2026-09-23). Values come from the
+    // existing row when editing, otherwise the role default.
+    planFillHourSelects('plan-start', 'plan-end',
+                        (sh && sh.start_time) ? sh.start_time : def.start,
+                        (sh && sh.end_time) ? sh.end_time : def.end);
+    planRenderPresets('plan-quick', role, 'plan-start', 'plan-end');
     $('plan-modal').classList.remove('hidden');
     planCell = { slot, dayIdx, role, date };
   }
@@ -3930,8 +3929,10 @@
       opts += `<option value="${s.id}"${sel}>${esc(s.name)}</option>`;
     });
     $('plan-day-staff').innerHTML = opts;
-    $('plan-day-start').value = sh && sh.start_time ? sh.start_time : ((PLAN_DEFAULT_TIMES[role]||{}).start || '11:00');
-    $('plan-day-end').value = sh && sh.end_time ? sh.end_time : ((PLAN_DEFAULT_TIMES[role]||{}).end || '21:00');
+    planFillHourSelects('plan-day-start', 'plan-day-end',
+                        (sh && sh.start_time) ? sh.start_time : ((PLAN_DEFAULT_TIMES[role]||{}).start || '11:00'),
+                        (sh && sh.end_time) ? sh.end_time : ((PLAN_DEFAULT_TIMES[role]||{}).end || '21:00'));
+    planRenderPresets('plan-day-quick', role, 'plan-day-start', 'plan-day-end');
     $('plan-day-delete').style.display = sh ? '' : 'none';
     $('plan-day-modal').classList.remove('hidden');
     planDayTarget = { shiftId: sh ? sh.id : null, role, date };
@@ -4212,13 +4213,74 @@
   $('plan-day-save').addEventListener('click', planSaveDayShift);
   $('plan-day-delete').addEventListener('click', planDeleteDayShift);
   $('plan-day-modal').addEventListener('click', e => { if (e.target === $('plan-day-modal')) planCloseDayModal(); });
+  // ── PLANNER HOURS: whole hours only, 24-hour clock (Ben 2026-09-23) ──────────────
+  // "For the planning of work hours ... we only start on the hour, so update
+  //  accordingly, don need minute or second."
+  //
+  // The old <input type="time"> let a captain pick 13:17 — a value the business never
+  // uses, and one the schedule then displayed as-is. Both controls are now selects
+  // built from WHOLE hours only, so a :17 shift is not expressible in the UI at all.
+  //
+  // 24-hour values throughout: the stored strings stay "HH:00" (no format change to
+  // existing rows), and the LABEL is rendered 24h, e.g. "13:00" — never "1 p.m.".
+  const PLAN_HOURS = [];
+  for (let h = 6; h <= 23; h++) PLAN_HOURS.push(String(h).padStart(2, '0') + ':00');
+
+  function planHourOptions(selected, includeNone) {
+    let o = includeNone ? '<option value="">— Sin hora —</option>' : '';
+    const sel = selected || '';
+    let found = PLAN_HOURS.indexOf(sel) !== -1;
+    PLAN_HOURS.forEach(h => {
+      o += `<option value="${h}"${h === sel ? ' selected' : ''}>${h}</option>`;
+    });
+    // An off-hour value that somehow already exists (legacy row) must never be
+    // silently rewritten to a different time — show it so the user sees the truth.
+    if (sel && !found) o = `<option value="${escAttr(sel)}" selected>${esc(sel)}</option>` + o;
+    return o;
+  }
+
+  // Per-role shift presets (Ben 2026-09-23). Kitchen/Cocina keeps the previous
+  // 13–23 default; Capitán gets the two variants Ben actually uses.
+  const PLAN_ROLE_PRESETS = {
+    'Capitán':    [['12:00', '20:00'], ['15:00', '23:00'], ['13:00', '23:00']],
+    'Mesero':     [['11:00', '20:00'], ['12:00', '22:00'], ['13:00', '23:00']],
+    'Barra':      [['12:00', '22:00'], ['13:00', '23:00'], ['11:00', '20:00']],
+    'Cocina':     [['13:00', '23:00'], ['11:00', '20:00'], ['12:00', '22:00']],
+    'Producción': [['09:00', '18:00'], ['08:00', '17:00'], ['10:00', '19:00']]
+  };
+  const PLAN_PRESET_FALLBACK = [['13:00', '23:00'], ['11:00', '20:00'], ['12:00', '22:00']];
+
+  function planRenderPresets(containerId, role, startSel, endSel) {
+    const box = $(containerId);
+    if (!box) return;
+    const presets = PLAN_ROLE_PRESETS[role] || PLAN_PRESET_FALLBACK;
+    box.innerHTML = presets.map(([s, e]) =>
+      `<button type="button" class="btn btn-secondary plan-qt-btn" data-s="${s}" data-e="${e}"`
+      + ` style="padding:6px 10px;font-size:0.85rem;min-height:36px;">${s} a ${e}</button>`
+    ).join('');
+    box.querySelectorAll('.plan-qt-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const s = btn.getAttribute('data-s'), e = btn.getAttribute('data-e');
+        if (startSel && $(startSel)) $(startSel).value = s;
+        if (endSel && $(endSel)) $(endSel).value = e;
+      });
+    });
+  }
+
+  function planFillHourSelects(startSel, endSel, startVal, endVal) {
+    const sEl = $(startSel), eEl = $(endSel);
+    if (sEl) sEl.innerHTML = planHourOptions(startVal, false);
+    if (eEl) eEl.innerHTML = planHourOptions(endVal, false);
+  }
+
+  // Legacy `.plan-qt-btn` markup is gone; presets are rendered per role on open.
   document.querySelectorAll('.plan-qt-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       const p = e.target.closest('.plan-modal');
-      const startInp = p.querySelector('input[type="time"][id$="start"]');
-      const endInp = p.querySelector('input[type="time"][id$="end"]');
-      if(startInp) startInp.value = e.target.getAttribute('data-s');
-      if(endInp) endInp.value = e.target.getAttribute('data-e');
+      const startInp = p.querySelector('select.plan-hour[id$="start"]');
+      const endInp = p.querySelector('select.plan-hour[id$="end"]');
+      if (startInp) startInp.value = e.target.getAttribute('data-s');
+      if (endInp) endInp.value = e.target.getAttribute('data-e');
     });
   });
   $('plan-audit-toggle').addEventListener('click', planToggleAudit);
@@ -5218,7 +5280,7 @@
         ['Fecha de servicio (TBC)', serviceDateFormatted],
         ['Resultado', outcomeFormatted],
         ...(row.status === 'Cancelado' && row.cancel_reason ? [['Motivo de cancelación', row.cancel_reason]] : []),
-        ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]
+        ['Fecha', new Date(row.created_at).toLocaleString('es-MX', { hour12: false })]
       );
     } else {
       detailRows.push(
@@ -5233,7 +5295,7 @@
         ['Solicitante', submitter],
         ['Status', statusLabel],
         ...(row.status === 'Cancelado' && row.cancel_reason ? [['Motivo de cancelación', row.cancel_reason]] : []),
-        ['Fecha', new Date(row.created_at).toLocaleString('es-MX')]
+        ['Fecha', new Date(row.created_at).toLocaleString('es-MX', { hour12: false })]
       );
     }
 
@@ -5278,7 +5340,7 @@
           ${list.length === 0 ? '<div style="font-size:0.85rem;color:var(--muted);font-style:italic;">Sin seguimientos</div>' : `
             <div style="display:flex;flex-direction:column;gap:8px;">
               ${list.map(f => {
-                const dateStr = f.at ? new Date(f.at).toLocaleString('es-MX') : '—';
+                const dateStr = f.at ? new Date(f.at).toLocaleString('es-MX', { hour12: false }) : '—';
                 const author = esc(f.by_name || 'Personal');
                 const tag = f.kind === 'not_resolved' ? ' <span style="display:inline-block;background:#fce8e6;color:#d93025;font-size:0.75rem;font-weight:700;padding:1px 6px;border-radius:6px;margin-left:4px;">No resuelto</span>' : '';
                 return `
@@ -5862,7 +5924,7 @@
     const w = window.open('', '_blank', 'width=800,height=900');
     if (!w) { showMsg(estatusMsgEl(), 'Permite las ventanas emergentes para descargar el PDF', 'err'); return; }
     const branch = d.branch || '—';
-    const date = d.created_at ? new Date(d.created_at).toLocaleString('es-MX') : '—';
+    const date = d.created_at ? new Date(d.created_at).toLocaleString('es-MX', { hour12: false }) : '—';
     const statusLabel = (statusMeta({ kind: table === 'purchases' ? 'comp' : 'mant' })[d.status] && statusMeta({ kind: table === 'purchases' ? 'comp' : 'mant' })[d.status].label) || d.status || '—';
     const title = table === 'purchases' ? 'Solicitud de Compra' : 'Solicitud de Mantenimiento (Reparación)';
     const kind = table === 'purchases' ? 'Compra' : 'Reparación';
@@ -5902,7 +5964,7 @@
       <table>${bodyRows}</table>
       ${photos}
       <hr/>
-      <p style="font-size:10px;color:#999;">Generado por Nudo Hub · ${new Date().toLocaleString('es-MX')}</p>
+      <p style="font-size:10px;color:#999;">Generado por Nudo Hub · ${new Date().toLocaleString('es-MX', { hour12: false })}</p>
       <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 400); };<\/script>
     </body></html>`);
     w.document.close();
