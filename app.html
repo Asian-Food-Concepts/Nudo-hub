@@ -443,6 +443,11 @@
   .plan-cell { cursor: pointer; border-radius: 6px; min-height: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
   .plan-cell.shift { background: rgba(60,140,220,0.14); }
   .plan-cell.descanso { background: rgba(150,150,150,0.12); color: var(--muted); }
+  /* Duplicate-assignment flag (Ben 2026-09-23) — a person scheduled at BOTH outlets the
+     same day. Allowed to save; this marks it so it is not missed in the grid. */
+  .plan-dup-flag { display: inline-block; font-size: 0.7rem; line-height: 1; margin-right: 3px;
+                   vertical-align: middle; }
+  .plan-slot-btn.has-dup { border-color: #d97706; box-shadow: inset 0 0 0 1px rgba(217,119,6,0.35); background: rgba(217,119,6,0.08); }
   .plan-cell.empty { color: var(--muted); }
   .plan-cell .t { font-weight: 600; font-size: 0.78rem; }
   .plan-cell .h { font-size: 0.68rem; color: var(--muted); }
@@ -1358,7 +1363,6 @@
           <div class="row"><label>Sale</label><select id="plan-end" class="plan-hour"></select></div>
           <div class="plan-quick-times" id="plan-quick" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:12px 0;"></div>
           <div class="actions">
-            <button class="btn btn-secondary" id="plan-descanso">Descanso</button>
             <button class="btn btn-secondary" id="plan-clear">Quitar</button>
             <button class="btn" id="plan-save">Guardar</button>
           </div>
@@ -1696,7 +1700,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.7";
+  const APP_VERSION = "v0.209.8";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -3491,7 +3495,7 @@
     'Producción':['Producción 1']
   };
 
-  let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [], extraSlots: {}, tab: 'puesto', view: (window.innerWidth < 700 ? 'day' : 'week'), dayIdx: 0, auditRole: false, currentProfileId: null };
+  let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [], otherBranchShifts: [], extraSlots: {}, tab: 'puesto', view: (window.innerWidth < 700 ? 'day' : 'week'), dayIdx: 0, auditRole: false, currentProfileId: null };
   let planWarningsExpanded = false;
 
   function planSlotsNeeded(role) {
@@ -3612,6 +3616,35 @@
       .select('*').eq('branch', planState.branch)
       .gte('shift_date', s).lte('shift_date', e);
     planState.shifts = (error ? [] : (data || []));
+    // Ben 2026-09-23: a person scheduled at BOTH outlets on the SAME DAY is allowed to
+    // pass through, but must be FLAGGED. The grid only loads ONE branch, so the other
+    // outlet's week is invisible here — without this second fetch the conflict cannot be
+    // seen at all. Failure is non-fatal: the planner still works, we just cannot flag.
+    try {
+      const { data: other } = await supabase.from('shifts')
+        .select('*').neq('branch', planState.branch)
+        .gte('shift_date', s).lte('shift_date', e);
+      planState.otherBranchShifts = (other || []);
+    } catch (e2) {
+      planState.otherBranchShifts = [];
+    }
+  }
+
+  // Other-outlet shifts for a person on a given date (excluding rest days, which do not
+  // occupy their day). Returns the rows so the caller can name the outlet and times.
+  function planCrossBranchDupes(staffId, date) {
+    if (!staffId || !date) return [];
+    return (planState.otherBranchShifts || []).filter(x =>
+      x && x.staff_id === staffId && x.shift_date === date && x.status !== 'descanso');
+  }
+
+  // Same-outlet, same-day duplicates: two slots at THIS branch holding one person.
+  // Only possible via "+ Agregar" extra slots; the unique index does not prevent it.
+  function planSameBranchDupes(staffId, date, excludeShiftId) {
+    if (!staffId || !date) return [];
+    return (planState.shifts || []).filter(x =>
+      x && x.staff_id === staffId && x.shift_date === date && x.status !== 'descanso'
+      && x.id !== excludeShiftId);
   }
 
   // Build the list of slots for a role: minimums + any extra slots added.
@@ -3724,12 +3757,21 @@
           const sh = planShiftForSlot(slot, i);
           const assigned = sh ? (planState.staff.find(s => s.id === sh.staff_id) || null) : null;
           const isDescanso = sh && sh.status === 'descanso';
+          const rowDup = (sh && !isDescanso && sh.staff_id)
+            ? planCrossBranchDupes(sh.staff_id, date).length : 0;
           // v0.118: tap-to-open popup cell (no inline dropdown — popup picks person + times)
-          let inner = `<button class="plan-slot-btn${isDescanso ? ' off' : ''}" data-slot="${slot}" data-day="${i}" data-role="${role}">`;
+          let inner = `<button class="plan-slot-btn${isDescanso ? ' off' : ''}${rowDup ? ' has-dup' : ''}" data-slot="${slot}" data-day="${i}" data-role="${role}">`;
           if (isDescanso) {
             inner += `<span class="off-label">Descanso</span>`;
           } else if (assigned) {
-            inner += `<span class="nm">${esc(assigned.name)}</span><span class="tm">${sh.start_time||''}–${sh.end_time||''}</span>`;
+            // 🚩 Cross-outlet duplicate (Ben 2026-09-23): same person, same day, other
+            // branch. Allowed to pass — but flagged in the cell so it is visible without
+            // opening the modal, plus a title for the detail on hover/long-press.
+            const dupes = planCrossBranchDupes(sh.staff_id, date);
+            const dupMark = dupes.length
+              ? `<span class="plan-dup-flag" title="También programado en ${esc(dupes.map(d => d.branch).join(', '))}${dupes[0].start_time ? ' ' + esc(dupes[0].start_time) + '–' + esc(dupes[0].end_time || '') : ''} el mismo día">🚩</span>`
+              : '';
+            inner += `${dupMark}<span class="nm">${esc(assigned.name)}</span><span class="tm">${sh.start_time||''}–${sh.end_time||''}</span>`;
           } else {
             inner += `<span class="empty">—</span>`;
           }
@@ -3828,9 +3870,34 @@
     }
     if ($('plan-errors')) $('plan-errors').innerHTML = '';
     if (saved) await planAudit(existing ? 'update' : 'create', saved, existing ? existing : null);
+    // ── DUPLICATE NOTICE (Ben 2026-09-23) ────────────────────────────────────────
+    // The save has ALREADY succeeded above — "allow it to pass through but flag". This is
+    // a notice, never a block, and it is computed from the reloaded state so it reflects
+    // what is actually in the database rather than what we intended to write.
     await planLoadShifts();
+    await planNoticeDuplicates(staffId, date);
     planRender();
     planCloseModal();
+  }
+
+  // Show a dismissible banner when the person just scheduled is already working the other
+  // outlet (or another slot at this one) on the same day. Never blocks the save.
+  async function planNoticeDuplicates(staffId, date) {
+    const box = $('plan-errors');
+    if (!box) return;
+    box.innerHTML = '';
+    if (!staffId || !date) return;
+    const cross = planCrossBranchDupes(staffId, date);
+    const same = planSameBranchDupes(staffId, date, null);
+    if (!cross.length && !same.length) return;
+    const sname = planStaffName(staffId);
+    const bits = [];
+    cross.forEach(d => bits.push(`${esc(d.branch)} ${esc(d.start_time || '')}–${esc(d.end_time || '')}`));
+    same.forEach(d => bits.push(`${esc(planState.branch)} ${esc(d.start_time || '')}–${esc(d.end_time || '')}`));
+    box.innerHTML = `<div class="plan-warn red">
+      🚩 ${esc(sname)} ya está programado el mismo día en: ${bits.join(' · ')}.
+      <div style="margin-top:4px;font-weight:400;">Se guardó de todas formas — revisa que pueda cubrir ambos.</div>
+    </div>`;
   }
 
   // Add an extra slot for a role (e.g. a 4th Cocina on a busy day).
@@ -3990,6 +4057,8 @@
     if (saved) await planAudit(old ? 'update' : 'create', saved, old);
     planCloseDayModal();
     await planLoadShifts();
+    // Day-view path needs the same duplicate flag as the week view (Ben 2026-09-23).
+    await planNoticeDuplicates(staffId, date);
     planRender();
   }
 
@@ -4179,15 +4248,37 @@
       }
     });
 
-    const total = coverageWarns.length + hoursWarns.length;
+    // ── DUPLICATE ASSIGNMENTS (Ben 2026-09-23) ───────────────────────────────────
+    // Same person on the same day at BOTH outlets. Allowed to pass through — Ben asked
+    // for a FLAG, not a block — but it must be visible, because a person cannot work two
+    // outlets at once and the second shift will silently go uncovered.
+    const dupWarns = [];
+    const seenDup = {};
+    planState.shifts.forEach(sh => {
+      if (sh.status === 'descanso' || !sh.staff_id || !sh.shift_date) return;
+      const dupes = planCrossBranchDupes(sh.staff_id, sh.shift_date);
+      if (!dupes.length) return;
+      const key = sh.staff_id + '|' + sh.shift_date;
+      if (seenDup[key]) return;
+      seenDup[key] = true;
+      const sname = planStaffName(sh.staff_id);
+      const other = dupes.map(d =>
+        `${d.branch}${d.start_time ? ' ' + d.start_time + '–' + (d.end_time || '') : ''}`).join(', ');
+      dupWarns.push({
+        type: 'red',
+        text: `🚩 ${sname}: mismo día en ${planState.branch} y ${esc(other)} (${sh.shift_date.slice(8,10)}/${sh.shift_date.slice(5,7)})`
+      });
+    });
+
+    const total = coverageWarns.length + hoursWarns.length + dupWarns.length;
     if (!total) {
       box.innerHTML = '<div class="plan-warn ok">✅ Todo cubierto según mínimos y horarios de 48h.</div>';
     } else {
-      const allWarns = coverageWarns.concat(hoursWarns);
+      const allWarns = coverageWarns.concat(dupWarns, hoursWarns);
       const detailsHtml = allWarns.map(w => `<div class="plan-warn ${w.type}" style="margin-bottom:6px;">${w.text}</div>`).join('');
       box.innerHTML = `
         <button type="button" id="plan-warn-toggle" class="plan-warn yellow" style="width:100%;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border:1px solid rgba(220,160,40,0.3);background:rgba(220,160,40,0.12);color:#a70;border-radius:8px;padding:8px 12px;font-size:0.82rem;font-family:inherit;min-height:44px;text-align:left;">
-          <span>⚠️ ${total} aviso${total === 1 ? '' : 's'}: ${coverageWarns.length} de cobertura · ${hoursWarns.length} de horas</span>
+          <span>⚠️ ${total} aviso${total === 1 ? '' : 's'}: ${coverageWarns.length} de cobertura · ${hoursWarns.length} de horas${dupWarns.length ? ' · ' + dupWarns.length + ' de duplicado' : ''}</span>
           <span style="font-size:0.75rem;font-weight:600;color:var(--muted);white-space:nowrap;margin-left:8px;">${planWarningsExpanded ? '▲ Ocultar' : '▼ Ver'}</span>
         </button>
         <div id="plan-warn-details" class="${planWarningsExpanded ? '' : 'hidden'}" style="margin-top:6px;">
@@ -4206,7 +4297,11 @@
 
   // modal buttons
   $('plan-save').addEventListener('click', () => planSaveShift('programado', $('plan-staff').value, $('plan-start').value, $('plan-end').value));
-  $('plan-descanso').addEventListener('click', () => planSaveShift('descanso', $('plan-staff').value, '', ''));
+  // Descanso button removed from the modal (Ben 2026-09-23: "Descanso button in the
+  // selector not needed"). Rest days are still fully supported where they belong —
+  // the Descansos form, and any EXISTING shift row with status 'descanso' still renders
+  // as "Descanso" and is still treated as non-covering by every count. This only drops
+  // the shortcut in the shift picker.
   $('plan-clear').addEventListener('click', () => planSaveShift('clear', '', '', ''));
   $('plan-modal').addEventListener('click', e => { if (e.target === $('plan-modal')) planCloseModal(); });
   // day view modal + view toggle + audit (v0.106)
