@@ -1069,7 +1069,7 @@
             </div>
             <textarea class="t-detail hidden" data-for="b-propinas" data-ph-ok="Comentario / nota (opcional)" data-ph-problema="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)" placeholder="¿Qué pasó con las propinas? (quién, por qué, cómo se repartieron)"></textarea>
           </div>
-          <div class="field"><label>Sobres <span style="color:var(--muted);font-size:0.8rem;">(¿se entregaron?)</span></label>
+          <div class="field"><label>Sobres <span style="color:var(--muted);font-size:0.8rem;">(opcional — ¿se entregaron?)</span></label>
             <div class="radio-group">
               <label><input type="radio" name="t-sobres" value="ok"><span>✅</span></label>
               <label><input type="radio" name="t-sobres" value="problema"><span>⚠️</span></label>
@@ -1597,7 +1597,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.207";
+  const APP_VERSION = "v0.208";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -2379,6 +2379,12 @@
   // capitán no debe aparecerle a otro. Se resuelve al abrir el formulario, no al cargar
   // la página (todavía no hay sesión entonces).
   const BITACORA_THEMES = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','corte','promos','sobres'];
+  // Ben 2026-09-22: Sobres is OPTIONAL. It is a delivery confirmation and not every
+  // shift produces one, so forcing a tap would train people to answer it blindly.
+  // Derived, not hand-listed: one edit here changes validation, readiness and the
+  // label map together, so they cannot drift apart again.
+  const BITACORA_OPTIONAL_THEMES = ['sobres'];
+  const BITACORA_REQUIRED_THEMES = BITACORA_THEMES.filter(t => !BITACORA_OPTIONAL_THEMES.includes(t));
   let __draftUserId = null;
   async function draftUserId() {
     if (__draftUserId) return __draftUserId;
@@ -4759,7 +4765,7 @@
     const sucursal = document.querySelector('input[name="b-sucursal"]:checked');
     if (!sucursal || !corte || !afluencia) { showMsg($('b-msg'), 'Selecciona sucursal, corte y afluencia', 'err'); return; }
     // All theme toggles + propinas are mandatory (Ben 2026-09-08)
-    const requiredThemes = ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','corte','promos','sobres'];
+    const requiredThemes = BITACORA_REQUIRED_THEMES;
     const missingTheme = requiredThemes.find(t => !document.querySelector(`input[name="t-${t}"]:checked`));
     if (missingTheme) {
       const themeLabels = { personal:'Personal', servicio:'Servicio', comida:'Comida', bebidas:'Bebidas', instalacion:'Mantenimiento', limpieza:'Limpieza', seguridad:'Seguridad', reservaciones:'Reservaciones', corte:'Corte', promos:'Descuentos y cortesías', sobres:'Sobres' };
@@ -4768,9 +4774,11 @@
     const propinasSel = document.querySelector('input[name="b-propinas"]:checked');
     if (!propinasSel) { showMsg($('b-msg'), 'Selecciona el estado de las propinas', 'err'); return; }
     if (!$('b-confirm').checked) { showMsg($('b-msg'), 'Confirma el cierre', 'err'); return; }
-    // Build the temas object from all theme toggles + their detail texts
+    // Build the temas object from ALL theme toggles (optional ones included) + their
+    // detail texts. Building from `requiredThemes` here would silently DROP an optional
+    // category from the payload.
     const temas = {};
-    requiredThemes.forEach(t => {
+    BITACORA_THEMES.forEach(t => {
       const sel = document.querySelector(`input[name="t-${t}"]:checked`);
       const detailEl = document.querySelector(`textarea[data-for="t-${t}"]`);
       temas[t] = { ok: (sel.value === 'ok' || sel.value === 'ok_nota'), detalle: (detailEl && detailEl.value.trim()) || '' };
@@ -6181,7 +6189,7 @@
   // ---- [sticky-submit] live readiness for Bitácora (v0.113) ----
   function missingBitacoraCount() {
     let n = 0;
-    ['personal','servicio','comida','bebidas','instalacion','limpieza','seguridad','reservaciones','corte','promos','sobres'].forEach(t => { if (!document.querySelector(`input[name="t-${t}"]:checked`)) n++; });
+    BITACORA_REQUIRED_THEMES.forEach(t => { if (!document.querySelector(`input[name="t-${t}"]:checked`)) n++; });
     ['b-corte','b-afluencia','b-sucursal','b-propinas'].forEach(nm => { if (!document.querySelector(`input[name="${nm}"]:checked`)) n++; });
     if ($('b-confirm') && !$('b-confirm').checked) n++;
     return n;
