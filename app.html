@@ -1560,7 +1560,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.204";
+  const APP_VERSION = "v0.205";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -2144,7 +2144,7 @@
     // isRecl = Dueño or Gerente keep the real features; captains (isLeader
     // without management role) get greyed "Próximamente" placeholders parked
     // at the BOTTOM of Home; non-leaders see nothing (unchanged).
-    const isRecl = currentProfile ? isManagement(currentProfile.role, currentProfile.level) : false;
+    const isRecl = currentProfile ? isManagement(currentProfile.role, currentProfile.level, currentProfile.active) : false;
     const isCaptainOnly = (isLeader && !isRecl);
     const reclSection = document.getElementById('recl-section');
     const reclList = document.getElementById('recl-list');
@@ -4864,9 +4864,9 @@
       let user; try { user = await requireUser(); } catch(e) { return; }
       // Enforce leader role at submit (defense in depth)
       // v0.125: entrevistas insert = Dueño/Gerente only (captains disabled)
-      const { data: prof } = await supabase.from('profiles').select('role,level').eq('id', user.id).maybeSingle();
+      const { data: prof } = await supabase.from('profiles').select('role,level,active').eq('id', user.id).maybeSingle();
       const role = (prof && prof.role) || '';
-      const isRecl = isManagement(role, prof && prof.level);
+      const isRecl = isManagement(role, prof && prof.level, prof && prof.active);
       if (!isRecl) {
         showMsg($('i-msg'), 'Solo Dueño o Gerente pueden registrar entrevistas.', 'err');
         goHome();
@@ -5117,9 +5117,9 @@
       if (!first || !paterno) { showMsg(msg, 'Nombre y apellido paterno son obligatorios', 'err'); return; }
       let user; try { user = await requireUser(); } catch(err) { return; }
       // leader gate — v0.125: entrevistas edit = Dueño/Gerente only
-      const { data: prof } = await supabase.from('profiles').select('role,level').eq('id', user.id).maybeSingle();
+      const { data: prof } = await supabase.from('profiles').select('role,level,active').eq('id', user.id).maybeSingle();
       const role = (prof && prof.role) || '';
-      const isRecl = isManagement(role, prof && prof.level);
+      const isRecl = isManagement(role, prof && prof.level, prof && prof.active);
       if (!isRecl) { showMsg(msg, 'Solo Dueño o Gerente pueden editar entrevistas.', 'err'); return; }
       const panelists = Array.from(document.querySelectorAll('.ee-panelist')).map(v => v.value.trim()).filter(Boolean);
       const sal = $('ee-salario').value;
@@ -5159,9 +5159,9 @@
       if (!confirm('¿Eliminar definitivamente a "' + name + '"? Esta acción no se puede deshacer.')) return;
       let user; try { user = await requireUser(); } catch(err) { return; }
       // v0.125: entrevistas delete = Dueño/Gerente only
-      const { data: prof } = await supabase.from('profiles').select('role,level').eq('id', user.id).maybeSingle();
+      const { data: prof } = await supabase.from('profiles').select('role,level,active').eq('id', user.id).maybeSingle();
       const role = (prof && prof.role) || '';
-      const isRecl = isManagement(role, prof && prof.level);
+      const isRecl = isManagement(role, prof && prof.level, prof && prof.active);
       if (!isRecl) { showMsg(msg, 'Solo Dueño o Gerente pueden eliminar.', 'err'); return; }
       const { error } = await supabase.from('interviews').delete().eq('id', _editingId);
       if (error) { showMsg(msg, 'Error: ' + error.message, 'err'); return; }
@@ -6118,18 +6118,30 @@
     __writeGuardOn = true;
   }
 
-  // One definition of "management", matching the server's own gate:
-  // is_dueno() OR is_gerente() OR is_agf()  (is_agf == active and level <= 2).
-  // The old local rule (role === 'Dueño' || role.includes('gerente')) disagreed with the
-  // database, so a level-2 manager without "gerente" in their title was silently shown
-  // nothing. Level is the durable signal, so accept it too.
-  function isManagement(role, level) {
+  // One definition of "management". Ben (2026-09-22) removed the AGF tier:
+  // "Do without agf". The gate is now dueño OR gerente — matching the DB policy
+  // `is_dueno() OR is_gerente()` exactly, by ROLE only.
+  //
+  // History worth keeping: an earlier version accepted `level <= 2` to match
+  // is_agf(). That clause is gone on purpose. Level must NOT gate this, or any
+  // future L1/L2 non-manager (e.g. a Finance Director) would silently inherit
+  // access to onboarding data and contracts.
+  function isManagement(role, level, active) {
+    // `level` is accepted but deliberately NOT consulted (that was the AGF rule).
+    // `active` IS consulted, because the DB predicates both use coalesce(p.active,true):
+    //   is_dueno()   -> active AND role = 'Dueño'
+    //   is_gerente() -> active AND role ilike '%gerente%'
+    // Without it, a deactivated Dueño would see a button that the DB then rejects.
+    if (!coalesceActive(active)) return false;
     const r = String(role || '').toLowerCase();
-    if (!r && level == null) return false;
     if (String(role || '') === 'Dueño') return true;
     if (r.includes('gerente')) return true;
-    const lv = Number(level);
-    return Number.isFinite(lv) && lv <= 2;
+    return false;
+  }
+
+  // Mirrors the DB's coalesce(p.active, true): null/undefined mean "active".
+  function coalesceActive(v) {
+    return v === null || v === undefined ? true : !!v;
   }
 
   function realLevel() {

@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v100'; // v0.204: Nuevos ingresos edit modes, document ticks, send-back & hide; Compras PDF removed; improved date pickers // v0.203: Solicitud de compras unidades + monto por unidad & Visto como deshabilitado para todos // v0.202: Nuevos ingresos contract PDFs (revisión y firma), quick-edit modal & send-back mode B // v0.201: CUTOVER — the repo now carries a CNAME file, so GitHub Pages
+const CACHE = 'nudo-hub-v101'; // v0.205: AGF removed — management gate is dueño OR gerente (role only) // v0.204: Nuevos ingresos edit modes, document ticks, send-back & hide; Compras PDF removed; improved date pickers // v0.203: Solicitud de compras unidades + monto por unidad & Visto como deshabilitado para todos // v0.202: Nuevos ingresos contract PDFs (revisión y firma), quick-edit modal & send-back mode B // v0.201: CUTOVER — the repo now carries a CNAME file, so GitHub Pages
 // serves the app at https://hub.asianfoodconcepts.mx/ and the old project-site URL
 // (asian-food-concepts.github.io/Nudo-hub/) 301-redirects here. The version bump is what
 // moves EXISTING clients: a stale client detects the new version, reloads, follows the
