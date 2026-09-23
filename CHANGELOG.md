@@ -5,6 +5,18 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
+## [v0.209.5] - 2026-09-23
+
+### Cambiado (Changed)
+- **Seguimiento de solicitudes ahora son DOS páginas separadas** (Ben): **🛒 Compras** y **🔧 Mantenimiento**, cada una con su propia tarjeta en Inicio. Antes eran dos pestañas dentro de una misma página, con dos controles de filtro apilados que se veían confusos y recargados.
+  - Ya no se carga el contenido de ambas: cada página trae solo lo suyo.
+  - Se eliminó el conmutador de pestañas y el filtro duplicado; cada página conserva **🔴 Pendientes / Todas**.
+  - Cada tarjeta de Inicio muestra su **propio** contador de pendientes (antes el badge sumaba compras + mantenimiento en un solo lugar).
+  - Los mensajes de error ahora aparecen en la página que el usuario está viendo (antes se escribían en la página oculta).
+  - El auto-refresco en tiempo real respeta la página abierta: las compras solo recargan Compras y el mantenimiento solo Mantenimiento.
+
+---
+
 ## [v0.209.4] - 2026-09-23
 
 ### Cambiado (Changed)

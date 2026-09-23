@@ -843,10 +843,16 @@
         <div class="section-title">Seguimiento</div>
         <div class="card-list">
           <a class="card" href="#" data-form="estatus">
-            <div class="icon icon-form">📋</div>
-            <div class="text"><div class="title">Seguimiento de solicitudes</div><div class="sub">Da seguimiento a tus solicitudes</div></div>
+            <div class="icon icon-form">🛒</div>
+            <div class="text"><div class="title">Compras</div><div class="sub">Seguimiento a tus solicitudes de compra</div></div>
             <div class="arrow">›</div>
             <span id="estatus-badge" class="hidden" style="position:absolute;top:8px;right:34px;display:flex;gap:4px;align-items:center;"></span>
+          </a>
+          <a class="card" href="#" data-form="mantestatus">
+            <div class="icon icon-form">🔧</div>
+            <div class="text"><div class="title">Mantenimiento</div><div class="sub">Etapas, seguimiento e historial</div></div>
+            <div class="arrow">›</div>
+            <span id="mantestatus-badge" class="hidden" style="position:absolute;top:8px;right:34px;display:flex;gap:4px;align-items:center;"></span>
           </a>
         </div>
 
@@ -1342,22 +1348,33 @@
         </div>
       </div>
 
-      <!-- ESTATUS DE SOLICITUDES -->
+      <!-- ESTATUS DE SOLICITUDES — COMPRAS (own page, Ben 2026-09-23) -->
       <div id="form-estatus" class="form-page">
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card">
-          <h2>📋 Seguimiento de solicitudes</h2>
-          <p id="estatus-subhead" style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">Compras enviadas desde la app.</p>
-          <div class="seg" id="estatus-seg" style="margin-bottom:10px;">
-            <button type="button" data-est="comp" class="on" style="font-size:15px;font-weight:600;">🛒 Compras</button>
-            <button type="button" data-est="mant" style="font-size:15px;font-weight:600;">🔧 Mantenimiento</button>
-          </div>
+          <h2>🛒 Compras</h2>
+          <p id="estatus-subhead" style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">Solicitudes de compra y su estatus.</p>
           <div class="seg" id="estatus-open-seg" style="margin-bottom:14px;">
-            <button type="button" data-open="open" class="on" style="font-size:15px;font-weight:600;">🔴 Abiertos</button>
+            <button type="button" data-open="open" class="on" style="font-size:15px;font-weight:600;">🔴 Pendientes</button>
             <button type="button" data-open="all" style="font-size:15px;font-weight:600;">Todas</button>
           </div>
           <div id="estatus-msg" class="msg hidden"></div>
           <div id="estatus-list"></div>
+        </div>
+      </div>
+
+      <!-- ESTATUS DE SOLICITUDES — MANTENIMIENTO (own page, Ben 2026-09-23) -->
+      <div id="form-mantestatus" class="form-page">
+        <button class="back" data-back><span class="chev">‹</span> Volver</button>
+        <div class="form-card">
+          <h2>🔧 Mantenimiento</h2>
+          <p id="mantestatus-subhead" style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">Solicitudes de mantenimiento: etapas, seguimiento e historial.</p>
+          <div class="seg" id="mantestatus-open-seg" style="margin-bottom:14px;">
+            <button type="button" data-open="open" class="on" style="font-size:15px;font-weight:600;">🔴 Pendientes</button>
+            <button type="button" data-open="all" style="font-size:15px;font-weight:600;">Todas</button>
+          </div>
+          <div id="mantestatus-msg" class="msg hidden"></div>
+          <div id="mantestatus-list"></div>
         </div>
       </div>
 
@@ -1662,7 +1679,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.4";
+  const APP_VERSION = "v0.209.5";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -2546,25 +2563,30 @@
   // Comunicado con proveedor). Completed/terminal requests are NOT counted.
   async function updateEstatusBadge() {
     const badge = document.getElementById('estatus-badge');
-    if (!badge) return;
+    const mBadge = document.getElementById('mantestatus-badge');
+    if (!badge && !mBadge) return;
     try {
       const [m, c] = await Promise.all([
         supabase.from('maintenance_requests').select('status'),
         supabase.from('purchases').select('status')
       ]);
-      const statuses = [
-        ...(m.data || []).map(r => r.status),
-        ...(c.data || []).map(r => r.status)
-      ];
       // Solicitado = not yet acted on (red). In-process = Comprado / Comunicado (yellow).
-      const solicitado = statuses.filter(s => s === 'Solicitado').length;
-      const inProcess = statuses.filter(s => s === 'Comprado' || s === 'Comunicado con proveedor').length;
+      // Each card now counts its OWN kind (Ben 2026-09-23 — two separate pages).
       const seg = (n, color) => n > 0
         ? `<span style="background:${color};color:#fff;border-radius:999px;min-width:20px;height:20px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 6px;">${n > 99 ? '99+' : n}</span>`
         : '';
-      const html = seg(solicitado, '#e53935') + seg(inProcess, '#f9a825');
-      if (html) { badge.innerHTML = html; badge.classList.remove('hidden'); }
-      else { badge.classList.add('hidden'); }
+      const setBadge = (el, html) => {
+        if (!el) return;
+        if (html) { el.innerHTML = html; el.classList.remove('hidden'); }
+        else { el.classList.add('hidden'); }
+      };
+      const count = (rows, pick) => {
+        const st = (rows.data || []).map(r => r.status);
+        return seg(st.filter(s => s === 'Solicitado').length, '#e53935')
+             + seg(st.filter(s => pick.includes(s)).length, '#f9a825');
+      };
+      setBadge(badge,  count(c, ['Comprado', 'Comunicado con proveedor']));
+      setBadge(mBadge, count(m, ['Comprado', 'Comunicado con proveedor']));
     } catch(e) { /* non-fatal */ }
   }
 
@@ -3007,7 +3029,8 @@
       $('home-view').style.display = 'none';
       $('form-' + f).classList.add('active');
       if (f === 'horario') loadSchedule();
-      if (f === 'estatus') loadEstatus();
+      if (f === 'estatus')     { estatusTab = 'comp'; loadEstatus(); }
+      if (f === 'mantestatus') { estatusTab = 'mant'; loadEstatus(); }
       if (f === 'mantenimiento') loadMaintenanceAssets();
       if (f === 'entrevistas') { loadEntrevistas(); loadPanelistRoster(); if (window.__slidePuestoReposition) window.__slidePuestoReposition(); }
       if (f === 'entrevistados') { loadEntrevistados(); }
@@ -4416,7 +4439,7 @@
 
     const { error } = await supabase.from('maintenance_requests').update(updatePayload).eq('id', reqId);
     if (error) {
-      showMsg($('estatus-msg'), 'Error al completar: ' + error.message, 'err');
+      showMsg(estatusMsgEl(), 'Error al completar: ' + error.message, 'err');
       return;
     }
     toast('✅ Mantenimiento completado');
@@ -4623,16 +4646,29 @@
     bodyEl.innerHTML = summaryHtml + timelineHtml;
   }
 
-  let estatusTab = 'comp'; // 'comp' | 'mant'
-  if (typeof localStorage !== 'undefined') {
-    const savedTab = localStorage.getItem('nudo_estatus_tab');
-    if (savedTab === 'mant' || savedTab === 'comp') estatusTab = savedTab;
+  // Is the given estatus page the one currently on screen?
+  function estatusPageOpen(kind) {
+    const el = $(kind === 'comp' ? 'form-estatus' : 'form-mantestatus');
+    return !!(el && el.classList.contains('active'));
   }
-  let estatusOpenOnly = true; // DEFAULT true (Abiertos)
+
+  // Resolve the message element for the page the user is CURRENTLY on. After the
+  // Compras/Mantenimiento split (Ben 2026-09-23) a hardcoded #estatus-msg would write
+  // errors into the hidden page — a silent failure.
+  function estatusMsgEl() {
+    return $(estatusTab === 'comp' ? 'estatus-msg' : 'mantestatus-msg');
+  }
+
+  let estatusTab = 'comp'; // 'comp' | 'mant' — set by which Home card opened the page
+  // No longer persisted: Ben split these into two pages (2026-09-23), so the "which tab was
+  // I on" memory is meaningless — the page itself decides. Old localStorage key is ignored.
+  let estatusOpenOnly = true; // DEFAULT true (Pendientes)
 
   async function loadEstatus() {
-    const listEl = $('estatus-list');
-    const msgEl = $('estatus-msg');
+    // Target the page for the CURRENT kind (Ben split these 2026-09-23).
+    const isC = estatusTab === 'comp';
+    const listEl = $(isC ? 'estatus-list' : 'mantestatus-list');
+    const msgEl  = $(isC ? 'estatus-msg'  : 'mantestatus-msg');
     listEl.innerHTML = '<p style="color:var(--muted);">Cargando…</p>';
     msgEl.classList.add('hidden');
 
@@ -4968,29 +5004,29 @@
   }
 
   function renderEstatusView() {
-    const listEl = $('estatus-list');
+    // Two separate pages (Ben 2026-09-23): each has its OWN list + pendientes control.
+    const isC = estatusTab === 'comp';
+    const listEl  = $(isC ? 'estatus-list' : 'mantestatus-list');
+    const openSeg = $(isC ? 'estatus-open-seg' : 'mantestatus-open-seg');
+    const subhead = $(isC ? 'estatus-subhead' : 'mantestatus-subhead');
     if (!listEl) return;
 
-    // Update segmented controls state
-    document.querySelectorAll('#estatus-seg button').forEach(b => {
-      b.classList.toggle('on', b.getAttribute('data-est') === estatusTab);
-    });
-    document.querySelectorAll('#estatus-open-seg button').forEach(b => {
-      const mode = b.getAttribute('data-open');
-      b.classList.toggle('on', estatusOpenOnly ? mode === 'open' : mode === 'all');
-    });
-
-    // Update subtitle
-    const subhead = $('estatus-subhead') || document.querySelector('#form-estatus p');
+    // Update this page's segmented control state
+    if (openSeg) {
+      openSeg.querySelectorAll('button').forEach(b => {
+        const mode = b.getAttribute('data-open');
+        b.classList.toggle('on', estatusOpenOnly ? mode === 'open' : mode === 'all');
+      });
+    }
     if (subhead) {
-      subhead.textContent = estatusTab === 'comp'
-        ? 'Compras enviadas desde la app.'
+      subhead.textContent = isC
+        ? 'Solicitudes de compra y su estatus.'
         : 'Solicitudes de mantenimiento: etapas, seguimiento e historial.';
     }
 
     const tabRows = estatusRowsCache.filter(r => r.kind === estatusTab);
     if (!tabRows.length) {
-      const tabName = estatusTab === 'comp' ? 'compras' : 'mantenimiento';
+      const tabName = isC ? 'compras' : 'mantenimiento';
       listEl.innerHTML = `<p style="color:var(--muted);text-align:center;padding:24px 16px;">No hay solicitudes de ${tabName} todavía.</p>`;
       return;
     }
@@ -5223,7 +5259,7 @@
           const val = $('estatus-mant-date').value || null;
           dateSaveBtn.disabled = true;
           const { error } = await supabase.from(row.table).update({ service_date: val }).eq('id', row.id);
-          if (error) { showMsg($('estatus-msg'), 'Error al guardar fecha: ' + error.message, 'err'); dateSaveBtn.disabled = false; return; }
+          if (error) { showMsg(estatusMsgEl(), 'Error al guardar fecha: ' + error.message, 'err'); dateSaveBtn.disabled = false; return; }
           row.service_date = val;
           toast('✅ Fecha de servicio guardada');
           loadEstatus();
@@ -5239,7 +5275,7 @@
           const val = raw ? new Date(raw + 'T12:00:00').toISOString() : null;
           nextSaveBtn.disabled = true;
           const { error } = await supabase.from(row.table).update({ next_follow_up_at: val }).eq('id', row.id);
-          if (error) { showMsg($('estatus-msg'), 'Error al guardar seguimiento: ' + error.message, 'err'); nextSaveBtn.disabled = false; return; }
+          if (error) { showMsg(estatusMsgEl(), 'Error al guardar seguimiento: ' + error.message, 'err'); nextSaveBtn.disabled = false; return; }
           row.next_follow_up_at = val;
           toast(val ? '✅ Próximo seguimiento guardado' : '✅ Seguimiento quitado');
           loadEstatus();
@@ -5251,7 +5287,7 @@
         nextClearBtn.addEventListener('click', async () => {
           nextClearBtn.disabled = true;
           const { error } = await supabase.from(row.table).update({ next_follow_up_at: null }).eq('id', row.id);
-          if (error) { showMsg($('estatus-msg'), 'Error al quitar seguimiento: ' + error.message, 'err'); nextClearBtn.disabled = false; return; }
+          if (error) { showMsg(estatusMsgEl(), 'Error al quitar seguimiento: ' + error.message, 'err'); nextClearBtn.disabled = false; return; }
           row.next_follow_up_at = null;
           toast('✅ Seguimiento quitado');
           loadEstatus();
@@ -5270,7 +5306,7 @@
           const entry = { at: new Date().toISOString(), by: author.by, by_name: author.by_name, text, kind: 'followup' };
           const updated = [...cur, entry];
           const { error } = await supabase.from(row.table).update({ follow_ups: updated }).eq('id', row.id);
-          if (error) { showMsg($('estatus-msg'), 'Error al guardar seguimiento: ' + error.message, 'err'); noteSaveBtn.disabled = false; return; }
+          if (error) { showMsg(estatusMsgEl(), 'Error al guardar seguimiento: ' + error.message, 'err'); noteSaveBtn.disabled = false; return; }
           row.follow_ups = updated;
           toast('✅ Seguimiento agregado');
           loadEstatus();
@@ -5293,7 +5329,7 @@
           const entry = { at: new Date().toISOString(), by: author.by, by_name: author.by_name, text, kind: 'not_resolved' };
           const updated = [...cur, entry];
           const { error } = await supabase.from(row.table).update({ follow_ups: updated }).eq('id', row.id);
-          if (error) { showMsg($('estatus-msg'), 'Error al guardar: ' + error.message, 'err'); notResolvedBtn.disabled = false; return; }
+          if (error) { showMsg(estatusMsgEl(), 'Error al guardar: ' + error.message, 'err'); notResolvedBtn.disabled = false; return; }
           row.follow_ups = updated;
           toast('✅ Registrado como no resuelto');
           loadEstatus();
@@ -5324,7 +5360,7 @@
           if (nextSt === 'Completado' || nextSt === 'Resuelto') payload.completed_at = new Date().toISOString();
         }
         const { error } = await supabase.from(row.table).update(payload).eq('id', row.id);
-        if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); adv.disabled = false; return; }
+        if (error) { showMsg(estatusMsgEl(), 'Error: ' + error.message, 'err'); adv.disabled = false; return; }
         closeEstatusDetail(); loadEstatus();
       });
       actions.appendChild(adv);
@@ -5352,7 +5388,7 @@
         const entry = { at: new Date().toISOString(), by: author.by, by_name: author.by_name, text: 'Marcado como Resuelto', kind: 'followup' };
         const updated = [...cur, entry];
         const { error } = await supabase.from(row.table).update({ outcome: 'resuelto', completed_at: new Date().toISOString(), follow_ups: updated }).eq('id', row.id);
-        if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); btnRes.disabled = false; return; }
+        if (error) { showMsg(estatusMsgEl(), 'Error: ' + error.message, 'err'); btnRes.disabled = false; return; }
         row.outcome = 'resuelto'; row.completed_at = new Date().toISOString(); row.follow_ups = updated;
         toast('✅ Marcado como resuelto');
         closeEstatusDetail(); loadEstatus();
@@ -5394,12 +5430,12 @@
         const { error } = await supabase.from(row.table)
           .update({ status: 'Cancelado', cancel_reason: reason }).eq('id', row.id);
         if (error) {
-          showMsg($('estatus-msg'), 'Error al cancelar: ' + error.message, 'err');
+          showMsg(estatusMsgEl(), 'Error al cancelar: ' + error.message, 'err');
           cancelBtn.disabled = false; return;
         }
         const { data: verifyRow } = await supabase.from(row.table).select('status').eq('id', row.id).maybeSingle();
         if (verifyRow && verifyRow.status !== 'Cancelado') {
-          showMsg($('estatus-msg'), 'No se pudo cancelar la solicitud', 'err');
+          showMsg(estatusMsgEl(), 'No se pudo cancelar la solicitud', 'err');
           cancelBtn.disabled = false; return;
         }
         toast('🚫 Solicitud cancelada');
@@ -5566,7 +5602,7 @@
 
       const { error } = await supabase.from(row.table).update(payload).eq('id', row.id);
       if (error) {
-        showMsg($('estatus-msg'), 'Error al actualizar: ' + error.message, 'err');
+        showMsg(estatusMsgEl(), 'Error al actualizar: ' + error.message, 'err');
         saveBtn.disabled = false;
         return;
       }
@@ -5577,14 +5613,14 @@
         : 'item, vendor, amount, units, amount_per_unit, link, notes, priority, branch';
       const { data: updatedData, error: verifyErr } = await supabase.from(row.table).select(verifyCols).eq('id', row.id).maybeSingle();
       if (verifyErr || !updatedData) {
-        showMsg($('estatus-msg'), 'Error al verificar la actualización.', 'err');
+        showMsg(estatusMsgEl(), 'Error al verificar la actualización.', 'err');
         saveBtn.disabled = false;
         return;
       }
       if (isMant) {
         const costMatch = (updatedData.cost == null && payload.cost == null) || (Number(updatedData.cost) === Number(payload.cost));
         if (updatedData.area !== payload.area || !costMatch) {
-          showMsg($('estatus-msg'), 'No se pudieron guardar los cambios.', 'err');
+          showMsg(estatusMsgEl(), 'No se pudieron guardar los cambios.', 'err');
           saveBtn.disabled = false;
           return;
         }
@@ -5593,7 +5629,7 @@
         const amountPerUnitMatch = (updatedData.amount_per_unit == null && payload.amount_per_unit == null) || (Number(updatedData.amount_per_unit) === Number(payload.amount_per_unit));
         const amountMatch = (updatedData.amount == null && payload.amount == null) || (Number(updatedData.amount) === Number(payload.amount));
         if (updatedData.item !== payload.item || !unitsMatch || !amountPerUnitMatch || !amountMatch) {
-          showMsg($('estatus-msg'), 'No se pudieron guardar los cambios.', 'err');
+          showMsg(estatusMsgEl(), 'No se pudieron guardar los cambios.', 'err');
           saveBtn.disabled = false;
           return;
         }
@@ -5618,20 +5654,10 @@
   // Tap a request card -> open its detail modal (but not when tapping the
   // inline advance button or inline edit button, which have their own handlers).
   document.addEventListener('click', (e) => {
-    const segBtn = e.target.closest('#estatus-seg button');
-    if (segBtn) {
-      const tab = segBtn.getAttribute('data-est');
-      if (tab && (tab === 'comp' || tab === 'mant')) {
-        estatusTab = tab;
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem('nudo_estatus_tab', tab);
-        }
-        renderEstatusView();
-      }
-      return;
-    }
-
-    const openBtn = e.target.closest('#estatus-open-seg button');
+    // The Compras/Mantenimiento switch is gone — each is its own page now (Ben 2026-09-23),
+    // so there is no in-page tab to handle. The per-page Pendientes/Todas control applies
+    // to whichever page the user is on (determined by estatusTab, set when the page opens).
+    const openBtn = e.target.closest('#estatus-open-seg button, #mantestatus-open-seg button');
     if (openBtn) {
       const mode = openBtn.getAttribute('data-open');
       if (mode === 'open') estatusOpenOnly = true;
@@ -5650,7 +5676,7 @@
       (async () => {
         const { error } = await supabase.from('maintenance_requests').update({ next_follow_up_at: val }).eq('id', id);
         if (error) {
-          showMsg($('estatus-msg'), 'Error al guardar seguimiento: ' + error.message, 'err');
+          showMsg(estatusMsgEl(), 'Error al guardar seguimiento: ' + error.message, 'err');
           cardDateSave.disabled = false;
           return;
         }
@@ -5677,7 +5703,7 @@
         const updated = [...cur, entry];
         const { error } = await supabase.from('maintenance_requests').update({ follow_ups: updated }).eq('id', id);
         if (error) {
-          showMsg($('estatus-msg'), 'Error al guardar seguimiento: ' + error.message, 'err');
+          showMsg(estatusMsgEl(), 'Error al guardar seguimiento: ' + error.message, 'err');
           cardNoteBtn.disabled = false;
           return;
         }
@@ -5737,10 +5763,10 @@
     // (this is exactly how a Gerente Regional clicking "Marcar Entregado" failed
     // silently on purchases). Never trust the absence of an error.
     const { error } = await supabase.from(table).update(updatePayload).eq('id', id);
-    if (error) { showMsg($('estatus-msg'), 'Error: ' + error.message, 'err'); btn.disabled = false; return; }
+    if (error) { showMsg(estatusMsgEl(), 'Error: ' + error.message, 'err'); btn.disabled = false; return; }
     const { data: chk } = await supabase.from(table).select('status').eq('id', id).maybeSingle();
     if (!chk || chk.status !== newStatus) {
-      showMsg($('estatus-msg'), 'No se pudo actualizar el estatus. Verifica tus permisos.', 'err');
+      showMsg(estatusMsgEl(), 'No se pudo actualizar el estatus. Verifica tus permisos.', 'err');
       btn.disabled = false;
       return;
     }
@@ -5752,12 +5778,12 @@
     if (table === 'purchases') return; // Purchases PDF removed (v0.204)
     let user; try { user = await requireUser(); } catch(err) { return; }
     const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-    if (!ADMIN_ROLES.includes(prof && prof.role)) { showMsg($('estatus-msg'), 'Solo el Dueño puede descargar PDFs', 'err'); return; }
+    if (!ADMIN_ROLES.includes(prof && prof.role)) { showMsg(estatusMsgEl(), 'Solo el Dueño puede descargar PDFs', 'err'); return; }
     const q = table === 'purchases'
       ? { cols: 'id, item, vendor, amount, units, amount_per_unit, link, notes, status, branch, submitted_by, created_at, photo_urls', titleField: 'item' }
       : { cols: 'id, area, description, notes, priority, status, branch, submitted_by, created_at, photo_urls', titleField: 'area' };
     const { data, error } = await supabase.from(table).select(q.cols).eq('id', id).maybeSingle();
-    if (error || !data) { showMsg($('estatus-msg'), 'No se pudo cargar la solicitud', 'err'); return; }
+    if (error || !data) { showMsg(estatusMsgEl(), 'No se pudo cargar la solicitud', 'err'); return; }
     openPdfWindow(table, data, q.titleField);
   }
 
@@ -5787,7 +5813,7 @@
   // Build a print-ready document for a request and trigger the native print/PDF
   function openPdfWindow(table, d, titleField) {
     const w = window.open('', '_blank', 'width=800,height=900');
-    if (!w) { showMsg($('estatus-msg'), 'Permite las ventanas emergentes para descargar el PDF', 'err'); return; }
+    if (!w) { showMsg(estatusMsgEl(), 'Permite las ventanas emergentes para descargar el PDF', 'err'); return; }
     const branch = d.branch || '—';
     const date = d.created_at ? new Date(d.created_at).toLocaleString('es-MX') : '—';
     const statusLabel = (statusMeta({ kind: table === 'purchases' ? 'comp' : 'mant' })[d.status] && statusMeta({ kind: table === 'purchases' ? 'comp' : 'mant' })[d.status].label) || d.status || '—';
@@ -7228,16 +7254,18 @@
     try {
       // Clear the hash so a refresh or a later re-login does not reopen the modal.
       if (history.replaceState) history.replaceState(null, '', location.pathname + location.search);
-      // Activate the Estatus view via the SAME path the tab button uses.
+      // Activate the correct Estatus page via the SAME path the Home card uses.
       document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
       const home = $('home-view'); if (home) home.style.display = 'none';
-      const form = $('form-estatus'); if (form) form.classList.add('active');
+      estatusTab = (target.table === 'maintenance_requests') ? 'mant' : 'comp';
+      const form = $(estatusTab === 'mant' ? 'form-mantestatus' : 'form-estatus');
+      if (form) form.classList.add('active');
       setActiveTab('estatus');
       await loadEstatus();                 // populates estatusRowsCache
       if (estatusRowsCache.some(r => r.table === target.table && r.id === target.id)) {
         openEstatusDetail(target.table, target.id);
       } else {
-        const el = $('estatus-msg');
+        const el = estatusMsgEl();
         if (el) showMsg(el, 'No se encontró la solicitud', 'err');
       }
     } catch (e) {
@@ -7256,9 +7284,9 @@
       rtChannel = supabase
         .channel('app-live-' + (Math.random().toString(36).slice(2)))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases' },
-            () => { if (!$('form-estatus').classList.contains('hidden')) loadEstatus(); })
+            () => { if (estatusPageOpen('comp')) loadEstatus(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance_requests' },
-            () => { if (!$('form-estatus').classList.contains('hidden')) loadEstatus(); })
+            () => { if (estatusPageOpen('mant')) loadEstatus(); })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bitacora' },
             () => { /* bitácora live event — Estatus shows requests; keep for future use */ })
         .subscribe();
