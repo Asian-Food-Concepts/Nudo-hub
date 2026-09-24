@@ -1737,12 +1737,20 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.11";
+  const APP_VERSION = "v0.209.12";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
   // Flip VIEW_AS_ENABLED to true to re-enable "Visto como" for level 1 (Dueño).
-  const VIEW_AS_ENABLED = false;
+  //
+  // v0.209.12 — ENABLED (Ben 2026-09-24). He is logged in as Nudo A. (Dueño, level 1) and the
+  // button existed but was disabled with a `not-allowed` cursor:
+  //   "I'm locked in with the Nudo account and I have Dueño status but I'm not able to use
+  //    Visto como to look at how the other accounts see the different forms."
+  // It was turned off globally on 2026-09-23 ("disabled for now for everybody"), and "for now"
+  // is over. The gate is unchanged: level 1 ONLY, read-only, and the write guard must be
+  // airtight because Ben will now actually use it on LIVE data.
+  const VIEW_AS_ENABLED = true;
 
   // Formatting helper for currency amounts in MXN (v0.203).
   // Returns '—' for null, undefined, NaN, or empty values; formatted currency otherwise.
@@ -2524,9 +2532,10 @@
     const displayName = (currentProfile && currentProfile.name) || (user.email || 'Equipo');
     const role = (currentProfile && currentProfile.role) || '';
     $('user-name').textContent = displayName + (role ? ' · ' + role : '');
-    // Impersonation control (v0.203): Ben ordered that everyone should SEE it, but it is disabled for now.
-    // When VIEW_AS_ENABLED is false: visible to all signed-in users, but disabled.
-    // When VIEW_AS_ENABLED is true: restored to level 1 (Dueño) only.
+    // Impersonation control (v0.203, re-enabled v0.209.12).
+    // Level 1 (Dueño) sees it ENABLED; everyone else sees it but disabled — Ben's 2026-09-22
+    // order was that everyone should SEE it. The previous code disabled it for EVERYONE while
+    // VIEW_AS_ENABLED was false, which is why Ben met a `not-allowed` cursor on his own button.
     {
       const vo = $('viewas-open');
       if (vo) {
@@ -2537,11 +2546,15 @@
           vo.style.cursor = 'not-allowed';
           vo.title = 'Temporalmente no disponible';
         } else {
-          vo.disabled = false;
-          vo.style.opacity = '';
-          vo.style.cursor = '';
-          vo.title = 'Ver la app como otra persona (solo lectura)';
-          vo.classList.toggle('hidden', realLevel() !== 1);
+          // Enabled: only level 1 may click. Everyone else still sees it, but inert.
+          const allowed = realLevel() === 1;
+          vo.disabled = !allowed;
+          vo.style.opacity = allowed ? '' : '0.5';
+          vo.style.cursor = allowed ? '' : 'not-allowed';
+          vo.title = allowed
+            ? 'Ver la app como otra persona (solo lectura)'
+            : 'Solo el Dueño puede usar esta función';
+          vo.classList.remove('hidden');
         }
       }
     }
@@ -7983,20 +7996,82 @@
   // refusing there covers all 20+ handlers at once — no per-handler checks to
   // forget. Returns the SAME shape supabase returns, so existing `if (error)`
   // paths report it cleanly instead of throwing an unhandled rejection.
+  //
+  // v0.209.12 — the guard now also covers the paths that BYPASSED it. With the feature
+  // merely disabled this was theoretical; now that Ben actually uses it on live data, a
+  // bypass means a real write attributed to the wrong person. Three gaps were found by
+  // grepping every write in the file that does not go through supabase.from():
+  //   1. supabase.storage.from(...).upload()   — maintenance photos (line ~6996)
+  //   2. supabase.auth.*                       — sign-in/out, OTP
+  //   3. direct fetch() to edge functions      — manage-user, generate-contract
+  // Each is refused with the same shape so callers' error handling is unchanged.
+  const VIEW_AS_BLOCK = {
+    data: null,
+    error: { message: 'Modo "Visto como" es de solo lectura. Toca "Salir" para poder editar.' }
+  };
+
   function installWriteGuard() {
     if (__writeGuardOn) return;
+
     const origFrom = supabase.from.bind(supabase);
     supabase.from = function (table) {
       const q = origFrom(table);
       if (!VIEW_AS) return q;
       ['insert', 'update', 'upsert', 'delete'].forEach(m => {
-        q[m] = () => Promise.resolve({
-          data: null,
-          error: { message: 'Modo "Visto como" es de solo lectura. Toca "Salir" para poder editar.' }
-        });
+        q[m] = () => Promise.resolve(VIEW_AS_BLOCK);
       });
       return q;
     };
+
+    // (1) Storage — the one upload() in the app (maintenance photos) is a real write.
+    //     Each method re-checks VIEW_AS AT CALL TIME: wrapping is permanent (the app never
+    //     unwraps), so a closure that decided once would leave uploads broken forever after
+    //     the owner exited impersonation.
+    if (supabase.storage && typeof supabase.storage.from === 'function') {
+      const origStorageFrom = supabase.storage.from.bind(supabase.storage);
+      supabase.storage.from = function (bucket) {
+        const b = origStorageFrom(bucket);
+        ['upload', 'update', 'move', 'copy', 'remove'].forEach(m => {
+          if (typeof b[m] === 'function') {
+            const orig = b[m].bind(b);
+            b[m] = (...args) => (VIEW_AS ? Promise.resolve(VIEW_AS_BLOCK) : orig(...args));
+          }
+        });
+        return b;
+      };
+    }
+
+    // (2) Auth — impersonation must never change who is signed in. Signing out from inside an
+    //     impersonated session would drop the real owner's session. Call-time check, for the
+    //     same reason as storage.
+    if (supabase.auth) {
+      ['signOut', 'signInWithOtp', 'signInWithPassword', 'setSession',
+       'updateUser', 'verifyOtp'].forEach(m => {
+        if (typeof supabase.auth[m] === 'function') {
+          const orig = supabase.auth[m].bind(supabase.auth);
+          supabase.auth[m] = (...args) => (VIEW_AS ? Promise.resolve(VIEW_AS_BLOCK) : orig(...args));
+        }
+      });
+    }
+
+    // (3) Edge functions via fetch are server-side writes (manage-user creates accounts,
+    // generate-contract writes a storage object). Refuse rather than let the server decide.
+    if (typeof window.__origFetch !== 'function') {
+      window.__origFetch = window.fetch.bind(window);
+      window.fetch = function (input, init) {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        if (VIEW_AS && (url.includes('/functions/v1/') || url.includes('/rest/v1/'))) {
+          const method = ((init && init.method) || 'GET').toUpperCase();
+          if (method !== 'GET' && method !== 'HEAD') {
+            return Promise.resolve(new Response(
+              JSON.stringify({ error: VIEW_AS_BLOCK.error.message }),
+              { status: 403, headers: { 'Content-Type': 'application/json' } }));
+          }
+        }
+        return window.__origFetch(input, init);
+      };
+    }
+
     __writeGuardOn = true;
   }
 
@@ -8088,6 +8163,27 @@
     loadUser();
   }
 
+  // "Visto como" — the authorization decision, extracted so it can be TESTED.
+  //
+  // WHY THIS IS A FUNCTION RATHER THAN AN INLINE `if`: the level check lived inside a click
+  // handler, where mutation testing proved it untestable — deleting `realLevel() === 1` left
+  // every test green, because a string assertion cannot see a condition that no longer runs.
+  // This is a SECURITY gate (it is the only thing stopping a level-2..6 account from rendering
+  // the app as someone else), so it gets a pure function with its own tests.
+  //
+  // Two independent barriers exist by design: the button is `disabled` for non-owners (a
+  // disabled control fires no click), AND this predicate is re-checked at click time so a
+  // programmatic .click() or a DOM tamper still cannot open the picker.
+  function mayUseViewAs(enabled, level) {
+    if (!enabled) return false;
+    // `level` arrives from an untyped DB row. Accept a number or a numeric string only.
+    // Reject booleans explicitly: Number(true) === 1, so `true` would otherwise satisfy this
+    // gate — harmless in practice (profiles.level is an integer column) but wrong for the one
+    // check that decides whether an account may render the app as somebody else.
+    if (typeof level === 'boolean') return false;
+    return Number(level) === 1;
+  }
+
   document.addEventListener('click', (e) => {
     if (!e.target || !e.target.closest) return;
     if (e.target.closest('#viewas-exit')) { exitViewAs(); return; }
@@ -8101,9 +8197,10 @@
                     pick.getAttribute('data-branch'), pick.getAttribute('data-level'));
       return;
     }
-    // Only level 1 (Dueño) may preview — nobody else, ever (gated by VIEW_AS_ENABLED, v0.203).
-    if (e.target.closest('#viewas-open')) { if (VIEW_AS_ENABLED) openViewAsPicker(); return; }
-    if (e.target.closest('#user-name')) { if (VIEW_AS_ENABLED && realLevel() === 1) openViewAsPicker(); }
+    if (e.target.closest('#viewas-open') || e.target.closest('#user-name')) {
+      if (mayUseViewAs(VIEW_AS_ENABLED, realLevel())) openViewAsPicker();
+      return;
+    }
   });
 
   // ============ EQUIPO — org chart, read-only (v0.149) =========================

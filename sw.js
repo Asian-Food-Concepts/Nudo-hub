@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v116'; // v0.209.11: Nuevos ingresos gains 'Ver ficha completa' (every submitted field, grouped, blanks shown as gaps, documents openable via signed URL) and a 'Generar contrato' button that delegates to an edge function — no Google credential can ever ship to this PUBLIC page.
+const CACHE = 'nudo-hub-v117'; // v0.209.12: 'Visto como' re-enabled for the owner (level 1) with a readable cursor, and the read-only guard now also blocks storage uploads, auth changes and non-GET edge/REST calls - each verified behaviourally.
 // serves the app at https://hub.asianfoodconcepts.mx/ and the old project-site URL
 // (asian-food-concepts.github.io/Nudo-hub/) 301-redirects here. The version bump is what
 // moves EXISTING clients: a stale client detects the new version, reloads, follows the
