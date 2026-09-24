@@ -1616,6 +1616,20 @@
         </div>
       </div>
 
+      <!-- FICHA DEL CANDIDATO — everything the person actually submitted, so a reviewer
+           never has to guess or re-ask. Reuses .review-modal/.review-box for the sheet
+           behaviour staff already know. -->
+      <div class="review-modal hidden" id="nuevo-ficha-modal">
+        <div class="review-box">
+          <h3 id="nuevo-ficha-title">📋 Ficha del candidato</h3>
+          <div id="nuevo-ficha-msg" class="msg hidden" style="margin-bottom:8px;"></div>
+          <div class="review-body" id="nuevo-ficha-body"></div>
+          <div class="review-actions" style="margin-top:8px;">
+            <button class="btn btn-outline" id="nuevo-ficha-close" style="margin:0;min-height:44px;font-size:16px;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ESTATUS DETAIL MODAL -->
       <div class="review-modal hidden" id="estatus-detail">
         <div class="review-box">
@@ -1723,7 +1737,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.10";
+  const APP_VERSION = "v0.209.11";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
@@ -8500,7 +8514,7 @@
       const [onbRes, contractsRes, docsRes] = await Promise.all([
         supabase
           .from('onboarding')
-          .select('id,auth_user_id,email,nombres,apellido_paterno,apellido_materno,movil,current_step,created_at,updated_at,lfpdppp_consent,puesto,salario_semanal,fecha_de_ingreso,dias_de_probacion,stage1_submitted_at')
+          .select('id,auth_user_id,email,nombres,apellido_paterno,apellido_materno,apodo_etiqueta,sexo,fecha_nacimiento,estado_civil,nacionalidad,movil,direccion,ciudad_fiscal,cp_fiscal,direccion_fiscal_completa,tipo_sangre,emergencia_nombre,emergencia_parentesco,emergencia_telefono,rfc,curp,nss,regimen_fiscal,banco,clabe,numero_cuenta,current_step,created_at,updated_at,lfpdppp_consent,lfpdppp_consent_at,sensibles_consent,sensibles_consent_at,puesto,salario_semanal,fecha_de_ingreso,dias_de_probacion,prestaciones,stage1_submitted_at')
           .is('hidden_at', null)
           .order('created_at', { ascending: false })
           .limit(200),
@@ -8510,7 +8524,9 @@
           .order('generated_at', { ascending: false }),
         supabase
           .from('onboarding_documents')
-          .select('onboarding_id,doc_type,required,tier2_ok,uploaded_at,reviewer_status')
+          // storage_path is needed to mint a signed link for the reviewer — without it the
+          // ficha can say "documento subido" but cannot let anyone open it.
+          .select('onboarding_id,doc_type,required,tier2_ok,uploaded_at,reviewer_status,storage_path')
       ]);
       if (onbRes.error) throw onbRes.error;
       window.__nuevos_cache = onbRes.data || [];
@@ -8630,14 +8646,17 @@
           + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">➕ Agregar puesto, sueldo y fecha de ingreso</button>'
         + '<button class="btn btn-outline" data-nuevo-onboarding="' + esc(r.id) + '"'
           + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">✏️ Editar</button>'
-        + '<button class="btn btn-outline" data-nuevo-dl="revision" data-id="' + esc(r.id) + '"'
-          + (revPath ? '' : ' disabled')
-          + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">'
-          + (revPath ? '📄 Contrato con resaltado' : 'Sin contrato') + '</button>'
-        + '<button class="btn btn-outline" data-nuevo-dl="firma" data-id="' + esc(r.id) + '"'
-          + (firmaPath ? '' : ' disabled')
-          + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">'
-          + (firmaPath ? '✍️ Contrato sin resaltado' : 'Sin contrato') + '</button>'
+        + '<button class="btn btn-outline" data-nuevo-ficha="' + esc(r.id) + '"'
+          + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">📋 Ver ficha completa</button>'
+        + (revPath
+            ? '<button class="btn btn-outline" data-nuevo-dl="revision" data-id="' + esc(r.id) + '"'
+              + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">📄 Contrato con resaltado</button>'
+            : '<button class="btn btn-outline" data-nuevo-gen="' + esc(r.id) + '"'
+              + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">⚙️ Generar contrato</button>')
+        + (firmaPath
+            ? '<button class="btn btn-outline" data-nuevo-dl="firma" data-id="' + esc(r.id) + '"'
+              + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">✍️ Contrato sin resaltado</button>'
+            : '')
         + (!activated
             ? '<button class="btn btn-outline" data-nuevo-sendback="' + esc(r.id) + '"'
               + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">✉️ Enviar correo con link para corrección</button>'
@@ -8881,6 +8900,237 @@
     } finally {
       btn.disabled = false;
       btn.textContent = origText;
+    }
+  });
+
+  // ---- Ficha del candidato: show the reviewer everything the person submitted ----
+  // Ben 2026-09-24: "add button for me to view what he has put in". Before this the card
+  // showed only name/email/mobile/step, so a reviewer could not see the RFC, CURP, bank
+  // details or address without opening the database.
+  //
+  // Grouped in the same order as the onboarding form, so a reviewer comparing the ficha to
+  // the form finds each field where they expect it.
+  const FICHA_SECTIONS = [
+    ['Datos personales', [
+      ['nombres', 'Nombre(s)'], ['apellido_paterno', 'Apellido paterno'],
+      ['apellido_materno', 'Apellido materno'], ['apodo_etiqueta', 'Apodo / etiqueta'],
+      ['sexo', 'Sexo'], ['fecha_nacimiento', 'Fecha de nacimiento'],
+      ['estado_civil', 'Estado civil'], ['nacionalidad', 'Nacionalidad'],
+    ]],
+    ['Contacto y domicilio', [
+      ['email', 'Correo'], ['movil', 'Móvil'], ['direccion', 'Dirección'],
+      ['ciudad_fiscal', 'Ciudad fiscal'], ['cp_fiscal', 'C.P. fiscal'],
+      ['direccion_fiscal_completa', 'Dirección fiscal completa'],
+    ]],
+    ['Datos médicos y contacto de emergencia', [
+      ['tipo_sangre', 'Tipo de sangre'], ['emergencia_nombre', 'Contacto de emergencia'],
+      ['emergencia_parentesco', 'Parentesco'], ['emergencia_telefono', 'Teléfono'],
+    ]],
+    ['Datos fiscales y bancarios', [
+      ['rfc', 'RFC'], ['curp', 'CURP'], ['nss', 'NSS'],
+      ['regimen_fiscal', 'Régimen fiscal'], ['banco', 'Banco'],
+      ['clabe', 'CLABE'], ['numero_cuenta', 'Número de cuenta'],
+    ]],
+    ['Puesto y contratación', [
+      ['puesto', 'Puesto'], ['salario_semanal', 'Sueldo semanal'],
+      ['fecha_de_ingreso', 'Fecha de ingreso'], ['dias_de_probacion', 'Días de prueba'],
+      ['prestaciones', 'Prestaciones'],
+    ]],
+  ];
+
+  // A blank field is meaningful information (it is what the reviewer must chase), so it is
+  // shown as a visible gap rather than silently omitted.
+  function fichaField(row, key, label) {
+    let v = row ? row[key] : null;
+    if (v === null || v === undefined || String(v).trim() === '') {
+      return '<div class="rv-row"><div class="rv-label">' + esc(label) + '</div>'
+        + '<div class="rv-value" style="color:var(--amber);">— sin llenar</div></div>';
+    }
+    if (key === 'salario_semanal') v = '$' + Number(v).toLocaleString('es-MX') + ' / semana';
+    else if (key === 'fecha_de_ingreso' || key === 'fecha_nacimiento') v = String(v).slice(0, 10);
+    return '<div class="rv-row"><div class="rv-label">' + esc(label) + '</div>'
+      + '<div class="rv-value">' + esc(String(v)) + '</div></div>';
+  }
+
+  function consentsBlock(row) {
+    const yes = v => v ? '✅ sí' : '⚠️ no';
+    return '<h4 style="margin:16px 0 6px;font-size:0.95rem;">Consentimientos</h4>'
+      + '<div class="rv-row"><div class="rv-label">Aviso de privacidad</div>'
+      + '<div class="rv-value">' + yes(row && row.lfpdppp_consent) + '</div></div>'
+      + '<div class="rv-row"><div class="rv-label">Datos sensibles</div>'
+      + '<div class="rv-value">' + yes(row && row.sensibles_consent) + '</div></div>'
+      + '<div class="rv-row"><div class="rv-label">Solicitud enviada</div>'
+      + '<div class="rv-value">'
+      + (row && row.stage1_submitted_at
+          ? esc(String(row.stage1_submitted_at).slice(0, 19).replace('T', ' '))
+          : '<span style="color:var(--amber);">⚠️ no enviada</span>')
+      + '</div></div>';
+  }
+
+  async function openNuevoFicha(id) {
+    const modal = $('nuevo-ficha-modal');
+    const body = $('nuevo-ficha-body');
+    const title = $('nuevo-ficha-title');
+    const msg = $('nuevo-ficha-msg');
+    if (!modal || !body) return;
+    if (msg) clearMsg(msg);
+
+    const row = (window.__nuevos_cache || []).find(r => r.id === id) || null;
+    if (!row) {
+      showMsg(msg, 'No se encontró el registro. Recarga la página.', 'err');
+      modal.classList.remove('hidden');
+      return;
+    }
+    const full = [row.nombres, row.apellido_paterno, row.apellido_materno]
+      .filter(Boolean).join(' ').trim() || '(sin nombre)';
+    if (title) title.textContent = '📋 Ficha de ' + full;
+
+    let html = '<div class="rv-row"><div class="rv-label">Registro</div>'
+      + '<div class="rv-value" style="font-size:13px;color:var(--muted);">'
+      + 'paso ' + Number(row.current_step || 1) + '/4 · creado '
+      + esc(String(row.created_at || '').slice(0, 10))
+      + (row.updated_at ? ' · actualizado ' + esc(String(row.updated_at).slice(0, 10)) : '')
+      + '</div></div>';
+
+    FICHA_SECTIONS.forEach(([heading, fields]) => {
+      html += '<h4 style="margin:16px 0 6px;font-size:0.95rem;">' + esc(heading) + '</h4>';
+      fields.forEach(([key, label]) => { html += fichaField(row, key, label); });
+    });
+    html += consentsBlock(row);
+
+    // Documents, each openable by the reviewer via a short-lived signed link.
+    const docs = (window.__nuevos_docs || {})[id] || [];
+    html += '<h4 style="margin:16px 0 6px;font-size:0.95rem;">Documentos</h4>';
+    if (!docs.length) {
+      html += '<div class="rv-row"><div class="rv-value" style="color:var(--amber);">'
+        + '— sin documentos subidos</div></div>';
+    } else {
+      docs.forEach((d, i) => {
+        const verdict = d.tier2_ok === true ? '✅ verificado'
+                      : (d.tier2_ok === false ? '⚠️ no verificado' : '⏳ pendiente');
+        html += '<div class="rv-row"><div class="rv-label">'
+          + esc(String(d.doc_type || '').toUpperCase())
+          + (d.required ? ' <span style="color:var(--red);">*</span>' : '') + '</div>'
+          + '<div class="rv-value">' + verdict
+          + ' <button class="btn btn-outline" data-ficha-doc="' + esc(id) + '"'
+          + ' data-doc-idx="' + i + '" style="min-height:36px;font-size:14px;padding:4px 10px;margin:4px 0 0;">'
+          + '⬇️ Abrir</button></div></div>';
+      });
+    }
+
+    // Contract state — and say plainly when there is nothing to download.
+    const contract = (window.__nuevos_contracts || {})[id] || null;
+    html += '<h4 style="margin:16px 0 6px;font-size:0.95rem;">Contrato</h4>';
+    if (contract) {
+      html += '<div class="rv-row"><div class="rv-label">Generado</div><div class="rv-value">'
+        + esc(String(contract.generated_at || '').slice(0, 19).replace('T', ' '))
+        + '</div></div>';
+    } else {
+      html += '<div class="rv-row"><div class="rv-value" style="color:var(--amber);">'
+        + '⚠️ Aún no se ha generado un contrato para esta persona.</div></div>';
+    }
+
+    body.innerHTML = html;
+    modal.classList.remove('hidden');
+  }
+
+  function closeNuevoFicha() {
+    const modal = $('nuevo-ficha-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  document.addEventListener('click', async (e) => {
+    if (!e.target || !e.target.closest) return;
+    const openBtn = e.target.closest('[data-nuevo-ficha]');
+    if (openBtn) {
+      e.preventDefault();
+      openNuevoFicha(openBtn.getAttribute('data-nuevo-ficha'));
+      return;
+    }
+    if (e.target.closest('#nuevo-ficha-close')) { e.preventDefault(); closeNuevoFicha(); return; }
+    const fichaModal = $('nuevo-ficha-modal');
+    if (fichaModal && e.target === fichaModal) { closeNuevoFicha(); return; }
+
+    // Open one stored document with a short-lived signed URL.
+    const docBtn = e.target.closest('[data-ficha-doc]');
+    if (docBtn) {
+      e.preventDefault();
+      const id = docBtn.getAttribute('data-ficha-doc');
+      const idx = Number(docBtn.getAttribute('data-doc-idx'));
+      const d = ((window.__nuevos_docs || {})[id] || [])[idx];
+      if (!d || !d.storage_path) {
+        showMsg($('nuevo-ficha-msg'), 'Ese documento no tiene archivo guardado.', 'err');
+        return;
+      }
+      const orig = docBtn.textContent;
+      docBtn.disabled = true;
+      docBtn.textContent = 'Abriendo…';
+      try {
+        const { data, error } = await supabase.storage
+          .from('onboarding-documents').createSignedUrl(d.storage_path, 120);
+        if (error) throw error;
+        if (!data || !data.signedUrl) throw new Error('No se obtuvo URL');
+        window.open(data.signedUrl, '_blank', 'noopener');
+      } catch (err) {
+        showMsg($('nuevo-ficha-msg'), 'No se pudo abrir el documento: '
+          + esc((err && err.message) || 'error'), 'err');
+      } finally {
+        docBtn.disabled = false;
+        docBtn.textContent = orig;
+      }
+    }
+  });
+
+  // ---- Generate a contract for one person (server-side) ----
+  // The contract needs Drive + Docs, which must never be reachable from the browser: a
+  // refresh token there would expose the whole Drive to anyone who opens devtools. So this
+  // button calls an edge function and NOTHING else. It is deliberately explicit when the
+  // function is not deployed rather than silently doing nothing.
+  document.addEventListener('click', async (e) => {
+    if (!e.target || !e.target.closest) return;
+    const btn = e.target.closest('[data-nuevo-gen]');
+    if (!btn || btn.disabled) return;
+    e.preventDefault();
+    const id = btn.getAttribute('data-nuevo-gen');
+    const msgEl = $('nuevos-msg');
+    clearMsg(msgEl);
+
+    const row = (window.__nuevos_cache || []).find(r => r.id === id) || {};
+    const full = [row.nombres, row.apellido_paterno, row.apellido_materno]
+      .filter(Boolean).join(' ').trim() || 'esta persona';
+    if (!row.puesto || row.salario_semanal == null || !row.fecha_de_ingreso) {
+      showMsg(msgEl, 'Falta puesto, sueldo o fecha de ingreso. Usa “➕ Agregar puesto, sueldo '
+        + 'y fecha de ingreso” antes de generar el contrato.', 'err');
+      return;
+    }
+
+    const orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Generando…';
+    try {
+      const sess = (await supabase.auth.getSession()).data.session;
+      if (!sess) throw new Error('Sesión expirada. Recarga la página.');
+      const res = await fetch(SUPABASE_URL + '/functions/v1/generate-contract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+                   'Authorization': 'Bearer ' + sess.access_token },
+        body: JSON.stringify({ onboarding_id: id }),
+      });
+      if (res.status === 404) {
+        showMsg(msgEl, 'La generación en el servidor todavía no está activa. Pídele a '
+          + 'Oversight que la instale.', 'err');
+        return;
+      }
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.error || ('HTTP ' + res.status));
+      showMsg(msgEl, '✅ Contrato generado para ' + esc(full) + '.', 'ok');
+      await loadNuevos();
+    } catch (err) {
+      showMsg(msgEl, 'No se pudo generar el contrato: '
+        + esc((err && err.message) || 'error'), 'err');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
     }
   });
 

@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v115'; // v0.209.10: 🔴 CRITICAL onboarding submit deadlock fixed — the privacy-consent checkbox wrote nothing and the submit gate read the consent FROM THE DB, so the only writer sat behind the gate it needed to pass. No real registration had ever been submitted. Consent now persists on tick and is written BEFORE the gate; uploaded documents are restored on a resumed session.
+const CACHE = 'nudo-hub-v116'; // v0.209.11: Nuevos ingresos gains 'Ver ficha completa' (every submitted field, grouped, blanks shown as gaps, documents openable via signed URL) and a 'Generar contrato' button that delegates to an edge function — no Google credential can ever ship to this PUBLIC page.
 // serves the app at https://hub.asianfoodconcepts.mx/ and the old project-site URL
 // (asian-food-concepts.github.io/Nudo-hub/) 301-redirects here. The version bump is what
 // moves EXISTING clients: a stale client detects the new version, reloads, follows the
