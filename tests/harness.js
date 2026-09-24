@@ -23,6 +23,7 @@ const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const APP = path.join(ROOT, 'app.html');
+const ONB = path.join(ROOT, 'onboarding.html');
 
 // ---------------------------------------------------------------------------
 // Source extraction
@@ -646,11 +647,21 @@ async function main() {
   }
   const src = blocks[0];
 
+  // onboarding.html is a SECOND shipped file with its own inline scripts, and it is the
+  // one that carries the legal-consent path. It was untested until the v0.209.10 deadlock
+  // (a submission that could never succeed) was found by hand. Tests may opt into it via
+  // api.onb / api.onbSrc.
+  const onbHtml = fs.existsSync(ONB) ? fs.readFileSync(ONB, 'utf8') : '';
+  const onbBlocks = onbHtml ? scriptBlocks(onbHtml) : [];
+
   const api = {
     html,
     src,
+    onb: onbHtml,
+    onbSrc: onbBlocks[0] || '',
     markup: extractMarkup(html),
     extractFunction: (n) => extractFunction(src, n),
+    extractOnbFunction: (n) => extractFunction(onbBlocks[0] || '', n),
     functionNames: () => functionNames(src),
     sandbox: (names, opts) => sandbox(src, names, Object.assign({ markup: extractMarkup(html) }, opts || {})),
     test, eq, ok, includes, results, settle,

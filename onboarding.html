@@ -1138,6 +1138,9 @@
       1: 'nombres,apellido_paterno,apellido_materno,sexo,apodo_etiqueta,fecha_nacimiento,estado_civil,nacionalidad',
       2: 'movil,direccion,ciudad_fiscal,cp_fiscal,direccion_fiscal_completa,tipo_sangre,emergencia_nombre,emergencia_parentesco,emergencia_telefono,sensibles_consent',
       3: 'rfc,curp,nss,regimen_fiscal,banco,clabe,numero_cuenta',
+      // v0.209.10 — step 4 was absent, so loadStepData(4) returned early and a resumed
+      // session could never re-show its consent state or its already-uploaded documents.
+      4: 'lfpdppp_consent',
     };
     if (!colMap[step]) return;
     var { data } = await supabase.from('onboarding').select(colMap[step])
@@ -1187,6 +1190,40 @@
       setVal('s3-clabe',   data.clabe);
       setVal('s3-cuenta',  data.numero_cuenta);
     }
+    if (step === 4) {
+      // 🔴 v0.209.10 — the uploaded-document ✅ marks used to exist ONLY in the browser
+      // session that uploaded the files. Nothing read them back, so a hire who returned
+      // later saw four empty upload slots and was told "Falta subir el documento: INE"
+      // for files already stored — one live applicant re-uploaded the same four documents
+      // six times. Restoring the marks from onboarding_documents makes a resumed session
+      // honest, and (with the consent fix) lets them actually submit.
+      var c4 = $('s4-consent');
+      if (c4) c4.checked = !!data.lfpdppp_consent;
+      await restoreDocStatuses();
+    }
+  }
+
+  // Mark every already-stored required document as ✅ without re-uploading it.
+  // NOTE: this reads DOC_CONFIG, which is declared further down the block. That is safe
+  // ONLY because the sole caller is loadStepData(), reached from the async initAfterAuth()
+  // network round-trip — i.e. after this script block has finished executing. Do not call
+  // this synchronously at load.
+  async function restoreDocStatuses() {
+    if (!onboardingId) return;
+    if (typeof DOC_CONFIG === 'undefined') return;
+    var res = await supabase.from('onboarding_documents')
+                  .select('doc_type,uploaded_at').eq('onboarding_id', onboardingId);
+    if (res && res.error) return;
+    var seen = {};
+    (res.data || []).forEach(function (d) { seen[d.doc_type] = true; });
+    DOC_CONFIG.forEach(function (cfg) {
+      if (!seen[cfg.docType]) return;
+      var el = $(cfg.statusId);
+      if (!el) return;
+      el.className = 'doc-status done';
+      el.textContent = '✅ Ya subido';
+      el.classList.remove('hidden');
+    });
   }
 
   // ---- Upsert helper ----
@@ -1687,10 +1724,54 @@
     // Saves the current step as a draft before leaving it (partial data is OK).
     await goBackTo(3);
   });
+
+  // The privacy consent MUST be persisted the moment it is ticked.
+  //
+  // 🔴 v0.209.10 BUG FIX — why this exists. Step 4 is the only step with no save path:
+  // buildPayloadFor(4) returns null, so saveDraftNow() writes nothing for step 4, and there
+  // was no change handler on #s4-consent. Meanwhile the submit gate below calls
+  // firstIncompleteStep(), which reads lfpdppp_consent FROM THE DATABASE, and the ONE line
+  // that ever wrote it (lfpdppp_consent:true) sat BEHIND that same gate — a circular
+  // dependency. Result: every hire ticked the box, hit Enviar, and was told "Falta tu
+  // consentimiento de privacidad" and sent back to the same screen, forever. No real
+  // registration had EVER been submitted through the form (proved 2026-09-24; the only
+  // submitted rows were script-made PRUEBA rows, and one live applicant was stuck in the
+  // loop having re-uploaded his documents six times).
+  function saveConsent() {
+    if (!onboardingId) return Promise.resolve({ error: null });
+    var checked = !!($('s4-consent') && $('s4-consent').checked);
+    return supabase.from('onboarding').update({
+      lfpdppp_consent:    checked,
+      lfpdppp_consent_at: checked ? new Date().toISOString() : null,
+      updated_at:         new Date().toISOString(),
+    }).eq('id', onboardingId);
+  }
+  (function () {
+    var c = $('s4-consent');
+    if (c) c.addEventListener('change', function () { saveConsent(); });
+  })();
+
   $('s4-submit').addEventListener('click', async function() {
     // Free step navigation means this gate is the ONLY thing standing between a hire
     // and submitting an empty form. Block, say which step, go there.
+    clearMsg($('s4-msg'));
+
+    // ⚠️ ORDER IS LOAD-BEARING. The consent is validated AND persisted BEFORE
+    // firstIncompleteStep(), because that gate reads lfpdppp_consent from the database.
+    // Checking it afterwards (the old order) made submission unreachable.
+    if (!$('s4-consent').checked) {
+      showMsg($('s4-msg'), 'Debes aceptar el aviso de privacidad para continuar.', 'err'); return;
+    }
+    this.disabled = true;
+    var cons = await saveConsent();
+    if (cons && cons.error) {
+      this.disabled = false;
+      showMsg($('s4-msg'), 'No se pudo registrar tu consentimiento: ' + cons.error.message, 'err');
+      reportFailure('consentimiento_no_guardado', cons.error.message, { code: cons.error.code || '' });
+      return;
+    }
     await saveDraftNow();
+    this.disabled = false;
     var gap = await firstIncompleteStep();
     if (gap) {
       showMsg($('s4-msg'), 'Falta ' + gap.what + '. Te llevamos al paso ' + gap.step + '.', 'err');
@@ -1698,23 +1779,23 @@
       await goToStep(gap.step);
       return;
     }
-    clearMsg($('s4-msg'));
     var reqDocs = ['ine','nss','csf','comprobante'];
+    var missingDocs = [];
     for (var i = 0; i < reqDocs.length; i++) {
       var ds = $('ds-' + reqDocs[i]);
-      if (!ds || !ds.classList.contains('done')) {
-        showMsg($('s4-msg'), 'Falta subir el documento: ' + reqDocs[i].toUpperCase() + '. Todos los documentos requeridos son obligatorios.', 'err');
-        return;
-      }
+      if (!ds || !ds.classList.contains('done')) missingDocs.push(reqDocs[i].toUpperCase());
     }
-    if (!$('s4-consent').checked) {
-      showMsg($('s4-msg'), 'Debes aceptar el aviso de privacidad para continuar.', 'err'); return;
+    if (missingDocs.length) {
+      showMsg($('s4-msg'), 'Falta subir el documento: ' + missingDocs.join(', ') +
+        '. Todos los documentos requeridos son obligatorios.', 'err');
+      return;
     }
     this.disabled = true;
     showMsg($('s4-msg'), 'Enviando solicitud…', 'info');
+    // Consent was already validated AND written by saveConsent() above; writing it again
+    // here would risk re-stamping lfpdppp_consent_at with a later timestamp than the
+    // moment the hire actually consented. Only the submission stamp is written now.
     var { error } = await supabase.from('onboarding').update({
-      lfpdppp_consent:     true,
-      lfpdppp_consent_at:  new Date().toISOString(),
       stage1_submitted_at: new Date().toISOString(),
       current_step:        4,
       updated_at:          new Date().toISOString(),
