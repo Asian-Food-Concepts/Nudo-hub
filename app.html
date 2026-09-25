@@ -136,12 +136,12 @@
      grid has 8 columns (role + 7 days) and only ever shows 5 before it scrolls sideways
      (Ben 2026-09-23: "can allow it to be bigger, esp if on desktop?"). Desktop only: a
      phone has no room to gain, and widening there would only add padding. */
+  @media (min-width: 700px) {
+    .wrap.wrap-wide { max-width: min(96vw, 1180px); }
+    .wrap.wrap-wide #form-mantestatus .form-card { padding: 18px 22px; }
+  }
   @media (min-width: 900px) {
     .wrap.wrap-wide { max-width: 1180px; }
-  }
-  /* Inside the planner, the grid is the thing that needs the room — let it fill the
-     now-wider card instead of being squeezed by the form padding. */
-  @media (min-width: 900px) {
     .wrap.wrap-wide #form-plan .form-card { padding: 18px 22px; }
     .wrap.wrap-wide .plan-grid { overflow-x: visible; }
   }
@@ -660,6 +660,154 @@
   .nuevo-card-deactivated {
     opacity: 0.65;
     background: var(--frame-bg);
+  }
+
+  /* MANTENIMIENTO: EXCEL-LIKE LIST (DESKTOP) & COMPRESSED CARDS (MOBILE) */
+  .estatus-mant-table-header { display: none; }
+  .estatus-mant-card {
+    border: 1px solid var(--border);
+    background: var(--card);
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .estatus-mant-card .btn { width: auto; }
+  .estatus-mant-title { font-weight: 700; color: var(--ink); }
+  .estatus-mant-detail { color: var(--ink); line-height: 1.35; }
+  .estatus-mant-thumb { object-fit: cover; border-radius: 4px; border: 1px solid var(--border); vertical-align: middle; }
+
+  @media (min-width: 700px) {
+    .estatus-mant-table-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 14px; margin: 12px 0 6px;
+      background: var(--frame-bg); border: 1px solid var(--border); border-radius: 8px;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; color: var(--muted);
+      text-transform: uppercase;
+    }
+    .estatus-mant-th-info { flex: 1 1 auto; }
+    .estatus-mant-th-actions { flex: 0 0 auto; text-align: right; min-width: 300px; max-width: 440px; }
+
+    .estatus-mant-card {
+      display: flex; flex-direction: row; align-items: center; justify-content: space-between;
+      gap: 14px; padding: 10px 14px; margin-bottom: 6px; border-radius: 8px;
+    }
+    .estatus-mant-card:hover { background: var(--input-bg); }
+    .estatus-mant-card.done { padding: 8px 14px; opacity: 0.85; }
+
+    .estatus-mant-info {
+      flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px;
+    }
+    .estatus-mant-header-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .estatus-mant-title { font-size: 0.95rem; white-space: nowrap; }
+
+    .estatus-mant-mid-row {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .estatus-mant-stepper-wrap {
+      flex: 0 0 270px; max-width: 270px;
+    }
+    .estatus-mant-stepper-wrap .mant-stepper-wrap { margin: 0 !important; }
+    .estatus-mant-stepper-wrap .mant-step-item { padding: 3px 6px !important; font-size: 0.72rem !important; }
+
+    .estatus-mant-detail {
+      flex: 1 1 auto; min-width: 0; font-size: 0.85rem;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .estatus-mant-meta-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      font-size: 0.78rem; color: var(--muted);
+    }
+    .estatus-mant-thumb { width: 28px; height: 28px; }
+
+    .estatus-mant-actions-col {
+      flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end;
+      gap: 6px; min-width: 300px; max-width: 440px;
+    }
+    .estatus-mant-date-box {
+      display: flex; align-items: center; justify-content: flex-end; gap: 6px; width: 100%;
+    }
+    .estatus-mant-date-lbl {
+      font-size: 0.76rem; font-weight: 600; color: var(--muted); white-space: nowrap;
+    }
+    .estatus-mant-date-inputs {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .estatus-mant-date-inputs input[type="date"] {
+      height: 32px; min-height: 32px; font-size: 0.82rem; padding: 2px 6px;
+      border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg);
+      color: var(--ink); width: 130px; box-sizing: border-box;
+    }
+    .estatus-mant-date-inputs button {
+      height: 32px; min-height: 32px; padding: 4px 10px; font-size: 0.8rem;
+      margin: 0; white-space: nowrap; border-radius: 6px;
+    }
+    .estatus-mant-btns {
+      display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap;
+    }
+    .estatus-mant-btns button,
+    .estatus-mant-btns .estatus-mant-detail-btn {
+      height: 32px; min-height: 32px; padding: 4px 10px; font-size: 0.82rem;
+      margin: 0; white-space: nowrap; border-radius: 6px;
+    }
+  }
+
+  .mant-step-item { min-width: 0 !important; word-break: break-word !important; }
+
+  @media (max-width: 699px) {
+    .estatus-mant-card {
+      display: flex; flex-direction: column; gap: 8px; padding: 10px 12px;
+      margin-bottom: 10px; border-radius: 12px; width: 100%; max-width: 100%; box-sizing: border-box;
+    }
+    .estatus-mant-card.done { padding: 10px 12px; opacity: 0.9; }
+
+    .estatus-mant-info { display: flex; flex-direction: column; gap: 6px; width: 100%; box-sizing: border-box; }
+    .estatus-mant-header-row {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; flex-wrap: wrap; width: 100%; box-sizing: border-box;
+    }
+    .estatus-mant-title { font-size: 1rem; flex: 1 1 auto; }
+
+    .estatus-mant-mid-row { display: flex; flex-direction: column; gap: 6px; width: 100%; box-sizing: border-box; }
+    .estatus-mant-stepper-wrap { width: 100%; margin: 2px 0; box-sizing: border-box; }
+    .estatus-mant-stepper-wrap .mant-step-item { font-size: 0.72rem !important; padding: 4px 2px !important; }
+    .estatus-mant-detail {
+      font-size: 0.88rem; word-break: break-word;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .estatus-mant-meta-row {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.78rem; color: var(--muted); width: 100%; box-sizing: border-box;
+    }
+    .estatus-mant-thumb { width: 44px; height: 44px; border-radius: 6px; }
+
+    .estatus-mant-actions-col {
+      display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;
+      margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--border);
+    }
+    .estatus-mant-date-box { display: flex; flex-direction: column; gap: 4px; width: 100%; box-sizing: border-box; }
+    .estatus-mant-date-lbl { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+    .estatus-mant-date-inputs { display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; }
+    .estatus-mant-date-inputs input[type="date"] {
+      flex: 1 1 auto; width: 0; min-width: 0; min-height: 44px; font-size: 16px; padding: 6px 8px;
+      border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg);
+      color: var(--ink); box-sizing: border-box;
+    }
+    .estatus-mant-date-inputs button {
+      min-height: 44px; min-width: 72px; font-size: 0.88rem; padding: 8px 12px;
+      margin: 0; flex: 0 0 auto; border-radius: 8px;
+    }
+
+    .estatus-mant-btns {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; box-sizing: border-box;
+    }
+    .estatus-mant-btns button,
+    .estatus-mant-btns .estatus-mant-detail-btn {
+      min-height: 44px; font-size: 0.88rem; padding: 8px 12px; margin: 0; border-radius: 8px; box-sizing: border-box;
+    }
+    .estatus-mant-btns button[data-edit] { flex: 0 0 44px; min-width: 44px; padding: 0; text-align: center; }
+    .estatus-mant-note-btn { flex: 1 1 auto; }
+    .estatus-mant-detail-btn { flex: 0 0 auto; text-align: center; }
+    .estatus-mant-advance-btn { width: 100%; flex: 1 1 100%; font-weight: 600; }
   }
 
   /* Review-before-submit modal */
@@ -3193,7 +3341,7 @@
       // The planner may use a wider wrapper than the rest of the app (Ben 2026-09-23).
       // Applied on the shared .wrap, so it MUST be cleared on every other page — a plain
       // remove here is safer than adding it in 30 places.
-      setPlannerWide(f === 'plan');
+      setPlannerWide(f === 'plan' || f === 'mantestatus');
       if (f === 'horario') loadSchedule();
       if (f === 'estatus')     { estatusTab = 'comp'; loadEstatus(); }
       if (f === 'mantestatus') { estatusTab = 'mant'; loadEstatus(); }
@@ -5301,56 +5449,85 @@
     `;
   }
 
+  function renderMantTableHeader() {
+    return `
+      <div class="estatus-mant-table-header">
+        <div class="estatus-mant-th-info">Solicitud / Área / Detalles</div>
+        <div class="estatus-mant-th-actions">Seguimiento y Acciones</div>
+      </div>
+    `;
+  }
+
+  function renderMantDoneTableHeader() {
+    return `
+      <div class="estatus-mant-table-header">
+        <div class="estatus-mant-th-info">Solicitud / Duración / Costo</div>
+        <div class="estatus-mant-th-actions">Acciones</div>
+      </div>
+    `;
+  }
+
   function renderMantenimientoCard(r, done, isOpenView) {
     const isAdmin = estatusAdminFlag;
     const isMine = !!r.submitted_by && r.submitted_by === __currentUserId;
     const statusLabel = statusMeta(r)[r.status] ? statusMeta(r)[r.status].label : esc(r.status);
     const statusPlain = /^[^\s]+\s/.test(statusLabel) ? statusLabel.replace(/^[^\s]+\s/, '') : statusLabel;
 
+    const branchBadge = r.branch
+      ? `<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--input-bg);border:1px solid var(--border);color:var(--ink);font-weight:600;white-space:nowrap;">📍 ${esc(r.branch)}</span>`
+      : '';
+
     if (done) {
       const isCancelled = r.status === 'Cancelado';
       const badge = isCancelled
-        ? `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;">⛔ Cancelado</span>`
-        : `<span style="display:inline-block;background:#e6f4ea;color:#188038;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;">✓ ${esc(statusPlain)}</span>`;
+        ? `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">⛔ Cancelado</span>`
+        : `<span style="display:inline-block;background:#e6f4ea;color:#188038;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">✓ ${esc(statusPlain)}</span>`;
       const durStr = formatDuration(r.created_at, r.completed_at);
       const assetTag = (r.asset_id && r.asset_name)
-        ? `<span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="color:var(--accent);font-weight:600;text-decoration:underline;cursor:pointer;">🔧 ${esc(r.asset_name)}</span> · `
+        ? `<span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="color:var(--accent);font-weight:600;text-decoration:underline;cursor:pointer;white-space:nowrap;">🔧 ${esc(r.asset_name)}</span>`
         : '';
 
       return `
-        <div class="estatus-card estatus-mant-card done" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--card);cursor:pointer;opacity:0.85;">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <div style="font-weight:600;font-size:0.92rem;color:var(--ink);">${esc(r.title)}</div>
-            <div>${badge}</div>
+        <div class="estatus-card estatus-mant-card done" data-open-detail="${r.table}|${r.id}">
+          <div class="estatus-mant-info">
+            <div class="estatus-mant-header-row">
+              <span class="estatus-mant-title">🔧 ${esc(r.title)}</span>
+              ${branchBadge}
+              <div>${badge}</div>
+              ${assetTag ? `<div>${assetTag}</div>` : ''}
+            </div>
+            <div class="estatus-mant-meta-row">
+              <span>⏱️ Duración: <b>${esc(durStr)}</b></span>
+              ${r.cost ? `<span>💰 ${formatMxn(r.cost)}</span>` : ''}
+              ${r.submitter_name ? `<span>👤 ${esc(r.submitter_name)}</span>` : ''}
+            </div>
           </div>
-          <div style="font-size:0.8rem;color:var(--muted);margin-top:4px;">
-            ${assetTag}⏱️ Duración: <b>${esc(durStr)}</b> ${r.cost ? `· 💰 ${formatMxn(r.cost)}` : ''}
+          <div class="estatus-mant-actions-col" data-no-card-open>
+            <div class="estatus-mant-btns" data-no-card-open>
+              <button type="button" class="btn btn-outline estatus-mant-detail-btn" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</button>
+            </div>
           </div>
         </div>
       `;
     }
 
-    // Open Mantenimiento row (patient, per-item dossier)
-    const branchBadge = isOpenView
-      ? `<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--input-bg);border:1px solid var(--border);color:var(--ink);font-weight:600;">📍 ${esc(r.branch)}</span>`
-      : '';
-
+    // Open Mantenimiento row
     const prio = prioBadge(r.priority);
 
     // Asset name when asset_id resolves
     const assetTagHtml = (r.asset_id && r.asset_name)
-      ? `<div style="margin:4px 0;"><span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="display:inline-block;color:var(--accent);font-weight:700;font-size:0.85rem;text-decoration:underline;cursor:pointer;">🔧 ${esc(r.asset_name)} (ver historial ›)</span></div>`
+      ? `<span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="display:inline-block;color:var(--accent);font-weight:700;font-size:0.8rem;text-decoration:underline;cursor:pointer;white-space:nowrap;">🔧 ${esc(r.asset_name)} (ver historial ›)</span>`
       : '';
 
     // Stepper for pipeline: Solicitado -> Comunicado con proveedor -> Completado
     const stepperHtml = renderMantStepper(r.status);
 
     // Age badge: "🔴 N días abierto"
-    const ageBadge = `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;">🔴 ${formatDiasAbierto(r.created_at)}</span>`;
+    const ageBadge = `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">🔴 ${formatDiasAbierto(r.created_at)}</span>`;
 
     // Last activity: "Última actividad hace N días" (or "Última actividad hoy")
     const lastActStr = formatUltimaActividad(r.updated_at || r.created_at);
-    const lastActHtml = `<span style="font-size:0.8rem;color:var(--muted);">⏱️ Última actividad: <b>${esc(lastActStr)}</b></span>`;
+    const lastActHtml = `<span style="font-size:0.78rem;color:var(--muted);white-space:nowrap;">⏱️ Última actividad: <b>${esc(lastActStr)}</b></span>`;
 
     // Próximo seguimiento
     let nextFollowUpBadge = '';
@@ -5358,9 +5535,9 @@
       const _nf = new Date(r.next_follow_up_at).getTime();
       if (!isNaN(_nf)) {
         if (_nf <= Date.now()) {
-          nextFollowUpBadge = `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:6px;border:1px solid rgba(217,48,37,0.3);">🔔 Toca seguimiento</span>`;
+          nextFollowUpBadge = `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:6px;border:1px solid rgba(217,48,37,0.3);white-space:nowrap;">🔔 Toca seguimiento</span>`;
         } else {
-          nextFollowUpBadge = `<span style="display:inline-block;background:var(--frame-bg);color:var(--ink);font-weight:600;font-size:0.75rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);">🔔 Próximo seguimiento: ${esc(formatProximoSeguimiento(r.next_follow_up_at))}</span>`;
+          nextFollowUpBadge = `<span style="display:inline-block;background:var(--frame-bg);color:var(--ink);font-weight:600;font-size:0.75rem;padding:2px 8px;border-radius:6px;border:1px solid var(--border);white-space:nowrap;">🔔 Próx: ${esc(formatProximoSeguimiento(r.next_follow_up_at))}</span>`;
         }
       }
     }
@@ -5370,7 +5547,7 @@
     const canEdit = (isAdmin || (isMine && r.status === 'Solicitado'));
 
     const photosHtml = (r.photo_urls && r.photo_urls.length)
-      ? `<div style="display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;">${r.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid var(--border);" />`).join('')}</div>`
+      ? `<span class="estatus-mant-photos">${r.photo_urls.slice(0, 3).map(u => `<img src="${escAttr(u)}" class="estatus-mant-thumb" alt="Foto" />`).join('')}${r.photo_urls.length > 3 ? `<span style="font-size:0.75rem;color:var(--muted);vertical-align:middle;margin-left:2px;">+${r.photo_urls.length - 3}</span>` : ''}</span>`
       : '';
 
     const costAndRepairer = [];
@@ -5378,50 +5555,52 @@
     if (r.repairer_name) costAndRepairer.push('🔧 ' + esc(r.repairer_name));
     if (r.vendor_name) costAndRepairer.push('🏢 ' + esc(r.vendor_name));
     const costRepairerHtml = costAndRepairer.length
-      ? `<div style="font-size:0.82rem;color:var(--ink);font-weight:600;margin:4px 0;">${costAndRepairer.join(' · ')}</div>`
+      ? `<span style="font-size:0.8rem;color:var(--ink);font-weight:600;white-space:nowrap;">${costAndRepairer.join(' · ')}</span>`
+      : '';
+
+    const submitterStr = r.submitter_name
+      ? `<span style="font-size:0.78rem;color:var(--muted);white-space:nowrap;">👤 ${esc(r.submitter_name)}</span>`
       : '';
 
     return `
-      <div class="estatus-card estatus-mant-card open" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--card);cursor:pointer;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-          <div style="font-weight:700;font-size:1.02rem;color:var(--ink);flex:1;">
-            🔧 ${esc(r.title)}
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;">
+      <div class="estatus-card estatus-mant-card open" data-open-detail="${r.table}|${r.id}">
+        <div class="estatus-mant-info">
+          <div class="estatus-mant-header-row">
+            <span class="estatus-mant-title">🔧 ${esc(r.title)}</span>
             ${branchBadge}
             ${prio}
+            ${assetTagHtml}
           </div>
-        </div>
-        ${assetTagHtml}
-        ${stepperHtml}
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0;flex-wrap:wrap;">
-          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <div class="estatus-mant-mid-row">
+            <div class="estatus-mant-stepper-wrap">${stepperHtml}</div>
+            ${r.detail ? `<div class="estatus-mant-detail" title="${escAttr(r.detail)}">${esc(r.detail)}</div>` : ''}
+          </div>
+          <div class="estatus-mant-meta-row">
             ${ageBadge}
             ${nextFollowUpBadge}
+            ${lastActHtml}
+            ${costRepairerHtml}
+            ${submitterStr}
+            ${photosHtml}
           </div>
-          ${lastActHtml}
-        </div>
-        ${r.detail ? `<div style="font-size:0.88rem;color:var(--ink);margin:6px 0;">${esc(r.detail)}</div>` : ''}
-        ${costRepairerHtml}
-        ${photosHtml}
-        ${r.submitter_name ? `<div style="font-size:0.78rem;color:var(--muted);margin:4px 0;">👤 Solicitado por: ${esc(r.submitter_name)}</div>` : ''}
-
-        <!-- Próximo seguimiento date control on card -->
-        <div data-no-card-open style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);flex-wrap:wrap;">
-          <label for="estatus-mant-next-card-${r.id}" style="font-size:0.8rem;font-weight:600;color:var(--muted);white-space:nowrap;">🔔 Próximo seguimiento:</label>
-          <input type="date" id="estatus-mant-next-card-${r.id}" class="estatus-mant-card-date" data-id="${r.id}" value="${escAttr(r.next_follow_up_at ? String(r.next_follow_up_at).slice(0, 10) : '')}" style="flex:1;min-width:140px;min-height:44px;font-size:16px;padding:6px 8px;border-radius:8px;border:1px solid var(--border);box-sizing:border-box;">
-          <button type="button" class="btn btn-secondary estatus-mant-card-date-save" data-id="${r.id}" style="min-height:44px;padding:8px 14px;font-size:0.85rem;margin:0;">Guardar</button>
         </div>
 
-        <!-- Action buttons -->
-        <div data-no-card-open style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap;">
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            ${canEdit ? `<button type="button" class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
-            <button type="button" class="btn btn-outline estatus-mant-card-note-btn" data-id="${r.id}" style="min-height:44px;padding:8px 12px;font-size:0.85rem;margin:0;">📝 Anotar seguimiento</button>
+        <div class="estatus-mant-actions-col" data-no-card-open>
+          <!-- Próximo seguimiento date control on card -->
+          <div class="estatus-mant-date-box" data-no-card-open>
+            <label for="estatus-mant-next-card-${r.id}" class="estatus-mant-date-lbl">🔔 Próximo seguimiento:</label>
+            <div class="estatus-mant-date-inputs">
+              <input type="date" id="estatus-mant-next-card-${r.id}" class="estatus-mant-card-date" data-id="${r.id}" value="${escAttr(r.next_follow_up_at ? String(r.next_follow_up_at).slice(0, 10) : '')}">
+              <button type="button" class="btn btn-secondary estatus-mant-card-date-save" data-id="${r.id}">Guardar</button>
+            </div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            ${canAdvance ? `<button type="button" class="btn" style="min-height:44px;padding:8px 14px;font-size:0.85rem;margin:0;font-weight:600;" data-advance="${r.table}|${r.id}|${nextStep}">Marcar ${nextStep}</button>` : ''}
-            <div style="font-size:0.8rem;color:var(--accent);cursor:pointer;padding:4px;" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</div>
+
+          <!-- Action buttons -->
+          <div class="estatus-mant-btns" data-no-card-open>
+            ${canEdit ? `<button type="button" class="btn btn-outline" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
+            <button type="button" class="btn btn-outline estatus-mant-card-note-btn" data-id="${r.id}">📝 Anotar seguimiento</button>
+            ${canAdvance ? `<button type="button" class="btn estatus-mant-advance-btn" data-advance="${r.table}|${r.id}|${nextStep}">Marcar ${nextStep}</button>` : ''}
+            <button type="button" class="btn btn-outline estatus-mant-detail-btn" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</button>
           </div>
         </div>
       </div>
@@ -5490,6 +5669,7 @@
               : '🎉 ¡No hay solicitudes de mantenimiento abiertas pendientes!'}
           </p>`;
       } else {
+        if (estatusTab === 'mant') html += renderMantTableHeader();
         openRows.forEach(r => {
           html += (estatusTab === 'comp')
             ? renderComprasCard(r, false, true)
@@ -5517,6 +5697,7 @@
       const list = groups[br];
       if (!list || !list.length) return;
       html += `<div class="section-title" style="margin-top:6px;">📍 ${esc(br)} <span style="color:var(--muted);font-weight:400;">(${list.length})</span></div>`;
+      if (estatusTab === 'mant') html += renderMantTableHeader();
       list.forEach(r => {
         html += (estatusTab === 'comp')
           ? renderComprasCard(r, false, false)
@@ -5525,6 +5706,7 @@
     });
     if (doneRows.length) {
       html += `<div class="section-title" style="margin-top:14px;">✅ Completadas <span style="color:var(--muted);font-weight:400;">(${doneRows.length})</span></div>`;
+      if (estatusTab === 'mant') html += renderMantDoneTableHeader();
       doneRows.forEach(r => {
         html += (estatusTab === 'comp')
           ? renderComprasCard(r, true, false)
@@ -7851,6 +8033,7 @@
       estatusTab = (target.table === 'maintenance_requests') ? 'mant' : 'comp';
       const form = $(estatusTab === 'mant' ? 'form-mantestatus' : 'form-estatus');
       if (form) form.classList.add('active');
+      setPlannerWide(estatusTab === 'mant');
       setActiveTab('estatus');
       await loadEstatus();                 // populates estatusRowsCache
       if (estatusRowsCache.some(r => r.table === target.table && r.id === target.id)) {
