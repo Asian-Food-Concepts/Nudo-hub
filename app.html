@@ -535,6 +535,9 @@
   .plan-cov-badge { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 2px 4px; border-radius: 4px; }
   .plan-cov-badge.red { background: rgba(220,80,60,0.15); color: #c0392b; font-weight: 700; white-space: nowrap; }
   .plan-cov-badge.ok { color: var(--muted); font-weight: 500; }
+  .plan-cov-badge.muted { color: var(--muted); font-weight: 500; }
+  .plan-empty-role-cell { text-align: center; }
+  .plan-empty-role-msg { font-size: 0.78rem; font-weight: 500; color: var(--muted); font-style: italic; letter-spacing: 0.01em; }
   .plan-person-cards { display: flex; flex-direction: column; gap: 12px; }
   .plan-person-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--card-bg, #fff); }
   .plan-person-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--frame, #eee); padding-bottom: 8px; }
@@ -3832,6 +3835,16 @@
     );
   }
 
+  // Eligible staff for a role specifically belonging to a branch (branch match + normalized role match).
+  // Profiles with branch 'Ambos' or empty/null are eligible for either outlet.
+  function planStaffForBranch(role, branch) {
+    const target = branch || (planState && planState.branch);
+    return ((planState && planState.staff) || []).filter(s =>
+      (s.branch === target || s.branch === 'Ambos' || !s.branch) &&
+      planRoleGroup(s.role) === role
+    );
+  }
+
   function planRender() {
     const isPersonaTab = (planState.tab === 'persona');
     const personView = $('plan-personview');
@@ -3875,21 +3888,28 @@
       const slots = planSlotsForRole(role);
       if (!slots.length) return;
 
+      const branchStaff = planStaffForBranch(role, planState.branch);
+      const noBranchStaff = !branchStaff.length;
+
       // Role header row with inline coverage status per day
       html += `<tr><td class="plan-role-head">${role}</td>`;
-      for (let i = 0; i < 7; i++) {
-        const date = fmtDate(new Date(planState.weekStart.getTime() + i * 86400000));
-        const min = (PLAN_MIN[planState.branch] && PLAN_MIN[planState.branch][role]) ? PLAN_MIN[planState.branch][role][i] : 0;
-        const count = planState.shifts.filter(x => x.shift_date === date && x.role === role && x.status !== 'descanso').length;
-        let badge = '';
-        if (min > 0) {
-          if (count < min) {
-            badge = `<span class="plan-cov-badge red">faltan ${min - count}</span>`;
-          } else {
-            badge = `<span class="plan-cov-badge ok">${count}/${min}</span>`;
+      if (noBranchStaff) {
+        html += `<td class="plan-role-head plan-cov-cell plan-empty-role-cell" colspan="7"><span class="plan-empty-role-msg">sin personal de ${esc(role)} en ${esc(planState.branch)}</span></td>`;
+      } else {
+        for (let i = 0; i < 7; i++) {
+          const date = fmtDate(new Date(planState.weekStart.getTime() + i * 86400000));
+          const min = (PLAN_MIN[planState.branch] && PLAN_MIN[planState.branch][role]) ? PLAN_MIN[planState.branch][role][i] : 0;
+          const count = planState.shifts.filter(x => x.shift_date === date && x.role === role && x.status !== 'descanso').length;
+          let badge = '';
+          if (min > 0) {
+            if (count < min) {
+              badge = `<span class="plan-cov-badge red">faltan ${min - count}</span>`;
+            } else {
+              badge = `<span class="plan-cov-badge ok">${count}/${min}</span>`;
+            }
           }
+          html += `<td class="plan-role-head plan-cov-cell">${badge}</td>`;
         }
-        html += `<td class="plan-role-head plan-cov-cell">${badge}</td>`;
       }
       html += `</tr>`;
 
@@ -4104,8 +4124,16 @@
         .sort((a,b) => (a.start_time||'99:99').localeCompare(b.start_time||'99:99'));
       const min = (PLAN_MIN[planState.branch] && PLAN_MIN[planState.branch][role]) ? PLAN_MIN[planState.branch][role][planState.dayIdx] : 0;
       const active = shiftsToday.filter(x => x.status !== 'descanso').length;
+      const branchStaff = planStaffForBranch(role, planState.branch);
+      const noBranchStaff = !branchStaff.length;
       let cover = '';
-      if (min) {
+      if (noBranchStaff) {
+        if (active > 0) {
+          cover = ` <span style="color:var(--muted);font-size:0.8rem;font-weight:400;margin-left:6px;">(${active}/${min} · sin personal en ${esc(planState.branch)})</span>`;
+        } else {
+          cover = ` <span class="plan-cov-badge muted" style="color:var(--muted);font-size:0.75rem;font-weight:400;margin-left:6px;">(sin personal de ${esc(role)} en ${esc(planState.branch)})</span>`;
+        }
+      } else if (min) {
         if (active < min) {
           cover = ` <span class="plan-cov-badge red" style="font-size:0.75rem;margin-left:6px;">faltan ${min - active} (${active}/${min})</span>`;
         } else {
@@ -4114,7 +4142,11 @@
       }
       html += `<div class="plan-day-area"><div class="plan-day-area-head">${role}${cover}</div>`;
       if (!shiftsToday.length) {
-        html += `<div class="empty-state" style="padding:12px 10px;"><div class="es-title" style="font-size:0.85rem;">Nadie asignado</div><div class="es-sub" style="font-size:0.78rem;margin-bottom:8px;">Usa “+ Agregar ${role}” para cubrir este puesto.</div></div>`;
+        if (noBranchStaff) {
+          html += `<div class="empty-state" style="padding:12px 10px;"><div class="es-title" style="font-size:0.85rem;">sin personal de ${esc(role)} en ${esc(planState.branch)}</div><div class="es-sub" style="font-size:0.78rem;margin-bottom:8px;">Esta sucursal no tiene personal registrado para este puesto.</div></div>`;
+        } else {
+          html += `<div class="empty-state" style="padding:12px 10px;"><div class="es-title" style="font-size:0.85rem;">Nadie asignado</div><div class="es-sub" style="font-size:0.78rem;margin-bottom:8px;">Usa “+ Agregar ${role}” para cubrir este puesto.</div></div>`;
+        }
       }
       shiftsToday.forEach(sh => {
         const name = planStaffName(sh.staff_id);
@@ -4390,6 +4422,8 @@
       const date = fmtDate(new Date(planState.weekStart.getTime() + i*86400000));
       PLAN_ROLES.forEach(role => {
         if (role === 'Producción' && planState.branch !== 'Del Valle') return;
+        const branchStaff = planStaffForBranch(role, planState.branch);
+        if (!branchStaff.length) return;
         const min = (PLAN_MIN[planState.branch] && PLAN_MIN[planState.branch][role]) ? PLAN_MIN[planState.branch][role][i] : 0;
         if (!min) return;
         const count = planState.shifts.filter(x => x.shift_date === date && x.role === role && x.status !== 'descanso').length;
