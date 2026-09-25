@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v117'; // v0.209.12: 'Visto como' re-enabled for the owner (level 1) with a readable cursor, and the read-only guard now also blocks storage uploads, auth changes and non-GET edge/REST calls - each verified behaviourally.
+const CACHE = 'nudo-hub-v118'; // v0.209.13: 'Visto como' is now level-1 ONLY — non-owners never see it (hidden + inert) and cannot reach it (click-time predicate). Removed the stale :disabled CSS that produced the not-allowed cursor Ben reported.
 // serves the app at https://hub.asianfoodconcepts.mx/ and the old project-site URL
 // (asian-food-concepts.github.io/Nudo-hub/) 301-redirects here. The version bump is what
 // moves EXISTING clients: a stale client detects the new version, reloads, follows the

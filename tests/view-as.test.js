@@ -36,10 +36,52 @@ module.exports = function (t) {
          'VIEW_AS_ENABLED must be true or the button is inert for everyone');
   });
 
-  t.test('VIEW-AS: only level 1 may open the picker, everyone else still sees it', () => {
-    // The level check now lives in the mayUseViewAs predicate (tested behaviourally below),
-    // so this asserts the WIRING: both entry points route through it, and the button is
-    // visible-but-disabled for non-owners.
+  t.test('VIEW-AS: non-owners must NOT see the button (Ben 2026-09-24)', () => {
+    // Ben reversed the earlier "everyone should see it" order: "non owners should not see the
+    // button, and they should not be able to access it." Three independent layers must hold,
+    // because hiding alone is not a boundary.
+    const a = SRC.indexOf("const vo = $('viewas-open');");
+    t.ok(a !== -1, 'the visibility block is missing');
+    // Brace-match the whole block so the assertions cannot pass on a fragment.
+    let depth = 0, end = a;
+    for (let k = SRC.indexOf('{', a); k < SRC.length; k++) {
+      if (SRC[k] === '{') depth++;
+      else if (SRC[k] === '}') { depth--; if (depth === 0) { end = k; break; } }
+    }
+    const blk = SRC.slice(a, end + 1);
+    t.ok(blk.length > 200 && blk.length < 3000, 'block isolation failed (len ' + blk.length + ')');
+
+    // LAYER 1 — hidden for non-owners, shown for the owner.
+    t.includes(blk, "vo.classList.add('hidden')", 'the non-owner branch must HIDE the button');
+    t.includes(blk, "vo.classList.remove('hidden')", 'the owner branch must SHOW the button');
+    t.ok(/if \(allowed\) \{/.test(blk), 'the block must branch on the authorization predicate');
+
+    // LAYER 2 — unreachable even if something unhides it.
+    t.includes(blk, "vo.setAttribute('inert', '')", 'the non-owner branch must set inert');
+    t.includes(blk, "vo.disabled = true", 'the non-owner branch must disable it');
+    t.includes(blk, "vo.removeAttribute('inert')", 'the owner branch must clear inert');
+
+    // LAYER 3 — the predicate itself is the gate (tested behaviourally in the next test).
+    t.includes(blk, 'mayUseViewAs(VIEW_AS_ENABLED, realLevel())',
+               'the block must delegate to the authorization predicate');
+
+    // The old "greyed out but visible" behaviour must be GONE — that was the bug Ben reported.
+    t.ok(!/vo\.style\.opacity = '0\.5'/.test(blk),
+         'the non-owner path must not render a greyed-out-but-visible button');
+    t.ok(!/cursor = 'not-allowed'/.test(blk),
+         'the non-owner path must not produce the not-allowed cursor Ben complained about');
+  });
+
+  t.test('VIEW-AS: the button starts hidden in markup', () => {
+    // If it ever shipped visible by default, a non-owner would see it for the instant before
+    // loadUser() runs — and on a slow connection that is long enough to tap.
+    t.ok(/<button[^>]*class="viewas-open hidden"[^>]*id="viewas-open"/.test(HTML),
+         'the button must ship with the `hidden` class');
+  });
+
+  t.test('VIEW-AS: both entry points route through the predicate', () => {
+    // A user can open the picker from the button AND by tapping their own name in the header.
+    // Both must go through the gate — a second ungated entry point would bypass everything.
     const i = CODE.indexOf("closest('#viewas-open')");
     t.ok(i !== -1, 'the open button handler is missing');
     const openBody = CODE.slice(i, i + 220);
@@ -47,47 +89,21 @@ module.exports = function (t) {
                'the open handler must delegate to the authorization predicate');
     t.includes(openBody, "closest('#user-name')",
                'the name-tap entry point must be in the same gated branch');
-    // The button must NOT be hidden for non-owners — Ben wants everyone to see it.
-    t.ok(!/vo\.classList\.toggle\('hidden', realLevel\(\) !== 1\)/.test(SRC),
-         'the non-owner path must not HIDE the button (Ben: everyone should see it)');
-    t.ok(/const allowed = realLevel\(\) === 1;/.test(SRC),
-         'the enabled branch must compute an owner-only `allowed` flag');
-    // The button ships with `hidden` in its markup, so the ENABLED branch is the only thing
-    // that can reveal it — for the owner AND for the non-owner who must merely see it greyed.
-    // Deleting that one call makes the button invisible to everyone, silently removing the
-    // feature Ben asked to have fixed. Asserted on the enabled branch specifically, because
-    // the disabled branch has its own show call and would mask the loss.
-    const a = SRC.indexOf('const allowed = realLevel() === 1;');
-    t.ok(a !== -1, 'the allowed flag is missing');
-    const elseAt = SRC.lastIndexOf('} else {', a);
-    t.ok(elseAt !== -1 && elseAt < a, 'could not locate the else block opening');
-    let depth = 0, end = elseAt;
-    for (let k = elseAt + 7; k < SRC.length; k++) {
-      if (SRC[k] === '{') depth++;
-      else if (SRC[k] === '}') { depth--; if (depth === 0) { end = k; break; } }
-    }
-    const enabledBranch = SRC.slice(elseAt, end + 1);
-    t.ok(enabledBranch.length > 80 && enabledBranch.length < 1200,
-         'the enabled branch was not isolated cleanly (len ' + enabledBranch.length + ')');
-    t.includes(enabledBranch, 'const allowed', 'the isolated block must be the enabled branch');
-    t.includes(enabledBranch, "vo.classList.remove('hidden')",
-               'the ENABLED branch must reveal the button — it ships hidden in markup, so '
-               + 'without this call the feature is invisible to everyone');
-    t.ok(!/classList\.(add|toggle)\('hidden'\s*(,\s*[^)]*)?\)/.test(enabledBranch),
-         'the enabled branch must never HIDE the button for a non-owner');
-    // And the ship state itself: `hidden` in the markup is fine only because loadUser shows it.
-    t.ok(/class="viewas-open hidden"|class="[^"]*\bhidden\b[^"]*"[^>]*id="viewas-open"/.test(HTML),
-         'the button is expected to start hidden and be revealed by loadUser');
   });
 
-  t.test('VIEW-AS: the owner does not get a not-allowed cursor', () => {
-    // The exact defect Ben reported: cursor 'not-allowed' on his own button.
-    const i = SRC.indexOf('const allowed = realLevel() === 1;');
-    t.ok(i !== -1, 'the allowed flag is missing');
-    const tail = SRC.slice(i, i + 400);
-    t.ok(/cursor = allowed \? '' : 'not-allowed'/.test(tail),
-         "the cursor must be cleared for the owner and 'not-allowed' only otherwise");
-    t.ok(/vo\.disabled = !allowed;/.test(tail), 'the button must be enabled for the owner');
+  t.test('VIEW-AS: the owner gets a live, normal-cursor button', () => {
+    // The exact defect Ben reported: cursor 'not-allowed' on his own button. The new contract
+    // is stronger — the owner's branch must actively CLEAR any prior inline styling, so a
+    // leftover style from an earlier render cannot leave him staring at a dead-looking control.
+    const i = SRC.indexOf("const vo = $('viewas-open');");
+    t.ok(i !== -1, 'the visibility block is missing');
+    const tail = SRC.slice(i, i + 1400);
+    t.ok(/vo\.disabled = false;/.test(tail), 'the owner branch must ENABLE the button');
+    t.ok(/vo\.removeAttribute\('inert'\)/.test(tail), 'the owner branch must clear inert');
+    t.ok(/vo\.style\.cursor = '';/.test(tail),
+         'the owner branch must reset the cursor — never inherit a not-allowed state');
+    t.ok(!/cursor = 'not-allowed'/.test(tail),
+         "the app must never set a not-allowed cursor anywhere in this block");
   });
 
   t.test('VIEW-AS: the authorization predicate is behavioural, not textual', () => {

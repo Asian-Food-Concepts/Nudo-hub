@@ -269,8 +269,11 @@
   .userbar .viewas-open { font-size:0.82rem; color:var(--accent); background:var(--card);
     border:1px solid var(--border); border-radius:8px; padding:5px 10px; cursor:pointer; }
   .userbar .viewas-open:hover { border-color:var(--accent); }
-  .userbar .viewas-open:disabled { opacity: 0.5; cursor: not-allowed; }
-  .userbar .viewas-open:disabled:hover { border-color: var(--border); }
+  /* The button is now level-1-only (Ben 2026-09-24): for non-owners it is `hidden` AND inert, so
+     no disabled state is ever painted for them. The :disabled rules that used to live here were
+     the source of the "do not click" cursor Ben reported — they applied a not-allowed cursor and
+     50% opacity to a button that was visible to everyone. Removed deliberately: a disabled-state
+     style for a control nobody should see is just a way for the defect to come back. */
   .userbar .logout { font-size: 0.85rem; color: var(--accent); background: none; border: none; cursor: pointer; padding: 6px 8px; }
   .userbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
   .theme-switch { display: flex; align-items: center; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 3px; }
@@ -1737,19 +1740,23 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.12";
+  const APP_VERSION = "v0.209.13";
   document.getElementById('ver').textContent = APP_VERSION;
 
-  // Impersonation feature gate (Ben 2026-09-22): everyone should SEE it, disabled for now.
-  // Flip VIEW_AS_ENABLED to true to re-enable "Visto como" for level 1 (Dueño).
+  // Impersonation feature gate. "Visto como" is a LEVEL-1-ONLY control.
   //
-  // v0.209.12 — ENABLED (Ben 2026-09-24). He is logged in as Nudo A. (Dueño, level 1) and the
-  // button existed but was disabled with a `not-allowed` cursor:
-  //   "I'm locked in with the Nudo account and I have Dueño status but I'm not able to use
-  //    Visto como to look at how the other accounts see the different forms."
-  // It was turned off globally on 2026-09-23 ("disabled for now for everybody"), and "for now"
-  // is over. The gate is unchanged: level 1 ONLY, read-only, and the write guard must be
-  // airtight because Ben will now actually use it on LIVE data.
+  // Ben 2026-09-24, final rule: "non owners should not see the button, and they should not be
+  // able to access it." This SUPERSEDES his 2026-09-22 note that everyone should see it.
+  // Levels 2-6 never render it; the click handler re-checks the level at click time.
+  //
+  // History, because both past states were bugs he personally hit:
+  //   2026-09-23 — turned off globally ("disabled for now for everybody"). Because the OFF
+  //     branch also disabled it for EVERYONE, a level-1 Dueño got a `not-allowed` cursor on his
+  //     own button: "I'm locked in with the Nudo account and I have Dueño status but I'm not
+  //     able to use Visto como..."
+  //   2026-09-24 — re-enabled, but still VISIBLE to everyone (greyed). He then narrowed it:
+  //     non-owners must not see it at all.
+  // The lesson: a single boolean cannot express "who may use this". Use the predicate.
   const VIEW_AS_ENABLED = true;
 
   // Formatting helper for currency amounts in MXN (v0.203).
@@ -2532,29 +2539,38 @@
     const displayName = (currentProfile && currentProfile.name) || (user.email || 'Equipo');
     const role = (currentProfile && currentProfile.role) || '';
     $('user-name').textContent = displayName + (role ? ' · ' + role : '');
-    // Impersonation control (v0.203, re-enabled v0.209.12).
-    // Level 1 (Dueño) sees it ENABLED; everyone else sees it but disabled — Ben's 2026-09-22
-    // order was that everyone should SEE it. The previous code disabled it for EVERYONE while
-    // VIEW_AS_ENABLED was false, which is why Ben met a `not-allowed` cursor on his own button.
+    // Impersonation control — VISIBLE TO LEVEL 1 ONLY (Ben 2026-09-24, final).
+    //
+    // Ben's earlier instruction was that everyone should SEE the button, disabled. He reversed
+    // it: "non owners should not see the button, and they should not be able to access it."
+    // So for levels 2-6 the control is not rendered, not focusable and not hit-testable.
+    //
+    // THREE independent layers, because one is not a boundary:
+    //   1. This block keeps `hidden` — no paint, no layout, no hit area.
+    //   2. `disabled` + `inert` — even a forced unhide cannot click, tab to, or focus it.
+    //   3. The click handler re-checks `mayUseViewAs()` at click time, so a programmatic
+    //      .click() or a DOM tamper still cannot open the picker.
+    // Layer 3 is the real gate; 1 and 2 are what make it invisible.
     {
       const vo = $('viewas-open');
       if (vo) {
-        if (!VIEW_AS_ENABLED) {
+        const allowed = mayUseViewAs(VIEW_AS_ENABLED, realLevel());
+        if (allowed) {
+          vo.disabled = false;
+          vo.removeAttribute('inert');
+          vo.style.opacity = '';
+          vo.style.cursor = '';
+          vo.title = 'Ver la app como otra persona (solo lectura)';
           vo.classList.remove('hidden');
-          vo.disabled = true;
-          vo.style.opacity = '0.5';
-          vo.style.cursor = 'not-allowed';
-          vo.title = 'Temporalmente no disponible';
         } else {
-          // Enabled: only level 1 may click. Everyone else still sees it, but inert.
-          const allowed = realLevel() === 1;
-          vo.disabled = !allowed;
-          vo.style.opacity = allowed ? '' : '0.5';
-          vo.style.cursor = allowed ? '' : 'not-allowed';
-          vo.title = allowed
-            ? 'Ver la app como otra persona (solo lectura)'
-            : 'Solo el Dueño puede usar esta función';
-          vo.classList.remove('hidden');
+          // Never shown to a non-owner. `inert` also removes it from the a11y tree and tab
+          // order, so it stays unreachable even if something later unhides it by accident.
+          vo.disabled = true;
+          vo.setAttribute('inert', '');
+          vo.style.opacity = '';
+          vo.style.cursor = '';
+          vo.title = '';
+          vo.classList.add('hidden');
         }
       }
     }
