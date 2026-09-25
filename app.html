@@ -7452,6 +7452,7 @@
     if (!row) return;
     closeEstatusDetail();
     const isMant = row.kind === 'mant';
+    const isAdmin = estatusAdminFlag;
     $('estatus-edit-title').textContent = isMant ? '✏️ Editar mantenimiento' : '✏️ Editar compra';
 
     const prioOptions = ['Urgente', 'Alta', 'Normal', 'Baja'].map(p =>
@@ -7466,18 +7467,10 @@
 
     let formFields = '';
     if (isMant) {
-      formFields = `
-        <div class="field"><label>Sucursal</label>
-          <select id="ee-branch" class="panelist-select" style="width:100%;font-size:16px;min-height:44px;">
-            ${branchOptionsFull}
-          </select>
-        </div>
-        <div class="field"><label>Área / equipo</label>
-          <input type="text" id="ee-title" value="${escAttr(row.title || '')}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
-        </div>
-        <div class="field"><label>Descripción</label>
-          <textarea id="ee-detail" style="width:100%;font-size:16px;min-height:80px;box-sizing:border-box;">${esc(row.detail || '')}</textarea>
-        </div>
+      // Protected management-only fields: cost, repairer_name, vendor_name,
+      // resolution_notes. The DB trigger rejects non-management writes to these
+      // columns, so they are hidden from the edit form for non-admins.
+      const protectedFieldsHtml = isAdmin ? `
         <div class="field"><label>Costo (MXN)</label>
           <input type="number" id="ee-cost" step="0.01" min="0" value="${row.cost != null ? escAttr(String(row.cost)) : ''}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
         </div>
@@ -7490,6 +7483,20 @@
         <div class="field"><label>Qué se hizo</label>
           <textarea id="ee-resolution" style="width:100%;font-size:16px;min-height:60px;box-sizing:border-box;">${esc(row.resolution_notes || '')}</textarea>
         </div>
+      ` : '';
+      formFields = `
+        <div class="field"><label>Sucursal</label>
+          <select id="ee-branch" class="panelist-select" style="width:100%;font-size:16px;min-height:44px;">
+            ${branchOptionsFull}
+          </select>
+        </div>
+        <div class="field"><label>Área / equipo</label>
+          <input type="text" id="ee-title" value="${escAttr(row.title || '')}" style="width:100%;font-size:16px;min-height:44px;box-sizing:border-box;">
+        </div>
+        <div class="field"><label>Descripción</label>
+          <textarea id="ee-detail" style="width:100%;font-size:16px;min-height:80px;box-sizing:border-box;">${esc(row.detail || '')}</textarea>
+        </div>
+        ${protectedFieldsHtml}
         <div class="field"><label>Notas</label>
           <textarea id="ee-notes" style="width:100%;font-size:16px;min-height:60px;box-sizing:border-box;">${esc(row.notes || '')}</textarea>
         </div>
