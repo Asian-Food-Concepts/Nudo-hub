@@ -2863,8 +2863,12 @@
     if (!user) return;
     currentProfile = null;
     // Look up the profile (name + role) for this user
-    const { data } = await supabase.from('profiles').select('id,name,role,active,level,branch').eq('id', user.id).maybeSingle();
-    if (data && data.name) currentProfile = data;
+    const { data, error } = await supabase.from('profiles').select('id,name,role,active,level,branch').eq('id', user.id).maybeSingle();
+    if (error) {
+      toast('No se pudo cargar el perfil.');
+    } else if (data && data.name) {
+      currentProfile = data;
+    }
     // v0.149 — "Visto como": the REAL identity is stashed in __realProfile and the
     // UI deliberately renders with the impersonated profile instead, so every
     // existing role gate applies unchanged. Writes are refused by installWriteGuard().
