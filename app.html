@@ -2015,7 +2015,7 @@
         <div class="review-box" style="max-height:85vh;display:flex;flex-direction:column;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <h3 id="maint-asset-title" style="margin:0;font-size:1.05rem;">🔧 Historial de equipo</h3>
-            <button type="button" class="btn btn-outline" id="maint-asset-close-top" style="margin:0;padding:4px 10px;font-size:0.8rem;min-height:36px;min-width:36px;">✕</button>
+            <button type="button" class="btn btn-outline" id="maint-asset-close-top" style="margin:0;padding:4px 10px;font-size:0.8rem;min-height:44px;min-width:44px;">✕</button>
           </div>
           <div class="review-body" id="maint-asset-body" style="overflow-y:auto;flex:1;"></div>
           <div class="review-actions" style="margin-top:12px;">
@@ -4925,7 +4925,7 @@
     const presets = PLAN_ROLE_PRESETS[role] || PLAN_PRESET_FALLBACK;
     box.innerHTML = presets.map(([s, e]) =>
       `<button type="button" class="btn btn-secondary plan-qt-btn" data-s="${s}" data-e="${e}"`
-      + ` style="padding:6px 10px;font-size:0.85rem;min-height:36px;">${s} a ${e}</button>`
+      + ` style="padding:6px 10px;font-size:16px;min-height:44px;">${s} a ${e}</button>`
     ).join('');
     box.querySelectorAll('.plan-qt-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -9931,7 +9931,7 @@
           + tierBadge + '</div>'
           + '<div class="rv-value">' + verdict
           + ' <button class="btn btn-outline" data-ficha-doc="' + esc(id) + '"'
-          + ' data-doc-idx="' + i + '" style="min-height:36px;font-size:14px;padding:4px 10px;margin:4px 0 0;">'
+          + ' data-doc-idx="' + i + '" style="min-height:44px;font-size:16px;padding:4px 10px;margin:4px 0 0;">'
           + '⬇️ Abrir</button></div></div>';
       });
     }
