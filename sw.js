@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v122'; // v0.209.17: planner - null-time crash guard, cross-outlet flag, honest empty-role message.
+const CACHE = 'nudo-hub-v123'; // v0.209.17: planner - null-time crash guard, cross-outlet flag, honest empty-role message.
 // serves the app at https://hub.asianfoodconcepts.mx/ and the old project-site URL
 // (asian-food-concepts.github.io/Nudo-hub/) 301-redirects here. The version bump is what
 // moves EXISTING clients: a stale client detects the new version, reloads, follows the

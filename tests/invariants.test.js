@@ -208,4 +208,71 @@ module.exports = function (t) {
     }
     t.ok(checked === 4, 'expected to check 4 branch/role combinations');
   });
+
+  // ── 2026-09-24: "Marcar entregado on main compras tracking page not working" ──────
+  // The cause was an inline `onclick="event.stopPropagation()"` on the CARD ACTION BAR —
+  // an ANCESTOR of the delegated controls. The event stopped at that row and never
+  // reached the document-level listeners powering `[data-advance]`, the note button and
+  // the date-save button, so every one of them silently did nothing: no error, no action.
+  // Reproduced in a real browser (old markup => zero handlers fire; marker => handler
+  // fires). This guards the whole CLASS, not just the one bar that broke: never stop
+  // propagation on an ancestor of a delegated control.
+  t.test('no card row stops propagation above a delegated control', () => {
+    const html = t.html;
+    t.ok(typeof html === 'string' && html.length > 1000,
+      'test harness did not expose the app markup');
+
+    // Parse STRUCTURALLY, not line-by-line. The offending `onclick=stopPropagation`
+    // sits on a container whose `data-advance` button is on a LATER line, so any
+    // per-line scan passes straight over the bug (the first version of this test did
+    // exactly that and was therefore worthless — a mutation that re-introduced the bug
+    // still went green).
+    //   A container "owns" a delegated control if the control appears anywhere inside it.
+    // We approximate the DOM by scanning tags and tracking depth for the containers we
+    // care about: <div ...> open, matching </div>, then looking at the enclosed slice.
+    const DELEGATED = ['data-advance', 'data-edit', 'estatus-mant-card-note-btn',
+                       'estatus-mant-card-date-save'];
+
+    const bad = [];
+    // find each element tag that carries an inline stopPropagation
+    const openTag = /<([a-z]+)\b[^>]*onclick\s*=\s*"[^"]*stopPropagation[^"]*"[^>]*>/gi;
+    let m;
+    while ((m = openTag.exec(html)) !== null) {
+      const start = m.index;
+      const tag = m[1];
+      // walk forward to this element's matching close tag, respecting nesting
+      const openRe = new RegExp('<' + tag + '\\b', 'gi');
+      const closeRe = new RegExp('</' + tag + '>', 'gi');
+      openRe.lastIndex = start + m[0].length;
+      closeRe.lastIndex = start + m[0].length;
+      let depth = 1, end = -1, o, c;
+      while (depth > 0) {
+        o = openRe.exec(html);
+        c = closeRe.exec(html);
+        if (!c) break;
+        if (o && o.index < c.index) { depth++; }
+        else { depth--; end = c.index; }
+      }
+      if (end < 0) end = Math.min(html.length, start + 4000);
+      const inner = html.slice(start, end);
+      const owns = DELEGATED.filter(d => inner.includes(d));
+      if (owns.length) bad.push(owns.join('+') + ' inside a stopPropagation ' + tag);
+    }
+    t.ok(bad.length === 0,
+      'an element carrying stopPropagation also contains delegated control(s) — those ' +
+      'clicks never reach the document-level listeners and die silently: ' +
+      bad.slice(0, 3).join(' | '));
+
+    // The action bars must use the replacement marker so the card-open listener can tell
+    // "this row owns its clicks" WITHOUT swallowing the event from other listeners.
+    const bars = (html.match(/data-no-card-open/g) || []).length;
+    t.ok(bars >= 3,
+      'expected the action bars (compras action, mant date, mant action) to carry ' +
+      'data-no-card-open; found ' + bars);
+
+    // ...and the card-open listener must honour it, or tapping "Marcar …" would
+    // advance the status AND pop the detail modal.
+    t.ok(/closest\('\[data-no-card-open\]'\)/.test(html),
+      'the card-open listener does not check for [data-no-card-open]');
+  });
 };

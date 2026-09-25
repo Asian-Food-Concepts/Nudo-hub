@@ -1781,7 +1781,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.17";
+  const APP_VERSION = "v0.209.18";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate. "Visto como" is a LEVEL-1-ONLY control.
@@ -5290,7 +5290,7 @@
           <div>${ageBadge}</div>
         </div>
         ${submitterStr ? `<div style="margin-bottom:6px;">${submitterStr}</div>` : ''}
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);" onclick="event.stopPropagation();">
+        <div data-no-card-open style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
           <div style="font-size:0.8rem;color:var(--accent);cursor:pointer;" onclick="openEstatusDetail('${r.table}','${r.id}')">Ver detalles ›</div>
           <div style="display:flex;gap:8px;align-items:center;">
             ${canEdit ? `<button type="button" class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
@@ -5407,14 +5407,14 @@
         ${r.submitter_name ? `<div style="font-size:0.78rem;color:var(--muted);margin:4px 0;">👤 Solicitado por: ${esc(r.submitter_name)}</div>` : ''}
 
         <!-- Próximo seguimiento date control on card -->
-        <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);flex-wrap:wrap;" onclick="event.stopPropagation();">
+        <div data-no-card-open style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);flex-wrap:wrap;">
           <label for="estatus-mant-next-card-${r.id}" style="font-size:0.8rem;font-weight:600;color:var(--muted);white-space:nowrap;">🔔 Próximo seguimiento:</label>
           <input type="date" id="estatus-mant-next-card-${r.id}" class="estatus-mant-card-date" data-id="${r.id}" value="${escAttr(r.next_follow_up_at ? String(r.next_follow_up_at).slice(0, 10) : '')}" style="flex:1;min-width:140px;min-height:44px;font-size:16px;padding:6px 8px;border-radius:8px;border:1px solid var(--border);box-sizing:border-box;">
           <button type="button" class="btn btn-secondary estatus-mant-card-date-save" data-id="${r.id}" style="min-height:44px;padding:8px 14px;font-size:0.85rem;margin:0;">Guardar</button>
         </div>
 
         <!-- Action buttons -->
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap;" onclick="event.stopPropagation();">
+        <div data-no-card-open style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap;">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             ${canEdit ? `<button type="button" class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
             <button type="button" class="btn btn-outline estatus-mant-card-note-btn" data-id="${r.id}" style="min-height:44px;padding:8px 12px;font-size:0.85rem;margin:0;">📝 Anotar seguimiento</button>
@@ -6156,6 +6156,17 @@
       if (row) openEstatusEdit(row);
       return;
     }
+    // Interactive rows inside a card (action bars, date controls) carry
+    // `data-no-card-open`: they own their clicks, and a tap there must NOT also open
+    // the detail modal. This REPLACES an inline `onclick="event.stopPropagation()"`
+    // on those rows. That inline handler fired on the ROW (an ancestor of the
+    // buttons) and stopped propagation there, so the event never reached the
+    // document-level delegation that powers "Marcar <estatus>", the note button and
+    // the date-save button — every one of them silently did nothing
+    // (2026-09-24 Ben: "Marcar entregado on main compras tracking page not working").
+    // Never stop propagation on an ancestor of a delegated control.
+    if (e.target.closest('[data-no-card-open]')) return;
+
     const card = e.target.closest('[data-open-detail]');
     if (!card) return;
     const [table, id] = card.getAttribute('data-open-detail').split('|');
