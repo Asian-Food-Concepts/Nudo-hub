@@ -5058,11 +5058,21 @@
   let allAssetsCache = [];
   let allAssetHistoryCache = [];
   async function loadMaintenanceAssets() {
+    const msgEl = $('m-msg');
+    if (msgEl) clearMsg(msgEl);
     try {
-      const { data: histData, error: hErr } = await supabase
-        .from('maintenance_asset_history')
-        .select('*')
-        .order('name');
+      let histData = null;
+      let hErr = null;
+      try {
+        const res = await supabase
+          .from('maintenance_asset_history')
+          .select('*')
+          .order('name');
+        histData = res.data;
+        hErr = res.error;
+      } catch (e) {
+        hErr = e;
+      }
       if (!hErr && histData && histData.length) {
         allAssetHistoryCache = histData;
         allAssetsCache = histData.map(h => ({
@@ -5079,16 +5089,24 @@
           avg_cost: h.avg_cost
         }));
       } else {
-        const { data: assetsData } = await supabase
+        const { data: assetsData, error: aErr } = await supabase
           .from('maintenance_assets')
           .select('*')
           .order('name');
+        if (aErr) {
+          throw aErr;
+        }
         if (assetsData) {
           allAssetsCache = assetsData;
         }
       }
     } catch (err) {
+      allAssetsCache = [];
+      allAssetHistoryCache = [];
       nudoWarn('loadMaintenanceAssets', err);
+      if (msgEl) {
+        showMsg(msgEl, 'No se pudo cargar la lista de equipos. Describe el equipo manualmente.', 'err');
+      }
     }
     updateMaintenanceAssetPicker();
     renderMaintenanceAssetsList();
