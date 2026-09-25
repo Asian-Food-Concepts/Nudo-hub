@@ -626,6 +626,28 @@
   .ico-btn:hover::after { content: attr(aria-label); position: absolute; top: -34px; left: 50%; transform: translateX(-50%); background: #222; color: #fff; font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 99; }
   .estatus-filter-btn.active { background: var(--ink) !important; color: var(--card) !important; font-weight: 700 !important; }
 
+  /* Document priority chips & deactivated nuevo card styles */
+  .doc-tier-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; font-weight: 700; line-height: 1;
+    padding: 3px 6px; border-radius: 6px; vertical-align: middle;
+    margin-left: 6px;
+  }
+  .doc-tier-chip.critical {
+    background: rgba(198, 40, 40, 0.15);
+    color: var(--red);
+    border: 1px solid rgba(198, 40, 40, 0.35);
+  }
+  .doc-tier-chip.important {
+    background: rgba(232, 161, 58, 0.15);
+    color: var(--amber);
+    border: 1px solid rgba(232, 161, 58, 0.35);
+  }
+  .nuevo-card-deactivated {
+    opacity: 0.65;
+    background: var(--frame-bg);
+  }
+
   /* Review-before-submit modal */
   .review-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
   .review-box { background: var(--card); border-radius: 16px; padding: 20px; width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
@@ -1562,6 +1584,11 @@
             la hoja del formulario, no en esta app.
           </div>
 
+          <div class="seg" id="nuevos-tab-seg" style="margin-bottom:14px;">
+            <button type="button" data-nuevos-tab="active" class="on" style="font-size:16px;font-weight:600;min-height:44px;">Activos</button>
+            <button type="button" data-nuevos-tab="disabled" style="font-size:16px;font-weight:600;min-height:44px;">Desactivados</button>
+          </div>
+
           <div id="nuevos-list"><p style="color:var(--muted);">Cargando…</p></div>
         </div>
       </div>
@@ -1740,7 +1767,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.13";
+  const APP_VERSION = "v0.209.14";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate. "Visto como" is a LEVEL-1-ONLY control.
@@ -8619,17 +8646,45 @@
   // Reading onboarding is gated by RLS to (is_dueno() OR is_gerente()); a captain who
   // sees the card via isRecl but lacks those roles simply gets zero rows, and the
   // empty state says why rather than looking broken.
+  const NUEVO_DOC_TIERS = {
+    ine:           { tier: 'critical',  label: '🔴 Crítico' },
+    nss:           { tier: 'critical',  label: '🔴 Crítico' },
+    csf:           { tier: 'critical',  label: '🔴 Crítico' },
+    comprobante:   { tier: 'important', label: '🟡 Importante' },
+    carta:         { tier: 'important', label: '🟡 Importante' },
+    certificacion: { tier: 'optional',  label: '⚪ Opcional' }
+  };
+
+  function getDocTier(docType) {
+    if (!docType) return null;
+    return NUEVO_DOC_TIERS[String(docType).toLowerCase()] || null;
+  }
+
+  function renderDocTierBadge(docType) {
+    const info = getDocTier(docType);
+    if (!info || info.tier === 'optional') return '';
+    return '<span class="doc-tier-chip ' + info.tier + '">' + esc(info.label) + '</span>';
+  }
+
+  let nuevosTab = 'active'; // 'active' | 'disabled'
+
   async function loadNuevos() {
     const list = $('nuevos-list');
     if (!list) return;
     list.innerHTML = '<p style="color:var(--muted);">Cargando…</p>';
     try {
-      const [onbRes, contractsRes, docsRes] = await Promise.all([
+      const [onbRes, onbHiddenRes, contractsRes, docsRes] = await Promise.all([
         supabase
           .from('onboarding')
-          .select('id,auth_user_id,email,nombres,apellido_paterno,apellido_materno,apodo_etiqueta,sexo,fecha_nacimiento,estado_civil,nacionalidad,movil,direccion,ciudad_fiscal,cp_fiscal,direccion_fiscal_completa,tipo_sangre,emergencia_nombre,emergencia_parentesco,emergencia_telefono,rfc,curp,nss,regimen_fiscal,banco,clabe,numero_cuenta,current_step,created_at,updated_at,lfpdppp_consent,lfpdppp_consent_at,sensibles_consent,sensibles_consent_at,puesto,salario_semanal,fecha_de_ingreso,dias_de_probacion,prestaciones,stage1_submitted_at')
+          .select('id,auth_user_id,email,nombres,apellido_paterno,apellido_materno,apodo_etiqueta,sexo,fecha_nacimiento,estado_civil,nacionalidad,movil,direccion,ciudad_fiscal,cp_fiscal,direccion_fiscal_completa,tipo_sangre,emergencia_nombre,emergencia_parentesco,emergencia_telefono,rfc,curp,nss,regimen_fiscal,banco,clabe,numero_cuenta,current_step,created_at,updated_at,lfpdppp_consent,lfpdppp_consent_at,sensibles_consent,sensibles_consent_at,puesto,salario_semanal,fecha_de_ingreso,dias_de_probacion,prestaciones,stage1_submitted_at,hidden_at')
           .is('hidden_at', null)
           .order('created_at', { ascending: false })
+          .limit(200),
+        supabase
+          .from('onboarding')
+          .select('id,auth_user_id,email,nombres,apellido_paterno,apellido_materno,apodo_etiqueta,sexo,fecha_nacimiento,estado_civil,nacionalidad,movil,direccion,ciudad_fiscal,cp_fiscal,direccion_fiscal_completa,tipo_sangre,emergencia_nombre,emergencia_parentesco,emergencia_telefono,rfc,curp,nss,regimen_fiscal,banco,clabe,numero_cuenta,current_step,created_at,updated_at,lfpdppp_consent,lfpdppp_consent_at,sensibles_consent,sensibles_consent_at,puesto,salario_semanal,fecha_de_ingreso,dias_de_probacion,prestaciones,stage1_submitted_at,hidden_at')
+          .not('hidden_at', 'is', null)
+          .order('hidden_at', { ascending: false })
           .limit(200),
         supabase
           .from('onboarding_contracts')
@@ -8642,7 +8697,9 @@
           .select('onboarding_id,doc_type,required,tier2_ok,uploaded_at,reviewer_status,storage_path')
       ]);
       if (onbRes.error) throw onbRes.error;
+      if (onbHiddenRes.error) throw onbHiddenRes.error;
       window.__nuevos_cache = onbRes.data || [];
+      window.__nuevos_hidden_cache = onbHiddenRes.data || [];
       const contractsMap = {};
       if (contractsRes && contractsRes.data) {
         contractsRes.data.forEach(c => {
@@ -8662,20 +8719,46 @@
         });
       }
       window.__nuevos_docs = docsMap;
-      renderNuevos(window.__nuevos_cache);
+      updateNuevosTabUI();
+      renderNuevosView();
     } catch (e) {
       list.innerHTML = '<p style="color:var(--red);">No se pudieron cargar los registros. '
         + esc((e && e.message) || 'error') + '</p>';
     }
   }
 
+  function updateNuevosTabUI() {
+    const activeCount = (window.__nuevos_cache || []).length;
+    const disabledCount = (window.__nuevos_hidden_cache || []).length;
+    const btnActive = document.querySelector('#nuevos-tab-seg button[data-nuevos-tab="active"]');
+    const btnDisabled = document.querySelector('#nuevos-tab-seg button[data-nuevos-tab="disabled"]');
+    if (btnActive) {
+      btnActive.textContent = 'Activos (' + activeCount + ')';
+      btnActive.classList.toggle('on', nuevosTab === 'active');
+    }
+    if (btnDisabled) {
+      btnDisabled.textContent = 'Desactivados (' + disabledCount + ')';
+      btnDisabled.classList.toggle('on', nuevosTab === 'disabled');
+    }
+  }
+
+  function renderNuevosView() {
+    updateNuevosTabUI();
+    const rows = nuevosTab === 'disabled'
+      ? (window.__nuevos_hidden_cache || [])
+      : (window.__nuevos_cache || []);
+    renderNuevos(rows);
+  }
+
   function renderNuevos(rows) {
     const list = $('nuevos-list');
     if (!list) return;
     if (!rows || !rows.length) {
-      list.innerHTML = '<p style="color:var(--muted);">No hay registros del formulario.</p>'
-        + '<div class="field-hint">Si esperabas ver personas aquí, puede que aún no hayan '
-        + 'empezado el formulario, o que tu cuenta no tenga permiso para verlo.</div>';
+      list.innerHTML = nuevosTab === 'disabled'
+        ? '<p style="color:var(--muted);">No hay registros desactivados.</p>'
+        : '<p style="color:var(--muted);">No hay registros del formulario.</p>'
+          + '<div class="field-hint">Si esperabas ver personas aquí, puede que aún no hayan '
+          + 'empezado el formulario, o que tu cuenta no tenga permiso para verlo.</div>';
       return;
     }
     // Which of these already have a staff account? That is the activation state.
@@ -8689,6 +8772,7 @@
       const email = (r.email || '').toLowerCase();
       const activated = haveProfile.has(email);
       const complete = isComplete(r);
+      const isHidden = !!r.hidden_at;
       const step = Number(r.current_step || 1);
       const pct = Math.min(100, Math.round((step / 4) * 100));
       const contract = (window.__nuevos_contracts || {})[r.id] || null;
@@ -8727,19 +8811,32 @@
           docColor = 'var(--amber)';
         }
 
+        const chipsHtml = docs.map(d => {
+          const typeName = String(d.doc_type || '').toUpperCase();
+          const tierBadge = renderDocTierBadge(d.doc_type);
+          const statusIco = d.tier2_ok === true ? '✅' : (d.tier2_ok === false ? '⚠️' : '⏳');
+          return '<span style="display:inline-flex;align-items:center;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:11px;margin-right:4px;margin-top:4px;">'
+            + statusIco + ' ' + esc(typeName) + tierBadge + '</span>';
+        }).join('');
+
         docLine = '<div style="color:' + docColor + ';font-size:13px;">📎 Documentos: '
-          + verifiedDocs + '/' + totalDocs + ' verificados ' + docBadge + '</div>';
+          + verifiedDocs + '/' + totalDocs + ' verificados ' + docBadge + '</div>'
+          + '<div style="display:flex;flex-wrap:wrap;margin:4px 0 6px;">' + chipsHtml + '</div>';
       }
 
-      return '<div data-nuevo-row="' + esc(r.id) + '" style="border:1px solid var(--border);'
-        + 'border-radius:12px;padding:12px;margin-bottom:10px;">'
+      const cardStyle = 'border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;'
+        + (isHidden ? 'opacity:0.65;background:var(--frame-bg);' : '');
+
+      return '<div data-nuevo-row="' + esc(r.id) + '" style="' + cardStyle + '">'
         + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
         +   '<div style="font-weight:600;">' + esc(full) + '</div>'
-        +   (activated
-              ? '<span style="font-size:11px;color:var(--green);white-space:nowrap;">✓ con cuenta</span>'
-              : (complete
-                  ? '<span style="font-size:11px;color:var(--amber);white-space:nowrap;">sin cuenta</span>'
-                  : '<span style="font-size:11px;color:var(--muted);white-space:nowrap;">incompleto</span>'))
+        +   (isHidden
+              ? '<span style="font-size:11px;color:var(--muted);white-space:nowrap;background:var(--border);padding:2px 6px;border-radius:6px;font-weight:600;">⛔ Desactivado</span>'
+              : (activated
+                  ? '<span style="font-size:11px;color:var(--green);white-space:nowrap;">✓ con cuenta</span>'
+                  : (complete
+                      ? '<span style="font-size:11px;color:var(--amber);white-space:nowrap;">sin cuenta</span>'
+                      : '<span style="font-size:11px;color:var(--muted);white-space:nowrap;">incompleto</span>')))
         + '</div>'
         + '<div style="color:var(--muted);font-size:13px;">' + esc(r.email || '—') + '</div>'
         + '<div style="color:var(--muted);font-size:13px;">' + esc(r.movil || 'sin móvil')
@@ -8749,12 +8846,15 @@
         + '<div style="height:6px;background:var(--border);border-radius:99px;margin:8px 0;">'
         +   '<div style="height:6px;width:' + pct + '%;background:var(--accent2);border-radius:99px;"></div></div>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-        + (activated
-            ? '<span class="field-hint" style="margin:0;width:100%;">Ya tiene cuenta — adminístrala en Usuarios.</span>'
-            : (!complete
-                ? '<span class="field-hint" style="margin:0;color:var(--amber);width:100%;">Registro incompleto — falta nombre o correo. No se puede activar todavía.</span>'
-                : '<button class="btn btn-outline" data-nuevo-activate="' + esc(r.id) + '"'
-                  + ' style="font-size:0.85rem;padding:10px 14px;min-height:44px;margin:0;flex:1;">✅ Activar cuenta</button>'))
+        + (isHidden
+            ? '<button class="btn btn-outline" data-nuevo-reactivate="' + esc(r.id) + '"'
+              + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;color:var(--green);font-weight:600;">🔄 Reactivar</button>'
+            : (activated
+                ? '<span class="field-hint" style="margin:0;width:100%;">Ya tiene cuenta — adminístrala en Usuarios.</span>'
+                : (!complete
+                    ? '<span class="field-hint" style="margin:0;color:var(--amber);width:100%;">Registro incompleto — falta nombre o correo. No se puede activar todavía.</span>'
+                    : '<button class="btn btn-outline" data-nuevo-activate="' + esc(r.id) + '"'
+                      + ' style="font-size:0.85rem;padding:10px 14px;min-height:44px;margin:0;flex:1;">✅ Activar cuenta</button>')))
         + '<button class="btn btn-outline" data-nuevo-edit="' + esc(r.id) + '"'
           + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">➕ Agregar puesto, sueldo y fecha de ingreso</button>'
         + '<button class="btn btn-outline" data-nuevo-onboarding="' + esc(r.id) + '"'
@@ -8770,11 +8870,11 @@
             ? '<button class="btn btn-outline" data-nuevo-dl="firma" data-id="' + esc(r.id) + '"'
               + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">✍️ Contrato sin resaltado</button>'
             : '')
-        + (!activated
+        + (!activated && !isHidden
             ? '<button class="btn btn-outline" data-nuevo-sendback="' + esc(r.id) + '"'
               + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">✉️ Enviar correo con link para corrección</button>'
             : '')
-        + (!complete && !activated
+        + (!complete && !activated && !isHidden
             ? '<button class="btn btn-outline" data-nuevo-delete="' + esc(r.id) + '"'
               + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;color:var(--red);">🗑️ Eliminar</button>'
             : '')
@@ -9121,9 +9221,11 @@
       docs.forEach((d, i) => {
         const verdict = d.tier2_ok === true ? '✅ verificado'
                       : (d.tier2_ok === false ? '⚠️ no verificado' : '⏳ pendiente');
+        const tierBadge = renderDocTierBadge(d.doc_type);
         html += '<div class="rv-row"><div class="rv-label">'
           + esc(String(d.doc_type || '').toUpperCase())
-          + (d.required ? ' <span style="color:var(--red);">*</span>' : '') + '</div>'
+          + (d.required ? ' <span style="color:var(--red);">*</span>' : '')
+          + tierBadge + '</div>'
           + '<div class="rv-value">' + verdict
           + ' <button class="btn btn-outline" data-ficha-doc="' + esc(id) + '"'
           + ' data-doc-idx="' + i + '" style="min-height:36px;font-size:14px;padding:4px 10px;margin:4px 0 0;">'
@@ -9346,6 +9448,67 @@
       btn.disabled = false;
       btn.textContent = origText;
     }
+  });
+
+  // Reactivate (un-hide) handler for deactivated onboarding rows
+  document.addEventListener('click', async (e) => {
+    if (!e.target || !e.target.closest) return;
+    const btn = e.target.closest('[data-nuevo-reactivate]');
+    if (!btn || btn.disabled) return;
+    e.preventDefault();
+    const msgEl = $('nuevos-msg');
+    clearMsg(msgEl);
+    const id = btn.getAttribute('data-nuevo-reactivate');
+    const row = (window.__nuevos_hidden_cache || []).find(r => r.id === id)
+      || (window.__nuevos_cache || []).find(r => r.id === id);
+    if (!row) {
+      showMsg(msgEl, 'No se encontró el registro.', 'err');
+      return;
+    }
+    const full = [row.nombres, row.apellido_paterno, row.apellido_materno].filter(Boolean).join(' ').trim() || row.email || 'este registro';
+    if (!confirm('¿Deseas reactivar el registro de ' + full + '? Volverá a aparecer en la pestaña de Activos.')) {
+      return;
+    }
+    btn.disabled = true;
+    const origText = btn.textContent;
+    btn.textContent = 'Reactivando…';
+    try {
+      const { error: updateErr } = await supabase
+        .from('onboarding')
+        .update({ hidden_at: null })
+        .eq('id', id);
+      if (updateErr) throw updateErr;
+
+      // 🔴 After the write, READ THE ROW BACK and confirm hidden_at is actually null
+      const { data: checkRow, error: checkErr } = await supabase
+        .from('onboarding')
+        .select('id, hidden_at')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (checkErr || !checkRow || checkRow.hidden_at !== null) {
+        throw new Error('No se pudo verificar la reactivación. Tu cuenta podría no tener permiso para modificar este registro.');
+      }
+
+      showMsg(msgEl, '✅ Registro reactivado correctamente.', 'ok');
+      await loadNuevos();
+    } catch (err) {
+      showMsg(msgEl, 'Error al reactivar: ' + esc((err && err.message) || 'error desconocido'), 'err');
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+  });
+
+  // Nuevos tab switch click handler (Activos / Desactivados)
+  document.addEventListener('click', (e) => {
+    if (!e.target || !e.target.closest) return;
+    const tabBtn = e.target.closest('#nuevos-tab-seg button[data-nuevos-tab]');
+    if (!tabBtn) return;
+    e.preventDefault();
+    const targetTab = tabBtn.getAttribute('data-nuevos-tab');
+    if (targetTab === nuevosTab) return;
+    nuevosTab = targetTab;
+    renderNuevosView();
   });
 
   // Native date picker activation on click for desktop / touch (DELIVERABLE 7)

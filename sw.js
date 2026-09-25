@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v118'; // v0.209.13: 'Visto como' is now level-1 ONLY — non-owners never see it (hidden + inert) and cannot reach it (click-time predicate). Removed the stale :disabled CSS that produced the not-allowed cursor Ben reported.
+const CACHE = 'nudo-hub-v119'; // v0.209.14: Nuevos ingresos gets a Desactivados tab (with verified Reactivar) and document priority chips (INE/NSS/CSF = Critico).
 // serves the app at https://hub.asianfoodconcepts.mx/ and the old project-site URL
 // (asian-food-concepts.github.io/Nudo-hub/) 301-redirects here. The version bump is what
 // moves EXISTING clients: a stale client detects the new version, reloads, follows the
