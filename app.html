@@ -181,9 +181,9 @@
   .icon-doc { background: var(--icon-doc); }
   .icon-form { background: var(--icon-form); }
   .icon-sheet { background: var(--icon-sheet); }
-  .card .text { flex: 1; }
-  .card .title { font-size: 1.05rem; font-weight: 600; }
-  .card .sub { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+  .card .text { flex: 1; min-width: 0; }
+  .card .title { font-size: 1.05rem; font-weight: 600; overflow-wrap: break-word; }
+  .card .sub { font-size: 0.85rem; color: var(--muted); margin-top: 2px; overflow-wrap: break-word; word-break: break-word; }
   .card .arrow { color: var(--muted); font-size: 1.3rem; }
 
   /* Login */
@@ -204,6 +204,17 @@
   }
   .field textarea { min-height: 80px; resize: vertical; }
   .t-detail { margin-top: 8px; min-height: 60px !important; }
+
+  /* Shared search input (≥44px tap target, 16px to prevent iOS zoom-on-focus) */
+  input[type="search"] {
+    width: 100%; min-height: 44px; font-size: 16px; padding: 10px 14px;
+    border: 1px solid var(--border); border-radius: 12px;
+    background: var(--input-bg); color: var(--ink); box-sizing: border-box;
+    -webkit-appearance: none; appearance: none;
+  }
+  input[type="search"]:focus {
+    outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent);
+  }
 
   /* Shared custom date picker (touch and desktop friendly) */
   input[type="date"] {
@@ -351,6 +362,7 @@
     flex: 1; min-width: 90px; text-align: center; padding: 10px 6px;
     border: 1px solid var(--border); border-radius: 12px; cursor: pointer;
     font-size: 0.85rem; font-weight: 500;
+    min-height: 44px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
   }
   .radio-group input { display: none; }
   .radio-group input:checked + span { color: var(--accent); font-weight: 700; }
@@ -1166,6 +1178,13 @@
   .review-body .rv-row:last-child { border-bottom: none; }
   .review-body .rv-label { flex: 0 0 110px; font-weight: 600; color: var(--muted); font-size: 0.85rem; }
   .review-body .rv-value { flex: 1; word-break: break-word; }
+  .review-body .rv-value input:not([type="checkbox"]):not([type="radio"]),
+  .review-body .rv-value select,
+  .review-body .rv-value textarea {
+    width: 100%; min-height: 44px; font-size: 16px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--input-bg); color: var(--ink); box-sizing: border-box;
+  }
   .review-actions { display: flex; gap: 10px; margin-top: 18px; }
   .review-actions .btn { flex: 1; margin: 0; }
   /* [v0.127] Confirm/Cancel at the TOP of the review box (Ben).
@@ -6367,11 +6386,11 @@
 
         <!-- Mobile Compressed Card (<1024px / <700px) -->
         <div class="estatus-mant-mobile">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-            <div style="font-weight:700;font-size:1.02rem;color:var(--ink);flex:1;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+            <div style="font-weight:700;font-size:1.02rem;color:var(--ink);flex:1;min-width:140px;">
               🔧 ${esc(r.title)}
             </div>
-            <div style="display:flex;align-items:center;gap:6px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
               ${branchBadge}
               ${prio}
             </div>
@@ -6392,18 +6411,20 @@
 
           <!-- Próximo seguimiento date control on card -->
           <div data-no-card-open style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);flex-wrap:wrap;">
-            <label for="estatus-mant-next-card-${r.id}" style="font-size:0.8rem;font-weight:600;color:var(--muted);white-space:nowrap;">🔔 Próximo seguimiento:</label>
-            <input type="date" id="estatus-mant-next-card-${r.id}" class="estatus-mant-card-date" data-id="${r.id}" value="${escAttr(r.next_follow_up_at ? String(r.next_follow_up_at).slice(0, 10) : '')}" style="flex:1;min-width:140px;min-height:44px;font-size:16px;padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--ink);box-sizing:border-box;">
-            <button type="button" class="btn btn-secondary estatus-mant-card-date-save" data-id="${r.id}" style="min-height:44px;min-width:72px;padding:8px 14px;font-size:0.85rem;margin:0;width:auto;">Guardar</button>
+            <label for="estatus-mant-next-card-${r.id}" style="font-size:0.8rem;font-weight:600;color:var(--muted);white-space:nowrap;width:100%;">🔔 Próximo seguimiento:</label>
+            <div style="display:flex;gap:8px;align-items:center;width:100%;flex-wrap:wrap;">
+              <input type="date" id="estatus-mant-next-card-${r.id}" class="estatus-mant-card-date" data-id="${r.id}" value="${escAttr(r.next_follow_up_at ? String(r.next_follow_up_at).slice(0, 10) : '')}" style="flex:1;min-width:130px;min-height:44px;font-size:16px;padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--ink);box-sizing:border-box;">
+              <button type="button" class="btn btn-secondary estatus-mant-card-date-save" data-id="${r.id}" style="min-height:44px;min-width:72px;padding:8px 14px;font-size:0.85rem;margin:0;width:auto;flex-shrink:0;">Guardar</button>
+            </div>
           </div>
 
           <!-- Action buttons -->
           <div data-no-card-open style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap;">
-            <div style="display:flex;gap:8px;align-items:center;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               ${canEdit ? `<button type="button" class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;width:auto;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
               <button type="button" class="btn btn-outline estatus-mant-card-note-btn" data-id="${r.id}" style="min-height:44px;padding:8px 12px;font-size:0.85rem;margin:0;width:auto;">📝 Anotar seguimiento</button>
             </div>
-            <div style="display:flex;gap:8px;align-items:center;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               ${canAdvance ? `<button type="button" class="btn estatus-mant-advance-btn" style="min-height:44px;padding:8px 14px;font-size:0.85rem;margin:0;font-weight:600;width:auto;" data-advance="${r.table}|${r.id}|${nextStep}">Marcar ${nextStep}</button>` : ''}
               <div style="font-size:0.85rem;color:var(--accent);font-weight:600;cursor:pointer;padding:8px 10px;min-height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</div>
             </div>
@@ -9745,8 +9766,8 @@
       `<div class="rv-row"><div class="rv-label">Apellido paterno</div>` +
         `<div class="rv-value"><input type="text" id="ue-apellido-paterno" value="${esc(u.apellido_paterno||'')}" style="width:100%;" placeholder="Ej. Rodríguez"></div></div>` +
       `<div class="rv-row"><div class="rv-label">Apellido materno</div>` +
-        `<div class="rv-value"><input type="text" id="ue-apellido-materno" value="${esc(u.apellido_materno||'')}" style="width:100%;" placeholder="Opcional"></div>` +
-        `<div class="field-hint">El apellido materno solo lo ve la Gerencia y el Dueño. No se muestra en la app.</div></div>` +
+        `<div class="rv-value"><input type="text" id="ue-apellido-materno" value="${esc(u.apellido_materno||'')}" style="width:100%;" placeholder="Opcional">` +
+        `<div class="field-hint">El apellido materno solo lo ve la Gerencia y el Dueño. No se muestra en la app.</div></div></div>` +
       `<div class="rv-row"><div class="rv-label">Se mostrará como</div>` +
         `<div class="rv-value"><div id="ue-preview" style="display:flex;align-items:center;min-height:44px;color:var(--muted);font-weight:600;">—</div>` +
         `<div class="field-hint">Nombre(s) + apellido paterno. Esto es lo que ve todo el equipo.</div></div></div>` +
