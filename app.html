@@ -1211,7 +1211,8 @@
     .wrap:has(#form-editar-entrevista.active),
     .wrap:has(#form-usuarios.active),
     .wrap:has(#form-nuevos.active),
-    .wrap:has(#form-roadmap.active) {
+    .wrap:has(#form-roadmap.active),
+    .wrap:has(#form-calendario-mant.active) {
       max-width: min(96vw, 1180px);
     }
 
@@ -1923,12 +1924,18 @@
   }
   .cal-task-actions {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    flex-direction: column;
     gap: 8px;
     margin-top: 10px;
     padding-top: 8px;
     border-top: 1px dashed var(--border);
+  }
+  .cal-task-btn {
+    width: 100%;
+    min-height: 44px;
+    font-size: 15px;
+    margin: 0;
+    padding: 10px 14px;
   }
   .cal-evidence-badge {
     display: inline-flex;
@@ -1951,6 +1958,35 @@
     background: rgba(229, 57, 53, 0.1);
     border-color: #e53935;
     color: #d32f2f;
+  }
+
+  @media (min-width: 1024px) {
+    .cal-task-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 16px;
+    }
+    .cal-task-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .cal-task-actions {
+      flex-direction: row;
+      align-items: center;
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+      flex-shrink: 0;
+      width: auto;
+      flex-wrap: nowrap;
+    }
+    .cal-task-btn {
+      width: auto;
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
   }
 
   .cal-hist-item {
@@ -1976,6 +2012,22 @@
     border: 1px solid var(--border);
     cursor: pointer;
     background: var(--input-bg);
+  }
+  .cal-hist-thumb-doc {
+    width: 80px;
+    height: 80px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--ink);
+    text-decoration: none;
   }
   .cal-filter-bar {
     display: flex;
@@ -4336,11 +4388,12 @@
     const mantprevList = document.getElementById('mantprev-list');
     const mantprevCard = document.getElementById('mantprev-card');
     const calMantCard = document.getElementById('calendario-mant-card');
-    const isCapitanOEnc = (r) => {
+    const isCapitanOEnc = (r, active) => {
+      if (active === false) return false;
       const s = String(r || '').toLowerCase();
       return s.includes('capit') || s.includes('encargad');
     };
-    const canSeeCalMant = isRecl || (currentProfile && isCapitanOEnc(currentProfile.role));
+    const canSeeCalMant = isRecl || (currentProfile && isCapitanOEnc(currentProfile.role, currentProfile.active));
     if (calMantCard) calMantCard.style.display = canSeeCalMant ? '' : 'none';
     if (mantprevSection && mantprevList && mantprevCard) {
       const showSection = (isLeader || canSeeCalMant) ? '' : 'none';
@@ -12900,6 +12953,16 @@
   let calExpandedHistTaskIds = new Set();
   let calIsSubmitting = false;
 
+  window.__setCalCaches = function(s, t, e, u) {
+    if (s) calSchedulesCache = s;
+    if (t) calTasksCache = t;
+    if (e) calEvidenceCache = e;
+    if (u) calSignedUrlsCache = u;
+  };
+  window.__getCalCaches = function() {
+    return { schedules: calSchedulesCache, tasks: calTasksCache, evidence: calEvidenceCache };
+  };
+
   function formatCalDate(dStr) {
     if (!dStr) return '—';
     try {
@@ -12935,7 +12998,8 @@
     try {
       const now = new Date();
       const todayStr = (new Date(now.getTime() - now.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
-      const tDue = new Date(dateStr + 'T00:00:00').getTime();
+      const cleanDate = String(dateStr).slice(0, 10);
+      const tDue = new Date(cleanDate + 'T00:00:00').getTime();
       const tNow = new Date(todayStr + 'T00:00:00').getTime();
       return Math.round((tDue - tNow) / 86400000);
     } catch (e) {
@@ -12973,7 +13037,10 @@
       const catFilter = $('cal-hist-cat-filter');
       if (catFilter) {
         const curVal = catFilter.value || 'all';
-        const cats = Array.from(new Set(calSchedulesCache.map(s => s.category).filter(Boolean))).sort();
+        const schedMap = new Map(calSchedulesCache.map(s => [s.id, s]));
+        const catsFromSched = calSchedulesCache.map(s => s.category);
+        const catsFromTasks = calTasksCache.map(t => (schedMap.get(t.schedule_id) || {}).category);
+        const cats = Array.from(new Set([...catsFromSched, ...catsFromTasks].filter(Boolean))).sort();
         catFilter.innerHTML = '<option value="all">Todas las categorías</option>' +
           cats.map(c => '<option value="' + esc(c) + '"' + (c === curVal ? ' selected' : '') + '>' + esc(c) + '</option>').join('');
       }
@@ -13153,22 +13220,25 @@
         const cardClass = 'cal-task-card' + (isOverdue ? ' overdue' : (isDueToday ? ' due-today' : ''));
 
         html += '<div class="' + cardClass + '" data-id="' + esc(t.id) + '">'
-          + '<div class="cal-task-top">'
-          +   '<div>'
-          +     '<span class="cal-task-title">' + esc(title) + '</span>'
-          +     '<span class="cal-task-category">' + esc(category) + '</span>'
+          + '<div class="cal-task-body">'
+          +   '<div class="cal-task-top">'
+          +     '<div>'
+          +       '<span class="cal-task-title">' + esc(title) + '</span>'
+          +       '<span class="cal-task-category">' + esc(category) + '</span>'
+          +     '</div>'
+          +     '<div>' + badgeHtml + '</div>'
           +   '</div>'
-          +   '<div>' + badgeHtml + '</div>'
+          +   '<div class="cal-task-meta">'
+          +     '<span>📍 <b>' + esc(t.branch || br) + '</b></span>'
+          +     '<span>📅 Programada: <b>' + esc(formatCalDate(t.due_date)) + '</b></span>'
+          +     (vendorText ? '<span>' + vendorText + '</span>' : '')
+          +     '<span>' + evBadgeHtml + '</span>'
+          +   '</div>'
+          +   (sched.notes ? '<div style="font-size:0.8rem;color:var(--muted);margin-top:4px;font-style:italic;">💡 ' + esc(sched.notes) + '</div>' : '')
           + '</div>'
-          + '<div class="cal-task-meta">'
-          +   '<span>📅 Programada: <b>' + esc(formatCalDate(t.due_date)) + '</b></span>'
-          +   (vendorText ? '<span>' + vendorText + '</span>' : '')
-          +   '<span>' + evBadgeHtml + '</span>'
-          + '</div>'
-          + (sched.notes ? '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;font-style:italic;">💡 ' + esc(sched.notes) + '</div>' : '')
           + '<div class="cal-task-actions">'
-          +   '<button type="button" class="btn" data-cal-complete="' + esc(t.id) + '" data-no-card-open style="flex:1;min-height:44px;font-size:15px;margin:0;padding:8px 14px;">✅ Marcar hecho</button>'
-          +   '<button type="button" class="btn btn-outline" data-cal-sooner="' + esc(t.id) + '" data-no-card-open style="flex:1;min-height:44px;font-size:15px;margin:0;padding:8px 14px;">⚡ Solicitar antes</button>'
+          +   '<button type="button" class="btn cal-task-btn" data-cal-complete="' + esc(t.id) + '" data-no-card-open>✅ Marcar hecho</button>'
+          +   '<button type="button" class="btn btn-outline cal-task-btn" data-cal-sooner="' + esc(t.id) + '" data-no-card-open>⚡ Solicitar antes</button>'
           + '</div>'
           + '</div>';
       });
@@ -13272,9 +13342,19 @@
             + '<div class="cal-hist-evidence-grid" id="cal-ev-grid-' + esc(t.id) + '">'
             +   evList.map(ev => {
                   const signed = calSignedUrlsCache[ev.storage_path];
-                  const srcAttr = signed ? ' src="' + esc(signed) + '"' : ' data-storage-path="' + esc(ev.storage_path) + '"';
+                  const isPdf = (ev.kind === 'documento' || (ev.storage_path && ev.storage_path.toLowerCase().endsWith('.pdf')));
+                  if (isPdf) {
+                    const hrefAttr = signed ? ' href="' + esc(signed) + '"' : '';
+                    return '<div style="display:inline-block;text-align:center;">'
+                      + '<a class="cal-hist-thumb-doc"' + hrefAttr + ' target="_blank" rel="noopener" data-open-photo data-storage-path="' + esc(ev.storage_path) + '" title="Toca para ver documento">'
+                      +   '📄 PDF'
+                      + '</a>'
+                      + '<span style="display:block;font-size:0.7rem;color:var(--muted);">' + esc(ev.kind || 'documento') + '</span>'
+                      + '</div>';
+                  }
+                  const srcAttr = signed ? ' src="' + esc(signed) + '"' : '';
                   return '<div style="display:inline-block;text-align:center;">'
-                    + '<img class="cal-hist-thumb"' + srcAttr + ' alt="Evidencia" title="Toca para ver en grande" data-open-photo />'
+                    + '<img class="cal-hist-thumb"' + srcAttr + ' alt="Evidencia" title="Toca para ver en grande" data-open-photo data-storage-path="' + esc(ev.storage_path) + '" />'
                     + '<span style="display:block;font-size:0.7rem;color:var(--muted);">' + esc(ev.kind || 'foto') + '</span>'
                     + '</div>';
                 }).join('')
@@ -13300,9 +13380,11 @@
 
     listEl.querySelectorAll('.cal-hist-item').forEach(itemEl => {
       itemEl.addEventListener('click', async (e) => {
-        if (e.target.closest('[data-open-photo]')) {
-          const img = e.target.closest('img');
-          if (img && img.src) window.open(img.src, '_blank');
+        const photoEl = e.target.closest('[data-open-photo]');
+        if (photoEl) {
+          const p = photoEl.getAttribute('data-storage-path');
+          const signed = (p && calSignedUrlsCache[p]) || photoEl.src || photoEl.href;
+          if (signed) window.open(signed, '_blank', 'noopener');
           return;
         }
         const id = itemEl.getAttribute('data-hist-id');
@@ -13326,15 +13408,20 @@
           const { data, error } = await supabase.storage.from('onboarding-documents').createSignedUrl(ev.storage_path, 3600);
           if (!error && data && data.signedUrl) {
             calSignedUrlsCache[ev.storage_path] = data.signedUrl;
-            const img = document.querySelector(`img[data-storage-path="${ev.storage_path}"]`);
-            if (img) img.src = data.signedUrl;
+            document.querySelectorAll(`[data-storage-path="${ev.storage_path}"]`).forEach(el => {
+              if (el.tagName === 'IMG') el.src = data.signedUrl;
+              if (el.tagName === 'A') el.href = data.signedUrl;
+            });
           }
         } catch (err) {
           console.warn('[cal-mant] sign err:', err);
         }
       } else {
-        const img = document.querySelector(`img[data-storage-path="${ev.storage_path}"]`);
-        if (img) img.src = calSignedUrlsCache[ev.storage_path];
+        const url = calSignedUrlsCache[ev.storage_path];
+        document.querySelectorAll(`[data-storage-path="${ev.storage_path}"]`).forEach(el => {
+          if (el.tagName === 'IMG') el.src = url;
+          if (el.tagName === 'A') el.href = url;
+        });
       }
     }
   }
@@ -13463,7 +13550,8 @@
 
       // 3. Generate NEXT occurrence (Requirement D)
       const freqDays = sched.frequency_days || 30;
-      const baseDt = new Date((task.due_date || compDate) + 'T00:00:00');
+      const baseStr = compDate || task.due_date;
+      const baseDt = new Date(baseStr + 'T00:00:00');
       const nextDt = new Date(baseDt.getTime() + freqDays * 86400000);
       const nextDueStr = nextDt.toISOString().slice(0, 10);
 
@@ -13487,11 +13575,15 @@
         });
         if (nextErr) {
           console.warn('[cal-mant] next occurrence insert error:', nextErr);
+          toast('Servicio completado, pero ocurrió un detalle al programar el siguiente: ' + (nextErr.message || String(nextErr)));
+        } else {
+          toast('Servicio completado y siguiente fecha programada ✅');
         }
+      } else {
+        toast('Servicio completado ✅');
       }
 
       closeCalCompleteModal();
-      toast('Servicio completado y siguiente fecha programada ✅');
       await loadCalendarioMant();
     } catch (err) {
       console.error('[cal-mant] submitCalComplete err:', err);
@@ -13504,16 +13596,26 @@
   }
 
   // Request Sooner Modal (Requirement F)
-  function openCalSoonerModal(taskId) {
-    const task = calTasksCache.find(t => t.id === taskId);
-    if (!task) return;
-    calActiveTaskId = taskId;
-
-    const sched = calSchedulesCache.find(s => s.id === task.schedule_id) || {};
-    calActiveScheduleId = sched.id || null;
+  function openCalSoonerModal(targetId, isSchedule) {
+    let task = null;
+    let sched = null;
+    if (isSchedule) {
+      sched = calSchedulesCache.find(s => s.id === targetId) || {};
+      task = calTasksCache.find(t => t.schedule_id === sched.id && t.status === 'pendiente') || null;
+      calActiveTaskId = task ? task.id : null;
+      calActiveScheduleId = sched.id || null;
+    } else {
+      task = calTasksCache.find(t => t.id === targetId);
+      if (!task) return;
+      sched = calSchedulesCache.find(s => s.id === task.schedule_id) || {};
+      calActiveTaskId = task.id;
+      calActiveScheduleId = sched.id || null;
+    }
 
     $('cal-sooner-title').textContent = '⚡ Adelantar: ' + (sched.title || 'Mantenimiento');
-    $('cal-sooner-info').innerHTML = '<b>Sucursal:</b> ' + esc(task.branch) + '<br><b>Próxima fecha programada:</b> ' + esc(formatCalDate(task.due_date));
+    const branchInfo = (task && task.branch) || sched.branch || '—';
+    const dueInfo = task ? formatCalDate(task.due_date) : 'Próximo ciclo';
+    $('cal-sooner-info').innerHTML = '<b>Sucursal:</b> ' + esc(branchInfo) + '<br><b>Próxima fecha programada:</b> ' + esc(dueInfo);
     clearMsg($('cal-sooner-msg'));
     $('cal-sooner-reason').value = '';
     $('cal-sooner-priority').value = 'Urgente';
@@ -13532,10 +13634,12 @@
 
   async function submitCalSooner() {
     if (calIsSubmitting) return;
-    const task = calTasksCache.find(t => t.id === calActiveTaskId);
-    if (!task) return;
+    const task = calActiveTaskId ? calTasksCache.find(t => t.id === calActiveTaskId) : null;
+    const sched = calActiveScheduleId
+      ? calSchedulesCache.find(s => s.id === calActiveScheduleId)
+      : (task ? calSchedulesCache.find(s => s.id === task.schedule_id) : null);
+    if (!sched && !task) return;
 
-    const sched = calSchedulesCache.find(s => s.id === task.schedule_id) || {};
     const reason = ($('cal-sooner-reason').value || '').trim();
     if (!reason) {
       showMsg($('cal-sooner-msg'), 'Por favor describe el motivo o problema por el que se requiere adelantar el servicio.', 'err');
@@ -13551,21 +13655,26 @@
 
     try {
       const user = await requireUser();
+      const schedTitle = (sched && sched.title) || 'Mantenimiento';
+      const schedCat = (sched && sched.category) || 'Servicio';
+      const branchVal = (task && task.branch) || (sched && sched.branch) || 'Roma Norte';
+      const dueVal = (task && task.due_date) ? task.due_date : 'No programada';
+
       const notesWithRef = '[Mantenimiento programado anticipado]\n'
-        + 'Programación: ' + (sched.title || 'Mantenimiento') + ' (' + (sched.category || 'Servicio') + ')\n'
-        + 'Tarea ref: ' + task.id + '\n'
-        + 'Fecha programada original: ' + task.due_date + '\n'
+        + 'Programación: ' + schedTitle + ' (' + schedCat + ')\n'
+        + (task ? ('Tarea ref: ' + task.id + '\n') : '')
+        + 'Fecha programada original: ' + dueVal + '\n'
         + 'Motivo: ' + reason;
 
       const { error: insErr } = await supabase.from('maintenance_requests').insert({
         submitted_by: user.id,
-        branch: task.branch || sched.branch || 'Roma Norte',
-        area: sched.category || 'Mantenimiento',
-        description: 'Adelantar servicio: ' + (sched.title || 'Mantenimiento') + '. ' + reason,
+        branch: branchVal,
+        area: schedCat,
+        description: 'Adelantar servicio: ' + schedTitle + '. ' + reason,
         notes: notesWithRef,
         priority: priority,
         status: 'Solicitado',
-        asset_id: sched.asset_id || null
+        asset_id: (sched && sched.asset_id) || null
       });
 
       if (insErr) throw insErr;
@@ -13632,13 +13741,22 @@
         +   '<div style="font-weight:700;font-size:0.95rem;color:var(--ink);">' + esc(s.title) + '</div>'
         +   '<div style="font-size:0.8rem;color:var(--muted);">' + esc(s.category || 'Mantenimiento') + ' · 📍 ' + esc(s.branch) + ' · Cada ' + s.frequency_days + ' días (aviso ' + (s.lead_days || 7) + 'd)</div>'
         + '</div>'
-        + '<div>'
+        + '<div style="display:flex;gap:6px;align-items:center;">'
+        +   '<button type="button" class="btn btn-outline" data-cal-sooner-sched="' + esc(s.id) + '" style="margin:0;font-size:12px;padding:4px 8px;min-height:36px;">⚡ Solicitar antes</button>'
         +   '<span style="font-size:0.75rem;padding:2px 8px;border-radius:999px;' + (s.active !== false ? 'background:rgba(46,125,50,0.1);color:#2e7d32;' : 'background:var(--input-bg);color:var(--muted);') + '">' + (s.active !== false ? 'Activo' : 'Pausado') + '</span>'
         + '</div>'
         + '</div>';
     }).join('');
 
     listEl.innerHTML = html;
+
+    listEl.querySelectorAll('[data-cal-sooner-sched]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const schedId = btn.getAttribute('data-cal-sooner-sched');
+        openCalSoonerModal(schedId, true);
+      });
+    });
 
     const toggleBtn = $('cal-toggle-add-sched-btn');
     if (toggleBtn) {
@@ -13913,6 +14031,15 @@
 
   window.loadCalendarioMant = loadCalendarioMant;
   window.generateMaintenanceIcs = generateMaintenanceIcs;
+  window.renderCalCumplimiento = renderCalCumplimiento;
+  window.renderCalPorVencer = renderCalPorVencer;
+  window.renderCalHistorial = renderCalHistorial;
+  window.openCalCompleteModal = openCalCompleteModal;
+  window.openCalSoonerModal = openCalSoonerModal;
+  window.submitCalComplete = submitCalComplete;
+  window.submitCalSooner = submitCalSooner;
+  window.getDaysDiff = getDaysDiff;
+  window.formatCalDate = formatCalDate;
   window.loadRoadmap = loadRoadmap;
   window.renderRoadmap = renderRoadmap;
   window.renderNuevos = renderNuevos;
