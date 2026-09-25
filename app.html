@@ -3939,7 +3939,7 @@
     'Producción':['Producción 1']
   };
 
-  let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [], otherBranchShifts: [], extraSlots: {}, tab: 'puesto', view: (window.innerWidth < 700 ? 'day' : 'week'), dayIdx: 0, auditRole: false, currentProfileId: null };
+  let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [], otherBranchShifts: [], extraSlots: {}, tab: 'puesto', view: (window.innerWidth < 700 ? 'day' : 'week'), dayIdx: 0, auditRole: false, currentProfileId: null, shiftsLoadError: null, otherBranchShiftsLoadError: null };
   let planWarningsExpanded = false;
 
   function planSlotsNeeded(role) {
@@ -4079,23 +4079,49 @@
   }
 
   async function planLoadShifts() {
+    planState.shiftsLoadError = null;
+    planState.otherBranchShiftsLoadError = null;
     const s = fmtDate(planState.weekStart);
     const e = fmtDate(new Date(planState.weekStart.getTime() + 6*86400000));
-    const { data, error } = await supabase.from('shifts')
-      .select('*').eq('branch', planState.branch)
-      .gte('shift_date', s).lte('shift_date', e);
-    planState.shifts = (error ? [] : (data || []));
+    let mainError = null;
+    try {
+      const { data, error } = await supabase.from('shifts')
+        .select('*').eq('branch', planState.branch)
+        .gte('shift_date', s).lte('shift_date', e);
+      if (error) {
+        mainError = error;
+      } else {
+        planState.shifts = data || [];
+      }
+    } catch (e1) {
+      mainError = e1;
+    }
+    const errBox = $('plan-errors');
+    if (mainError) {
+      planState.shifts = [];
+      planState.shiftsLoadError = mainError;
+      if (errBox) errBox.innerHTML = `<div class="plan-warn red">⚠️ No se pudo cargar los turnos: ${esc(mainError.message || mainError)}</div>`;
+      planState.otherBranchShifts = [];
+      return;
+    }
+
     // Ben 2026-09-23: a person scheduled at BOTH outlets on the SAME DAY is allowed to
     // pass through, but must be FLAGGED. The grid only loads ONE branch, so the other
     // outlet's week is invisible here — without this second fetch the conflict cannot be
     // seen at all. Failure is non-fatal: the planner still works, we just cannot flag.
     try {
-      const { data: other } = await supabase.from('shifts')
+      const { data: other, error: otherError } = await supabase.from('shifts')
         .select('*').neq('branch', planState.branch)
         .gte('shift_date', s).lte('shift_date', e);
+      if (otherError) throw otherError;
       planState.otherBranchShifts = (other || []);
+      planState.otherBranchShiftsLoadError = null;
     } catch (e2) {
       planState.otherBranchShifts = [];
+      planState.otherBranchShiftsLoadError = e2;
+      if (errBox) {
+        errBox.innerHTML = `<div class="plan-warn yellow">⚠️ No se pudieron cargar los turnos de la otra sucursal; la detección de duplicados entre sucursales no está disponible.</div>`;
+      }
     }
   }
 
@@ -4195,6 +4221,23 @@
     const dayView = $('plan-dayview');
 
     if (subSeg) subSeg.classList.toggle('hidden', isPersonaTab);
+
+    if (planState.shiftsLoadError) {
+      if (grid) grid.innerHTML = '';
+      if (dayView) dayView.innerHTML = '';
+      if (personView) personView.innerHTML = '';
+      const errBox = $('plan-errors');
+      if (errBox && !errBox.innerHTML) {
+        errBox.innerHTML = `<div class="plan-warn red">⚠️ No se pudo cargar los turnos: ${esc(planState.shiftsLoadError.message || planState.shiftsLoadError)}</div>`;
+      }
+      planRenderWarnings();
+      return;
+    }
+
+    const errBox = $('plan-errors');
+    if (errBox && !errBox.innerHTML && planState.otherBranchShiftsLoadError) {
+      errBox.innerHTML = `<div class="plan-warn yellow">⚠️ No se pudieron cargar los turnos de la otra sucursal; la detección de duplicados entre sucursales no está disponible.</div>`;
+    }
 
     if (isPersonaTab) {
       if (grid) grid.classList.add('hidden');
@@ -4459,6 +4502,8 @@
 
   function planRenderDay() {
     const wrap = $('plan-dayview');
+    if (!wrap) return;
+    if (planState.shiftsLoadError) { wrap.innerHTML = ''; return; }
     wrap.classList.remove('hidden');
     $('plan-grid').classList.add('hidden');
     // day selector
@@ -4776,6 +4821,7 @@
   function planRenderPersonView() {
     const wrap = $('plan-personview');
     if (!wrap) return;
+    if (planState.shiftsLoadError) { wrap.innerHTML = ''; return; }
     wrap.classList.remove('hidden');
     wrap.innerHTML = planRenderPersonViewHtml();
   }
@@ -4784,7 +4830,7 @@
     const box = $('plan-warnings');
     if (!box) return;
 
-    if (planState.tab === 'persona') {
+    if (planState.shiftsLoadError || planState.tab === 'persona') {
       box.innerHTML = '';
       box.classList.add('hidden');
       return;
