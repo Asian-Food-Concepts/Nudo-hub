@@ -663,8 +663,10 @@
     background: var(--frame-bg);
   }
 
-  /* MANTENIMIENTO: EXCEL-LIKE LIST (DESKTOP) & COMPRESSED CARDS (MOBILE) */
+  /* MANTENIMIENTO: DENSE ROWS (DESKTOP >1024px) & COMPRESSED CARDS (MOBILE) */
   .estatus-mant-table-header { display: none; }
+  .estatus-mant-desktop { display: none !important; }
+  .estatus-mant-mobile { display: block; }
   .estatus-mant-card {
     border: 1px solid var(--border);
     background: var(--card);
@@ -674,141 +676,143 @@
   }
   .estatus-mant-card .btn { width: auto; }
   .estatus-mant-title { font-weight: 700; color: var(--ink); }
-  .estatus-mant-detail { color: var(--ink); line-height: 1.35; }
-  .estatus-mant-thumb { object-fit: cover; border-radius: 4px; border: 1px solid var(--border); vertical-align: middle; }
+  .estatus-mant-col-obj { min-width: 0; }
+  .estatus-mant-col-area { min-width: 0; }
+  .mant-step-item { min-width: 0 !important; word-break: break-word !important; }
 
-  @media (min-width: 700px) {
+  @media (min-width: 1024px) {
     .estatus-mant-table-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 8px 14px; margin: 12px 0 6px;
-      background: var(--frame-bg); border: 1px solid var(--border); border-radius: 8px;
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; color: var(--muted);
+      display: grid;
+      grid-template-columns: minmax(140px, 1fr) 75px 85px 115px 75px 120px 340px;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      margin: 12px 0 6px;
+      background: var(--frame-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--muted);
       text-transform: uppercase;
+      box-sizing: border-box;
     }
-    .estatus-mant-th-info { flex: 1 1 auto; }
-    .estatus-mant-th-actions { flex: 0 0 auto; text-align: right; min-width: 300px; max-width: 440px; }
+    .estatus-mant-th-actions { text-align: right; }
+
+    .estatus-mant-desktop {
+      display: grid !important;
+      grid-template-columns: minmax(140px, 1fr) 75px 85px 115px 75px 120px 340px;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .estatus-mant-mobile { display: none !important; }
 
     .estatus-mant-card {
-      display: flex; flex-direction: row; align-items: center; justify-content: space-between;
-      gap: 14px; padding: 10px 14px; margin-bottom: 6px; border-radius: 8px;
+      padding: 8px 14px;
+      margin-bottom: 6px;
+      border-radius: 8px;
     }
     .estatus-mant-card:hover { background: var(--input-bg); }
     .estatus-mant-card.done { padding: 8px 14px; opacity: 0.85; }
 
-    .estatus-mant-info {
-      flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px;
+    .estatus-mant-col-obj {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
     }
-    .estatus-mant-header-row {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    .estatus-mant-col-obj .estatus-mant-title {
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .estatus-mant-title { font-size: 0.95rem; white-space: nowrap; }
-
-    .estatus-mant-mid-row {
-      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    .estatus-mant-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .estatus-mant-stepper-wrap {
-      flex: 0 0 270px; max-width: 270px;
+    .estatus-mant-area-text {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
     }
-    .estatus-mant-stepper-wrap .mant-stepper-wrap { margin: 0 !important; }
-    .estatus-mant-stepper-wrap .mant-step-item { padding: 3px 6px !important; font-size: 0.72rem !important; }
-
-    .estatus-mant-detail {
-      flex: 1 1 auto; min-width: 0; font-size: 0.85rem;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    .estatus-mant-col-branch {
+      font-size: 0.82rem;
+      white-space: nowrap;
     }
-    .estatus-mant-meta-row {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-      font-size: 0.78rem; color: var(--muted);
+    .estatus-mant-col-status {
+      white-space: nowrap;
     }
-    .estatus-mant-thumb { width: 28px; height: 28px; }
-
-    .estatus-mant-actions-col {
-      flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end;
-      gap: 6px; min-width: 300px; max-width: 440px;
+    .estatus-mant-col-prio {
+      white-space: nowrap;
     }
-    .estatus-mant-date-box {
-      display: flex; align-items: center; justify-content: flex-end; gap: 6px; width: 100%;
+    .estatus-mant-col-date {
+      font-size: 0.8rem;
+      white-space: nowrap;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
-    .estatus-mant-date-lbl {
-      font-size: 0.76rem; font-weight: 600; color: var(--muted); white-space: nowrap;
+    .estatus-mant-col-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 5px;
+      white-space: nowrap;
     }
-    .estatus-mant-date-inputs {
-      display: flex; align-items: center; gap: 4px;
+    .estatus-mant-col-actions .btn {
+      height: 30px;
+      min-height: 30px;
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      margin: 0;
+      white-space: nowrap;
+      border-radius: 6px;
+      width: auto;
     }
-    .estatus-mant-date-inputs input[type="date"] {
-      height: 32px; min-height: 32px; font-size: 0.82rem; padding: 2px 6px;
-      border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg);
-      color: var(--ink); width: 130px; box-sizing: border-box;
+    .estatus-mant-col-actions .btn[data-edit] {
+      padding: 4px 6px;
     }
-    .estatus-mant-date-inputs button {
-      height: 32px; min-height: 32px; padding: 4px 10px; font-size: 0.8rem;
-      margin: 0; white-space: nowrap; border-radius: 6px;
+    .estatus-mant-col-actions .estatus-mant-card-note-btn {
+      padding: 4px 8px;
     }
-    .estatus-mant-btns {
-      display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap;
-    }
-    .estatus-mant-btns button,
-    .estatus-mant-btns .estatus-mant-detail-btn {
-      height: 32px; min-height: 32px; padding: 4px 10px; font-size: 0.82rem;
-      margin: 0; white-space: nowrap; border-radius: 6px;
+    .estatus-mant-col-actions .estatus-mant-detail-btn {
+      height: 30px;
+      min-height: 30px;
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      margin: 0;
+      white-space: nowrap;
+      border-radius: 6px;
+      width: auto;
     }
   }
 
-  .mant-step-item { min-width: 0 !important; word-break: break-word !important; }
-
-  @media (max-width: 699px) {
+  @media (max-width: 1023px) {
     .estatus-mant-card {
-      display: flex; flex-direction: column; gap: 8px; padding: 10px 12px;
-      margin-bottom: 10px; border-radius: 12px; width: 100%; max-width: 100%; box-sizing: border-box;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
-    .estatus-mant-card.done { padding: 10px 12px; opacity: 0.9; }
-
-    .estatus-mant-info { display: flex; flex-direction: column; gap: 6px; width: 100%; box-sizing: border-box; }
-    .estatus-mant-header-row {
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; flex-wrap: wrap; width: 100%; box-sizing: border-box;
+    .estatus-mant-card.done {
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border-radius: 10px;
+      opacity: 0.85;
     }
-    .estatus-mant-title { font-size: 1rem; flex: 1 1 auto; }
-
-    .estatus-mant-mid-row { display: flex; flex-direction: column; gap: 6px; width: 100%; box-sizing: border-box; }
-    .estatus-mant-stepper-wrap { width: 100%; margin: 2px 0; box-sizing: border-box; }
-    .estatus-mant-stepper-wrap .mant-step-item { font-size: 0.72rem !important; padding: 4px 2px !important; }
-    .estatus-mant-detail {
-      font-size: 0.88rem; word-break: break-word;
-      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
-    }
-    .estatus-mant-meta-row {
-      display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.78rem; color: var(--muted); width: 100%; box-sizing: border-box;
-    }
-    .estatus-mant-thumb { width: 44px; height: 44px; border-radius: 6px; }
-
-    .estatus-mant-actions-col {
-      display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;
-      margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--border);
-    }
-    .estatus-mant-date-box { display: flex; flex-direction: column; gap: 4px; width: 100%; box-sizing: border-box; }
-    .estatus-mant-date-lbl { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
-    .estatus-mant-date-inputs { display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; }
-    .estatus-mant-date-inputs input[type="date"] {
-      flex: 1 1 auto; width: 0; min-width: 0; min-height: 44px; font-size: 16px; padding: 6px 8px;
-      border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg);
-      color: var(--ink); box-sizing: border-box;
-    }
-    .estatus-mant-date-inputs button {
-      min-height: 44px; min-width: 72px; font-size: 0.88rem; padding: 8px 12px;
-      margin: 0; flex: 0 0 auto; border-radius: 8px;
-    }
-
-    .estatus-mant-btns {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; box-sizing: border-box;
-    }
-    .estatus-mant-btns button,
-    .estatus-mant-btns .estatus-mant-detail-btn {
-      min-height: 44px; font-size: 0.88rem; padding: 8px 12px; margin: 0; border-radius: 8px; box-sizing: border-box;
-    }
-    .estatus-mant-btns button[data-edit] { flex: 0 0 44px; min-width: 44px; padding: 0; text-align: center; }
-    .estatus-mant-note-btn { flex: 1 1 auto; }
-    .estatus-mant-detail-btn { flex: 0 0 auto; text-align: center; }
-    .estatus-mant-advance-btn { width: 100%; flex: 1 1 100%; font-weight: 600; }
   }
 
   /* COMPRAS: DENSE ROWS (DESKTOP >1024px) & COMPRESSED CARDS (MOBILE) */
@@ -5498,6 +5502,7 @@
     const rows = [];
     (mant || []).forEach(r => rows.push({
       kind: 'mant', typeLabel: '🔧 Mantenimiento', title: r.area || 'Solicitud',
+      area: r.area || '',
       detail: r.description || '', notes: r.notes || '',
       priority: r.priority || 'Normal',
       branch: r.branch, status: r.status, created_at: r.created_at,
@@ -5724,8 +5729,13 @@
   function renderMantTableHeader() {
     return `
       <div class="estatus-mant-table-header">
-        <div class="estatus-mant-th-info">Solicitud / Área / Detalles</div>
-        <div class="estatus-mant-th-actions">Seguimiento y Acciones</div>
+        <div class="estatus-mant-th">Objeto / Asset</div>
+        <div class="estatus-mant-th">Área</div>
+        <div class="estatus-mant-th">Sucursal</div>
+        <div class="estatus-mant-th">Estatus</div>
+        <div class="estatus-mant-th">Prioridad</div>
+        <div class="estatus-mant-th">Fecha</div>
+        <div class="estatus-mant-th estatus-mant-th-actions">Acciones</div>
       </div>
     `;
   }
@@ -5733,8 +5743,13 @@
   function renderMantDoneTableHeader() {
     return `
       <div class="estatus-mant-table-header">
-        <div class="estatus-mant-th-info">Solicitud / Duración / Costo</div>
-        <div class="estatus-mant-th-actions">Acciones</div>
+        <div class="estatus-mant-th">Objeto / Asset</div>
+        <div class="estatus-mant-th">Área</div>
+        <div class="estatus-mant-th">Sucursal</div>
+        <div class="estatus-mant-th">Estatus</div>
+        <div class="estatus-mant-th">Prioridad</div>
+        <div class="estatus-mant-th">Fecha</div>
+        <div class="estatus-mant-th estatus-mant-th-actions">Acciones</div>
       </div>
     `;
   }
@@ -5745,63 +5760,12 @@
     const statusLabel = statusMeta(r)[r.status] ? statusMeta(r)[r.status].label : esc(r.status);
     const statusPlain = /^[^\s]+\s/.test(statusLabel) ? statusLabel.replace(/^[^\s]+\s/, '') : statusLabel;
 
-    const branchBadge = r.branch
-      ? `<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--input-bg);border:1px solid var(--border);color:var(--ink);font-weight:600;white-space:nowrap;">📍 ${esc(r.branch)}</span>`
-      : '';
-
-    if (done) {
-      const isCancelled = r.status === 'Cancelado';
-      const badge = isCancelled
-        ? `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">⛔ Cancelado</span>`
-        : `<span style="display:inline-block;background:#e6f4ea;color:#188038;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">✓ ${esc(statusPlain)}</span>`;
-      const durStr = formatDuration(r.created_at, r.completed_at);
-      const assetTag = (r.asset_id && r.asset_name)
-        ? `<span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="color:var(--accent);font-weight:600;text-decoration:underline;cursor:pointer;white-space:nowrap;">🔧 ${esc(r.asset_name)}</span>`
-        : '';
-
-      return `
-        <div class="estatus-card estatus-mant-card done" data-open-detail="${r.table}|${r.id}">
-          <div class="estatus-mant-info">
-            <div class="estatus-mant-header-row">
-              <span class="estatus-mant-title">🔧 ${esc(r.title)}</span>
-              ${branchBadge}
-              <div>${badge}</div>
-              ${assetTag ? `<div>${assetTag}</div>` : ''}
-            </div>
-            <div class="estatus-mant-meta-row">
-              <span>⏱️ Duración: <b>${esc(durStr)}</b></span>
-              ${r.cost ? `<span>💰 ${formatMxn(r.cost)}</span>` : ''}
-              ${r.submitter_name ? `<span>👤 ${esc(r.submitter_name)}</span>` : ''}
-            </div>
-          </div>
-          <div class="estatus-mant-actions-col" data-no-card-open>
-            <div class="estatus-mant-btns" data-no-card-open>
-              <button type="button" class="btn btn-outline estatus-mant-detail-btn" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</button>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    // Open Mantenimiento row
+    const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : '—';
+    const branchBadgeDesktop = `<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--input-bg);border:1px solid var(--border);color:var(--ink);font-weight:600;white-space:nowrap;">📍 ${esc(r.branch || '—')}</span>`;
     const prio = prioBadge(r.priority);
+    const areaStr = r.area || (r.title !== 'Solicitud' ? r.title : '') || '—';
 
-    // Asset name when asset_id resolves
-    const assetTagHtml = (r.asset_id && r.asset_name)
-      ? `<span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="display:inline-block;color:var(--accent);font-weight:700;font-size:0.8rem;text-decoration:underline;cursor:pointer;white-space:nowrap;">🔧 ${esc(r.asset_name)} (ver historial ›)</span>`
-      : '';
-
-    // Stepper for pipeline: Solicitado -> Comunicado con proveedor -> Completado
-    const stepperHtml = renderMantStepper(r.status);
-
-    // Age badge: "🔴 N días abierto"
-    const ageBadge = `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">🔴 ${formatDiasAbierto(r.created_at)}</span>`;
-
-    // Last activity: "Última actividad hace N días" (or "Última actividad hoy")
-    const lastActStr = formatUltimaActividad(r.updated_at || r.created_at);
-    const lastActHtml = `<span style="font-size:0.78rem;color:var(--muted);white-space:nowrap;">⏱️ Última actividad: <b>${esc(lastActStr)}</b></span>`;
-
-    // Próximo seguimiento
+    // Próximo seguimiento badge
     let nextFollowUpBadge = '';
     if (r.next_follow_up_at) {
       const _nf = new Date(r.next_follow_up_at).getTime();
@@ -5814,12 +5778,93 @@
       }
     }
 
+    if (done) {
+      const isCancelled = r.status === 'Cancelado';
+      const badge = isCancelled
+        ? `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">⛔ Cancelado</span>`
+        : `<span style="display:inline-block;background:#e6f4ea;color:#188038;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">✓ ${esc(statusPlain)}</span>`;
+      const durStr = formatDuration(r.created_at, r.completed_at);
+      const assetTag = (r.asset_id && r.asset_name)
+        ? `<span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="color:var(--accent);font-weight:600;text-decoration:underline;cursor:pointer;white-space:nowrap;">🔧 ${esc(r.asset_name)}</span>`
+        : '';
+
+      const desktopSubParts = [];
+      if (r.asset_name && r.detail) desktopSubParts.push(esc(r.detail));
+      if (r.photo_urls && r.photo_urls.length) desktopSubParts.push('📷 ' + r.photo_urls.length + (r.photo_urls.length > 1 ? ' fotos' : ' foto'));
+      if (r.cost != null && !isNaN(Number(r.cost))) desktopSubParts.push('💰 ' + formatMxn(r.cost));
+      if (r.repairer_name) desktopSubParts.push('🔧 ' + esc(r.repairer_name));
+      if (r.vendor_name) desktopSubParts.push('🏢 ' + esc(r.vendor_name));
+      if (r.submitter_name) desktopSubParts.push('👤 ' + esc(r.submitter_name));
+      const desktopSubStr = desktopSubParts.join(' · ');
+
+      const objDisplayTitle = r.asset_name
+        ? (r.asset_id
+            ? `<span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer;">🔧 ${esc(r.asset_name)}</span>`
+            : `🔧 ${esc(r.asset_name)}`)
+        : `🔧 ${esc(r.detail || r.title || 'Mantenimiento')}`;
+
+      return `
+        <div class="estatus-card estatus-mant-card done" data-open-detail="${r.table}|${r.id}">
+          <!-- Desktop Dense Row (>1024px) -->
+          <div class="estatus-mant-desktop">
+            <div class="estatus-mant-col estatus-mant-col-obj">
+              <span class="estatus-mant-title" title="${escAttr(r.asset_name || r.detail || r.title)}">${objDisplayTitle}</span>
+              ${desktopSubStr ? `<span class="estatus-mant-sub" title="${escAttr(desktopSubStr)}">${desktopSubStr}</span>` : ''}
+            </div>
+            <div class="estatus-mant-col estatus-mant-col-area">
+              <span class="estatus-mant-area-text" title="${escAttr(areaStr)}">${esc(areaStr)}</span>
+            </div>
+            <div class="estatus-mant-col estatus-mant-col-branch">${branchBadgeDesktop}</div>
+            <div class="estatus-mant-col estatus-mant-col-status">${badge}</div>
+            <div class="estatus-mant-col estatus-mant-col-prio">${prio}</div>
+            <div class="estatus-mant-col estatus-mant-col-date">
+              <span style="font-weight:600;font-size:0.8rem;color:var(--ink);">${dateStr}</span>
+              <span style="font-size:0.75rem;color:var(--muted);">${fmtAgo(r.created_at)} · ⏱️ ${esc(durStr)}</span>
+            </div>
+            <div class="estatus-mant-col estatus-mant-col-actions" data-no-card-open>
+              <button type="button" class="btn btn-outline estatus-mant-detail-btn" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</button>
+            </div>
+          </div>
+
+          <!-- Mobile Compressed Card (<1024px / <700px) -->
+          <div class="estatus-mant-mobile">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+              <div style="font-weight:600;font-size:0.92rem;color:var(--ink);">${esc(r.title)}</div>
+              <div>${badge}</div>
+            </div>
+            <div style="font-size:0.8rem;color:var(--muted);margin-top:4px;">
+              ${assetTag ? assetTag + ' · ' : ''}⏱️ Duración: <b>${esc(durStr)}</b> ${r.cost ? `· 💰 ${formatMxn(r.cost)}` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Open Mantenimiento row
+    const branchBadge = isOpenView
+      ? `<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--input-bg);border:1px solid var(--border);color:var(--ink);font-weight:600;white-space:nowrap;">📍 ${esc(r.branch)}</span>`
+      : '';
+
+    const ageBadge = `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">🔴 ${formatDiasAbierto(r.created_at)}</span>`;
+
+    // Asset name when asset_id resolves
+    const assetTagHtml = (r.asset_id && r.asset_name)
+      ? `<div style="margin:4px 0;"><span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="display:inline-block;color:var(--accent);font-weight:700;font-size:0.85rem;text-decoration:underline;cursor:pointer;">🔧 ${esc(r.asset_name)} (ver historial ›)</span></div>`
+      : '';
+
+    // Stepper for pipeline: Solicitado -> Comunicado con proveedor -> Completado
+    const stepperHtml = renderMantStepper(r.status);
+
+    // Last activity: "Última actividad hace N días" (or "Última actividad hoy")
+    const lastActStr = formatUltimaActividad(r.updated_at || r.created_at);
+    const lastActHtml = `<span style="font-size:0.8rem;color:var(--muted);">⏱️ Última actividad: <b>${esc(lastActStr)}</b></span>`;
+
     const nextStep = statusMeta(r)[r.status] ? statusMeta(r)[r.status].next : null;
     const canAdvance = (isAdmin && nextStep);
     const canEdit = (isAdmin || (isMine && r.status === 'Solicitado'));
 
     const photosHtml = (r.photo_urls && r.photo_urls.length)
-      ? `<span class="estatus-mant-photos">${r.photo_urls.slice(0, 3).map(u => `<img src="${escAttr(u)}" class="estatus-mant-thumb" alt="Foto" />`).join('')}${r.photo_urls.length > 3 ? `<span style="font-size:0.75rem;color:var(--muted);vertical-align:middle;margin-left:2px;">+${r.photo_urls.length - 3}</span>` : ''}</span>`
+      ? `<div data-no-card-open style="display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;">${r.photo_urls.map(u => `<img src="${escAttr(u)}" style="width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;" onclick="window.open('${escAttr(u)}','_blank')" />`).join('')}</div>`
       : '';
 
     const costAndRepairer = [];
@@ -5827,52 +5872,102 @@
     if (r.repairer_name) costAndRepairer.push('🔧 ' + esc(r.repairer_name));
     if (r.vendor_name) costAndRepairer.push('🏢 ' + esc(r.vendor_name));
     const costRepairerHtml = costAndRepairer.length
-      ? `<span style="font-size:0.8rem;color:var(--ink);font-weight:600;white-space:nowrap;">${costAndRepairer.join(' · ')}</span>`
+      ? `<div style="font-size:0.82rem;color:var(--ink);font-weight:600;margin:4px 0;">${costAndRepairer.join(' · ')}</div>`
       : '';
 
     const submitterStr = r.submitter_name
-      ? `<span style="font-size:0.78rem;color:var(--muted);white-space:nowrap;">👤 ${esc(r.submitter_name)}</span>`
+      ? `<div style="font-size:0.78rem;color:var(--muted);margin:4px 0;">👤 Solicitado por: ${esc(r.submitter_name)}</div>`
       : '';
+
+    // Desktop status badge
+    const statusBadge = (r.status === 'Solicitado')
+      ? `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">🔴 Solicitado</span>`
+      : `<span style="display:inline-block;background:#fef7e0;color:#e37400;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">🟡 Con proveedor</span>`;
+
+    const desktopSubParts = [];
+    if (r.asset_name && r.detail) desktopSubParts.push(esc(r.detail));
+    if (nextFollowUpBadge) desktopSubParts.push(nextFollowUpBadge);
+    if (r.photo_urls && r.photo_urls.length) desktopSubParts.push('📷 ' + r.photo_urls.length + (r.photo_urls.length > 1 ? ' fotos' : ' foto'));
+    if (r.cost != null && !isNaN(Number(r.cost))) desktopSubParts.push('💰 ' + formatMxn(r.cost));
+    if (r.repairer_name) desktopSubParts.push('🔧 ' + esc(r.repairer_name));
+    if (r.vendor_name) desktopSubParts.push('🏢 ' + esc(r.vendor_name));
+    if (r.submitter_name) desktopSubParts.push('👤 ' + esc(r.submitter_name));
+    const desktopSubStr = desktopSubParts.join(' · ');
+
+    const objDisplayTitle = r.asset_name
+      ? (r.asset_id
+          ? `<span class="mant-asset-tag" data-asset-id="${escAttr(r.asset_id)}" style="color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer;">🔧 ${esc(r.asset_name)}</span>`
+          : `🔧 ${esc(r.asset_name)}`)
+      : `🔧 ${esc(r.detail || r.title || 'Solicitud de mantenimiento')}`;
 
     return `
       <div class="estatus-card estatus-mant-card open" data-open-detail="${r.table}|${r.id}">
-        <div class="estatus-mant-info">
-          <div class="estatus-mant-header-row">
-            <span class="estatus-mant-title">🔧 ${esc(r.title)}</span>
-            ${branchBadge}
-            ${prio}
-            ${assetTagHtml}
+        <!-- Desktop Dense Row (>1024px) -->
+        <div class="estatus-mant-desktop">
+          <div class="estatus-mant-col estatus-mant-col-obj">
+            <span class="estatus-mant-title" title="${escAttr(r.asset_name || r.detail || r.title)}">${objDisplayTitle}</span>
+            ${desktopSubStr ? `<span class="estatus-mant-sub" title="${escAttr(desktopSubStr)}">${desktopSubStr}</span>` : ''}
           </div>
-          <div class="estatus-mant-mid-row">
-            <div class="estatus-mant-stepper-wrap">${stepperHtml}</div>
-            ${r.detail ? `<div class="estatus-mant-detail" title="${escAttr(r.detail)}">${esc(r.detail)}</div>` : ''}
+          <div class="estatus-mant-col estatus-mant-col-area">
+            <span class="estatus-mant-area-text" title="${escAttr(areaStr)}">${esc(areaStr)}</span>
           </div>
-          <div class="estatus-mant-meta-row">
-            ${ageBadge}
-            ${nextFollowUpBadge}
-            ${lastActHtml}
-            ${costRepairerHtml}
-            ${submitterStr}
-            ${photosHtml}
+          <div class="estatus-mant-col estatus-mant-col-branch">${branchBadgeDesktop}</div>
+          <div class="estatus-mant-col estatus-mant-col-status">${statusBadge}</div>
+          <div class="estatus-mant-col estatus-mant-col-prio">${prio}</div>
+          <div class="estatus-mant-col estatus-mant-col-date">
+            <span style="font-weight:600;font-size:0.8rem;color:var(--ink);">${dateStr}</span>
+            <span style="font-size:0.75rem;">${ageBadge}</span>
+          </div>
+          <div class="estatus-mant-col estatus-mant-col-actions" data-no-card-open>
+            ${canEdit ? `<button type="button" class="btn btn-outline" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
+            <button type="button" class="btn btn-outline estatus-mant-card-note-btn" data-id="${r.id}" title="Anotar seguimiento">📝 Nota</button>
+            ${canAdvance ? `<button type="button" class="btn estatus-mant-advance-btn" data-advance="${r.table}|${r.id}|${nextStep}">${nextStep === 'Comunicado con proveedor' ? 'Marcar con proveedor' : `Marcar ${nextStep}`}</button>` : ''}
+            <button type="button" class="btn btn-outline estatus-mant-detail-btn" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</button>
           </div>
         </div>
 
-        <div class="estatus-mant-actions-col" data-no-card-open>
-          <!-- Próximo seguimiento date control on card -->
-          <div class="estatus-mant-date-box" data-no-card-open>
-            <label for="estatus-mant-next-card-${r.id}" class="estatus-mant-date-lbl">🔔 Próximo seguimiento:</label>
-            <div class="estatus-mant-date-inputs">
-              <input type="date" id="estatus-mant-next-card-${r.id}" class="estatus-mant-card-date" data-id="${r.id}" value="${escAttr(r.next_follow_up_at ? String(r.next_follow_up_at).slice(0, 10) : '')}">
-              <button type="button" class="btn btn-secondary estatus-mant-card-date-save" data-id="${r.id}">Guardar</button>
+        <!-- Mobile Compressed Card (<1024px / <700px) -->
+        <div class="estatus-mant-mobile">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <div style="font-weight:700;font-size:1.02rem;color:var(--ink);flex:1;">
+              🔧 ${esc(r.title)}
             </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              ${branchBadge}
+              ${prio}
+            </div>
+          </div>
+          ${assetTagHtml}
+          ${stepperHtml}
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0;flex-wrap:wrap;">
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+              ${ageBadge}
+              ${nextFollowUpBadge}
+            </div>
+            ${lastActHtml}
+          </div>
+          ${r.detail ? `<div style="font-size:0.88rem;color:var(--ink);margin:6px 0;">${esc(r.detail)}</div>` : ''}
+          ${costRepairerHtml}
+          ${photosHtml}
+          ${submitterStr}
+
+          <!-- Próximo seguimiento date control on card -->
+          <div data-no-card-open style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);flex-wrap:wrap;">
+            <label for="estatus-mant-next-card-${r.id}" style="font-size:0.8rem;font-weight:600;color:var(--muted);white-space:nowrap;">🔔 Próximo seguimiento:</label>
+            <input type="date" id="estatus-mant-next-card-${r.id}" class="estatus-mant-card-date" data-id="${r.id}" value="${escAttr(r.next_follow_up_at ? String(r.next_follow_up_at).slice(0, 10) : '')}" style="flex:1;min-width:140px;min-height:44px;font-size:16px;padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--ink);box-sizing:border-box;">
+            <button type="button" class="btn btn-secondary estatus-mant-card-date-save" data-id="${r.id}" style="min-height:44px;min-width:72px;padding:8px 14px;font-size:0.85rem;margin:0;width:auto;">Guardar</button>
           </div>
 
           <!-- Action buttons -->
-          <div class="estatus-mant-btns" data-no-card-open>
-            ${canEdit ? `<button type="button" class="btn btn-outline" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
-            <button type="button" class="btn btn-outline estatus-mant-card-note-btn" data-id="${r.id}">📝 Anotar seguimiento</button>
-            ${canAdvance ? `<button type="button" class="btn estatus-mant-advance-btn" data-advance="${r.table}|${r.id}|${nextStep}">Marcar ${nextStep}</button>` : ''}
-            <button type="button" class="btn btn-outline estatus-mant-detail-btn" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</button>
+          <div data-no-card-open style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap;">
+            <div style="display:flex;gap:8px;align-items:center;">
+              ${canEdit ? `<button type="button" class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;width:auto;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
+              <button type="button" class="btn btn-outline estatus-mant-card-note-btn" data-id="${r.id}" style="min-height:44px;padding:8px 12px;font-size:0.85rem;margin:0;width:auto;">📝 Anotar seguimiento</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              ${canAdvance ? `<button type="button" class="btn estatus-mant-advance-btn" style="min-height:44px;padding:8px 14px;font-size:0.85rem;margin:0;font-weight:600;width:auto;" data-advance="${r.table}|${r.id}|${nextStep}">Marcar ${nextStep}</button>` : ''}
+              <div style="font-size:0.85rem;color:var(--accent);font-weight:600;cursor:pointer;padding:8px 10px;min-height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</div>
+            </div>
           </div>
         </div>
       </div>
