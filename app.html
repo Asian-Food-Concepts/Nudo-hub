@@ -683,7 +683,7 @@
   @media (min-width: 1024px) {
     .estatus-mant-table-header {
       display: grid;
-      grid-template-columns: minmax(140px, 1fr) 75px 85px 115px 75px 120px 340px;
+      grid-template-columns: minmax(100px, 1fr) 70px 80px 105px 70px 95px minmax(180px, auto);
       align-items: center;
       gap: 6px;
       padding: 8px 14px;
@@ -698,11 +698,11 @@
       text-transform: uppercase;
       box-sizing: border-box;
     }
-    .estatus-mant-th-actions { text-align: right; }
+    .estatus-mant-th-actions { text-align: right; min-width: 0; }
 
     .estatus-mant-desktop {
       display: grid !important;
-      grid-template-columns: minmax(140px, 1fr) 75px 85px 115px 75px 120px 340px;
+      grid-template-columns: minmax(100px, 1fr) 70px 80px 105px 70px 95px minmax(180px, auto);
       align-items: center;
       gap: 6px;
       width: 100%;
@@ -769,6 +769,7 @@
       justify-content: flex-end;
       gap: 5px;
       white-space: nowrap;
+      min-width: 0;
     }
     .estatus-mant-col-actions .btn {
       height: 30px;
@@ -779,6 +780,7 @@
       white-space: nowrap;
       border-radius: 6px;
       width: auto;
+      flex-shrink: 0;
     }
     .estatus-mant-col-actions .btn[data-edit] {
       padding: 4px 6px;
@@ -795,6 +797,7 @@
       white-space: nowrap;
       border-radius: 6px;
       width: auto;
+      flex-shrink: 0;
     }
   }
 
@@ -832,7 +835,7 @@
   @media (min-width: 1024px) {
     .estatus-comp-table-header {
       display: grid;
-      grid-template-columns: minmax(220px, 3.2fr) 110px 140px 105px 125px minmax(180px, auto);
+      grid-template-columns: minmax(160px, 1fr) 85px 105px 75px 95px minmax(180px, auto);
       align-items: center;
       gap: 12px;
       padding: 8px 14px;
@@ -847,11 +850,11 @@
       text-transform: uppercase;
       box-sizing: border-box;
     }
-    .estatus-comp-th-actions { text-align: right; }
+    .estatus-comp-th-actions { text-align: right; min-width: 0; }
 
     .estatus-comp-desktop {
       display: grid !important;
-      grid-template-columns: minmax(220px, 3.2fr) 110px 140px 105px 125px minmax(180px, auto);
+      grid-template-columns: minmax(160px, 1fr) 85px 105px 75px 95px minmax(180px, auto);
       align-items: center;
       gap: 12px;
       width: 100%;
@@ -909,6 +912,7 @@
       justify-content: flex-end;
       gap: 6px;
       white-space: nowrap;
+      min-width: 0;
     }
     .estatus-comp-col-actions .btn {
       height: 32px;
@@ -919,6 +923,7 @@
       white-space: nowrap;
       border-radius: 6px;
       width: auto;
+      flex-shrink: 0;
     }
     .estatus-comp-col-actions .btn[data-edit] {
       padding: 4px 8px;
@@ -931,6 +936,7 @@
       margin: 0;
       white-space: nowrap;
       border-radius: 6px;
+      flex-shrink: 0;
     }
   }
 
