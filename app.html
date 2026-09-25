@@ -642,10 +642,49 @@
       border-radius: 6px;
       cursor: pointer;
     }
+    /* ── v0.209.22: Side-panel on ≥900px — modal doesn't cover the grid ─────── */
+    /* Plan modals become a fixed right-edge panel instead of a centred overlay.
+       The dark backdrop is removed so the grid stays visible and scrollable
+       while the panel is open. .hidden still sets display:none (wins via !important). */
+    .wrap.wrap-wide .plan-modal {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: auto;
+      width: 320px;
+      background: transparent;
+      box-shadow: none;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding: 0;
+      z-index: 70;
+    }
     .wrap.wrap-wide .plan-modal .box {
-      max-height: min(90vh, 580px);
+      width: 320px;
+      max-width: 320px;
+      max-height: 100vh;
+      border-radius: 0;
+      border-left: 1px solid var(--border);
+      box-shadow: -4px 0 20px rgba(0,0,0,0.18);
+      padding: 20px 18px;
       overflow-y: auto;
+      margin: 0;
       box-sizing: border-box;
+      background: var(--card-bg, #fff);
+    }
+    /* Keyboard hint: only show in side-panel context */
+    .wrap.wrap-wide .plan-kbd-hint {
+      display: block;
+    }
+    /* More prominent gap badge on wide grid — draws eye to unfilled slots */
+    .wrap.wrap-wide .plan-cov-badge.red {
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 3px 7px;
+      border-radius: 5px;
+      letter-spacing: 0.01em;
     }
   }
   .plan-table td.role { color: var(--muted); font-size: 0.72rem; }
@@ -714,6 +753,8 @@
     font-size: 16px; min-height: 44px; font-variant-numeric: tabular-nums; }
   .plan-modal .actions { display: flex; gap: 8px; margin-top: 14px; }
   .plan-modal .actions button { flex: 1; }
+  /* Keyboard shortcut hint — hidden on mobile/touch, shown only in ≥900px side-panel */
+  .plan-kbd-hint { display: none; }
   .plan-cov-cell { padding: 4px 2px !important; text-align: center; }
   .plan-cov-badge { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 2px 4px; border-radius: 4px; }
   .plan-cov-badge.red { background: rgba(220,80,60,0.15); color: #c0392b; font-weight: 700; white-space: nowrap; }
@@ -1989,6 +2030,7 @@
             <button class="btn btn-secondary" id="plan-day-delete">Quitar</button>
             <button class="btn" id="plan-day-save">Guardar</button>
           </div>
+          <span class="plan-kbd-hint">1 / 2 / 3 → horario · Enter → guardar · Esc → cerrar</span>
         </div>
       </div>
 
@@ -2004,6 +2046,7 @@
             <button class="btn btn-secondary" id="plan-clear">Quitar</button>
             <button class="btn" id="plan-save">Guardar</button>
           </div>
+          <span class="plan-kbd-hint">1 / 2 / 3 → horario · Enter → guardar · Esc → cerrar</span>
         </div>
       </div>
 
@@ -2408,7 +2451,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.21";
+  const APP_VERSION = "v0.209.22";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate. "Visto como" is a LEVEL-1-ONLY control.
@@ -5299,6 +5342,36 @@
   $('plan-day-save').addEventListener('click', planSaveDayShift);
   $('plan-day-delete').addEventListener('click', planDeleteDayShift);
   $('plan-day-modal').addEventListener('click', e => { if (e.target === $('plan-day-modal')) planCloseDayModal(); });
+  // ── Keyboard shortcuts for planner modals (req 4, v0.209.22) ─────────────
+  // 1/2/3 → apply 1st/2nd/3rd preset; Enter → save; Escape → close.
+  // Guard: only fires when a plan modal is actually open.
+  // Ignored when focus is inside a <select> or <input> to avoid clobbering
+  // normal navigation inside those controls.
+  document.addEventListener('keydown', e => {
+    const dayOpen  = $('plan-day-modal') && !$('plan-day-modal').classList.contains('hidden');
+    const weekOpen = $('plan-modal')     && !$('plan-modal').classList.contains('hidden');
+    if (!dayOpen && !weekOpen) return;
+    // Don't intercept while user is navigating a select or typing in an input.
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'SELECT' || tag === 'INPUT' || tag === 'TEXTAREA') return;
+    const quickId  = weekOpen ? 'plan-quick'     : 'plan-day-quick';
+    const presetBtns = $( quickId ) ? $(quickId).querySelectorAll('.plan-qt-btn') : [];
+    if (e.key === '1' || e.key === '2' || e.key === '3') {
+      const btn = presetBtns[Number(e.key) - 1];
+      if (btn) { e.preventDefault(); btn.click(); }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (weekOpen) {
+        planSaveShift('programado', $('plan-staff').value, $('plan-start').value, $('plan-end').value);
+      } else {
+        planSaveDayShift();
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      if (weekOpen) planCloseModal();
+      else planCloseDayModal();
+    }
+  });
   // ── PLANNER HOURS: whole hours only, 24-hour clock (Ben 2026-09-23) ──────────────
   // "For the planning of work hours ... we only start on the hour, so update
   //  accordingly, don need minute or second."
@@ -5340,6 +5413,9 @@
     const box = $(containerId);
     if (!box) return;
     const presets = PLAN_ROLE_PRESETS[role] || PLAN_PRESET_FALLBACK;
+    // Identify modal context for one-tap commit (req 1, v0.209.22).
+    const isWeekModal = (containerId === 'plan-quick');
+    const staffSelId  = isWeekModal ? 'plan-staff' : 'plan-day-staff';
     box.innerHTML = presets.map(([s, e]) =>
       `<button type="button" class="btn btn-secondary plan-qt-btn" data-s="${s}" data-e="${e}"`
       + ` style="padding:6px 10px;font-size:16px;min-height:44px;">${s} a ${e}</button>`
@@ -5348,7 +5424,18 @@
       btn.addEventListener('click', () => {
         const s = btn.getAttribute('data-s'), e = btn.getAttribute('data-e');
         if (startSel && $(startSel)) $(startSel).value = s;
-        if (endSel && $(endSel)) $(endSel).value = e;
+        if (endSel   && $(endSel))   $(endSel).value   = e;
+        // ONE-TAP COMMIT: if a person is already chosen, save + close immediately.
+        // If staff is still '— Nadie —' the preset just fills the times; user
+        // must pick someone then tap Guardar (or use Enter keyboard shortcut).
+        const staffId = $(staffSelId) && $(staffSelId).value;
+        if (staffId) {
+          if (isWeekModal) {
+            planSaveShift('programado', staffId, s, e);
+          } else {
+            planSaveDayShift();
+          }
+        }
       });
     });
   }
