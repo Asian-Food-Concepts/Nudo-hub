@@ -7085,10 +7085,24 @@
   async function loadHorasRoster() {
     if (horasRoster.length) return;
     try {
-      const { data } = await supabase.from('profiles')
+      const { data, error } = await supabase.from('profiles')
         .select('name,branch').eq('active', true).order('name');
+      if (error) {
+        horasRoster = [];
+        const msgEl = $('b-msg');
+        if (msgEl) showMsg(msgEl, 'No se pudo cargar la lista del personal.', 'err');
+        return;
+      }
       horasRoster = (data || []).filter(p => p.name);
-    } catch (e) { horasRoster = []; }
+      const bMsg = $('b-msg');
+      if (bMsg && bMsg.textContent === 'No se pudo cargar la lista del personal.') {
+        clearMsg(bMsg);
+      }
+    } catch (e) {
+      horasRoster = [];
+      const msgEl = $('b-msg');
+      if (msgEl) showMsg(msgEl, 'No se pudo cargar la lista del personal.', 'err');
+    }
   }
 
   function horasOptions(selected, branch) {
