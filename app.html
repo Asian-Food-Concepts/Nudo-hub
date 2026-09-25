@@ -3422,13 +3422,37 @@
   let panelistCount = 1;
   const MAX_PANELISTS = 3;
   let panelRoster = [];
+  let panelRosterFailed = false;
   async function loadPanelistRoster() {
-    const { data } = await supabase.from('profiles').select('name, role, branch').eq('active', true).order('name');
-    panelRoster = (data || []).filter(p => p.name).map(p => ({
-      label: [p.name, p.role, p.branch].filter(Boolean).join(' · '),
-      value: p.name
-    }));
-    refreshPanelistSelects();
+    panelRosterFailed = false;
+    try {
+      const { data, error } = await supabase.from('profiles').select('name, role, branch').eq('active', true).order('name');
+      if (error) {
+        panelRosterFailed = true;
+        panelRoster = [];
+        refreshPanelistSelects();
+        showMsg($('i-msg'), 'No se pudo cargar la lista del equipo.', 'err');
+        return;
+      }
+      panelRoster = (data || []).filter(p => p.name).map(p => ({
+        label: [p.name, p.role, p.branch].filter(Boolean).join(' · '),
+        value: p.name
+      }));
+      refreshPanelistSelects();
+      if (!panelRoster.length) {
+        showMsg($('i-msg'), 'No hay personal activo en el equipo.', 'err');
+      } else {
+        const msgEl = $('i-msg');
+        if (msgEl && (msgEl.textContent === 'No se pudo cargar la lista del equipo.' || msgEl.textContent === 'No hay personal activo en el equipo.')) {
+          clearMsg(msgEl);
+        }
+      }
+    } catch (err) {
+      panelRosterFailed = true;
+      panelRoster = [];
+      refreshPanelistSelects();
+      showMsg($('i-msg'), 'No se pudo cargar la lista del equipo.', 'err');
+    }
   }
   function panelistOptions(selected) {
     let opts = '<option value="">— Selecciona —</option>';
@@ -3445,7 +3469,10 @@
   }
   function addPanelistSelect() {
     if (panelistCount >= MAX_PANELISTS) { showMsg($('i-msg'), 'Máximo ' + MAX_PANELISTS + ' entrevistadores.', 'err'); return; }
-    if (!panelRoster.length) { showMsg($('i-msg'), 'Carga la lista del equipo primero.', 'err'); return; }
+    if (!panelRoster.length) {
+      showMsg($('i-msg'), panelRosterFailed ? 'No se pudo cargar la lista del equipo.' : 'No hay personal activo en el equipo.', 'err');
+      return;
+    }
     panelistCount++;
     const sel = document.createElement('select');
     sel.className = 'panelist-select';
