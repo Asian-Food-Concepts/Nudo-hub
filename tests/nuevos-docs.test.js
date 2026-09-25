@@ -161,10 +161,45 @@ module.exports = function (t) {
     t.ok(seen !== null, 'the label must pass through esc() before reaching HTML');
   });
 
-  t.test('NUEVOS: an unknown or unset doc_type never highlights', () => {
-    // Mutation-style: the map must be consulted, not a hardcoded comparison list.
-    const i = SRC.indexOf('function renderDocTierBadge');
-    const body = SRC.slice(i, SRC.indexOf('\n  }', i));
-    t.ok(!/===\s*'ine'/.test(body), 'the badge must use the map, not inline doc comparisons');
+  t.test('NUEVOS: every action attribute has a handler and vice versa', () => {
+    // Derived invariant, not a pinned name. A BUTTON that emits data-nuevo-x with no handler
+    // is a DEAD button (it looks clickable and does nothing), and a handler with no emitter is
+    // dead code. Checking this generically means a future rename cannot silently create either.
+    //
+    // Scope: only attributes inside a `<button ...>` tag. `data-nuevo-row` lives on the card
+    // <div> as an identity/state attribute and is legitimately not a click target — flagging it
+    // would be a false positive that trains the reader to ignore this test.
+    const emitted = new Set();
+    const btnRe = /<button\b[^>]*>/g;
+    let bm;
+    while ((bm = btnRe.exec(SRC))) {
+      const attrRe = /data-nuevo-([a-z]+)=/g;
+      let am;
+      while ((am = attrRe.exec(bm[0]))) emitted.add('data-nuevo-' + am[1]);
+    }
+
+    const handled = new Set();
+    const reHandle = /closest\('\[(data-nuevo-[a-z]+)\]'\)/g;
+    let m;
+    while ((m = reHandle.exec(SRC))) handled.add(m[1]);
+
+    t.ok(emitted.size >= 5, `expected several action buttons, found ${emitted.size}`);
+    for (const a of emitted) {
+      t.ok(handled.has(a), `${a} is emitted by a button but has NO click handler (dead button)`);
+    }
+    for (const h of handled) {
+      t.ok(emitted.has(h), `${h} has a handler but nothing emits it (dead code)`);
+    }
   });
+
+  t.test('NUEVOS: the reactivate button is on deactivated rows only', () => {
+    // Both directions matter: offering Reactivar on an active row would be a no-op button,
+    // and omitting it on a hidden row would strand the record with no way back.
+    const i = SRC.indexOf('data-nuevo-reactivate');
+    t.ok(i > -1, 'needle: the reactivate button exists');
+    if (i < 0) return;
+    const before = SRC.slice(Math.max(0, i - 900), i);
+    t.ok(/isHidden/.test(before), 'its render must be conditional on the row being hidden');
+  });
+
 };

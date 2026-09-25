@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v120'; // v0.209.15: contract UI honestly reports 403 vs 404 now that generate-contract is deployed.
+const CACHE = 'nudo-hub-v121'; // v0.209.16: tests only - pins the button<->handler seam and the Nuevos tab control.
 // serves the app at https://hub.asianfoodconcepts.mx/ and the old project-site URL
 // (asian-food-concepts.github.io/Nudo-hub/) 301-redirects here. The version bump is what
 // moves EXISTING clients: a stale client detects the new version, reloads, follows the
