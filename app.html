@@ -3835,14 +3835,26 @@
     );
   }
 
-  // Eligible staff for a role specifically belonging to a branch (branch match + normalized role match).
-  // Profiles with branch 'Ambos' or empty/null are eligible for either outlet.
+  // Eligible staff for a role specifically belonging to a branch, honouring the SAME
+  // outlet-agnostic rule as planStaffForRole. Captains are deliberately offered from both
+  // outlets (v0.180 — Ben: "for now let capitans be visible from all outlets"), so a
+  // branch-strict count would let the UI claim "sin personal de Capitán en Roma Norte"
+  // while the slot picker right below it offers the Del Valle captains. The message must
+  // never contradict what the picker can actually assign.
   function planStaffForBranch(role, branch) {
     const target = branch || (planState && planState.branch);
+    const outletAgnostic = (role === 'Capitán');
     return ((planState && planState.staff) || []).filter(s =>
-      (s.branch === target || s.branch === 'Ambos' || !s.branch) &&
+      (outletAgnostic || s.branch === target || s.branch === 'Ambos' || !s.branch) &&
       planRoleGroup(s.role) === role
     );
+  }
+
+  // True only when NOBODY can be assigned to this role here at all. Branch-owned roles are
+  // strict; a role that is outlet-agnostic is only "empty" when it has no staff anywhere.
+  // This is the condition that makes the explanatory message honest.
+  function planRoleHasNoAssignable(role) {
+    return planStaffForBranch(role, planState.branch).length === 0;
   }
 
   function planRender() {
