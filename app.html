@@ -1811,6 +1811,7 @@
         <div class="form-card">
           <h2>👥 Entrevistados</h2>
           <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">Todos los candidatos. Toca uno para verlo y editarlo.</p>
+          <div id="ev-msg" class="msg hidden"></div>
           <input type="search" id="ev-search" placeholder="🔎 Buscar candidato…" style="width:100%;margin-bottom:12px;">
           <div id="ev-list"><p style="color:var(--muted);">Cargando…</p></div>
         </div>
@@ -7548,12 +7549,29 @@
     const msgEl = $('ev-msg');
     if (!listEl) return;
     listEl.innerHTML = '<p style="color:var(--muted);">Cargando…</p>';
-    let user; try { user = await requireUser(); } catch(e) { return; }
+    if (msgEl) clearMsg(msgEl);
+    let user;
+    try {
+      user = await requireUser();
+    } catch (e) {
+      listEl.innerHTML = '';
+      const noSession = e && e.message === 'no-session';
+      if (msgEl) {
+        showMsg(msgEl, noSession
+          ? 'Tu sesión terminó. Entra de nuevo.'
+          : 'No se pudo verificar tu sesión. Recarga e intenta de nuevo.', 'err');
+      }
+      return;
+    }
     const { data: rows, error } = await supabase
       .from('interviews')
       .select('id, first_name, paterno, materno, puesto, puesto_otro, salario_bruto_semanal, bono, status, email, phone, availability, notas, rating, panelists, interview_date, created_at')
       .order('created_at', { ascending: false });
-    if (error) { listEl.innerHTML = '<p style="color:var(--muted);">Error: ' + esc(error.message) + '</p>'; return; }
+    if (error) {
+      if (msgEl) showMsg(msgEl, 'Error al cargar entrevistas: ' + error.message, 'err');
+      listEl.innerHTML = '';
+      return;
+    }
     _evAll = rows || [];
     const q = ($('ev-search') ? $('ev-search').value.trim() : '').toLowerCase();
     const filtered = _evAll.filter(r => {
