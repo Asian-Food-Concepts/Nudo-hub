@@ -9438,6 +9438,8 @@
   async function loadNuevos() {
     const list = $('nuevos-list');
     if (!list) return;
+    const msgEl = $('nuevos-msg');
+    if (msgEl) clearMsg(msgEl);
     list.innerHTML = '<p style="color:var(--muted);">Cargando…</p>';
     try {
       const [onbRes, onbHiddenRes, contractsRes, docsRes] = await Promise.all([
@@ -9467,25 +9469,44 @@
       if (onbHiddenRes.error) throw onbHiddenRes.error;
       window.__nuevos_cache = onbRes.data || [];
       window.__nuevos_hidden_cache = onbHiddenRes.data || [];
-      const contractsMap = {};
-      if (contractsRes && contractsRes.data) {
-        contractsRes.data.forEach(c => {
-          if (!contractsMap[c.onboarding_id]) {
-            contractsMap[c.onboarding_id] = c;
-          }
-        });
+
+      if (contractsRes && contractsRes.error) {
+        window.__nuevos_contracts = null;
+      } else {
+        const contractsMap = {};
+        if (contractsRes && contractsRes.data) {
+          contractsRes.data.forEach(c => {
+            if (!contractsMap[c.onboarding_id]) {
+              contractsMap[c.onboarding_id] = c;
+            }
+          });
+        }
+        window.__nuevos_contracts = contractsMap;
       }
-      window.__nuevos_contracts = contractsMap;
-      const docsMap = {};
-      if (docsRes && docsRes.data) {
-        docsRes.data.forEach(d => {
-          if (!docsMap[d.onboarding_id]) {
-            docsMap[d.onboarding_id] = [];
-          }
-          docsMap[d.onboarding_id].push(d);
-        });
+
+      if (docsRes && docsRes.error) {
+        window.__nuevos_docs = null;
+      } else {
+        const docsMap = {};
+        if (docsRes && docsRes.data) {
+          docsRes.data.forEach(d => {
+            if (!docsMap[d.onboarding_id]) {
+              docsMap[d.onboarding_id] = [];
+            }
+            docsMap[d.onboarding_id].push(d);
+          });
+        }
+        window.__nuevos_docs = docsMap;
       }
-      window.__nuevos_docs = docsMap;
+
+      if (docsRes && docsRes.error && contractsRes && contractsRes.error) {
+        if (msgEl) showMsg(msgEl, 'No se pudieron cargar los documentos ni los contratos.', 'err');
+      } else if (docsRes && docsRes.error) {
+        if (msgEl) showMsg(msgEl, 'No se pudieron cargar los documentos.', 'err');
+      } else if (contractsRes && contractsRes.error) {
+        if (msgEl) showMsg(msgEl, 'No se pudieron cargar los contratos.', 'err');
+      }
+
       updateNuevosTabUI();
       renderNuevosView();
     } catch (e) {
@@ -9553,7 +9574,9 @@
 
       const docs = (window.__nuevos_docs || {})[r.id] || [];
       let docLine = '';
-      if (!docs.length) {
+      if (window.__nuevos_docs === null) {
+        docLine = '<div style="color:var(--amber);font-size:13px;">📎 no disponible / no se pudieron cargar</div>';
+      } else if (!docs.length) {
         docLine = '<div style="color:var(--muted);font-size:13px;">📎 Sin documentos subidos</div>';
       } else {
         const totalDocs = docs.length;
@@ -9628,11 +9651,13 @@
           + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">✏️ Editar</button>'
         + '<button class="btn btn-outline" data-nuevo-ficha="' + esc(r.id) + '"'
           + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">📋 Ver ficha completa</button>'
-        + (revPath
-            ? '<button class="btn btn-outline" data-nuevo-dl="revision" data-id="' + esc(r.id) + '"'
-              + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">📄 Contrato con resaltado</button>'
-            : '<button class="btn btn-outline" data-nuevo-gen="' + esc(r.id) + '"'
-              + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">⚙️ Generar contrato</button>')
+        + (window.__nuevos_contracts === null
+            ? '<span class="field-hint" style="margin:0;color:var(--amber);width:100%;">Contrato: no disponible / no se pudo cargar</span>'
+            : (revPath
+                ? '<button class="btn btn-outline" data-nuevo-dl="revision" data-id="' + esc(r.id) + '"'
+                  + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">📄 Contrato con resaltado</button>'
+                : '<button class="btn btn-outline" data-nuevo-gen="' + esc(r.id) + '"'
+                  + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">⚙️ Generar contrato</button>'))
         + (firmaPath
             ? '<button class="btn btn-outline" data-nuevo-dl="firma" data-id="' + esc(r.id) + '"'
               + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;">✍️ Contrato sin resaltado</button>'
@@ -9981,7 +10006,10 @@
     // Documents, each openable by the reviewer via a short-lived signed link.
     const docs = (window.__nuevos_docs || {})[id] || [];
     html += '<h4 style="margin:16px 0 6px;font-size:0.95rem;">Documentos</h4>';
-    if (!docs.length) {
+    if (window.__nuevos_docs === null) {
+      html += '<div class="rv-row"><div class="rv-value" style="color:var(--amber);">'
+        + '— no disponible / no se pudieron cargar</div></div>';
+    } else if (!docs.length) {
       html += '<div class="rv-row"><div class="rv-value" style="color:var(--amber);">'
         + '— sin documentos subidos</div></div>';
     } else {
@@ -10003,7 +10031,10 @@
     // Contract state — and say plainly when there is nothing to download.
     const contract = (window.__nuevos_contracts || {})[id] || null;
     html += '<h4 style="margin:16px 0 6px;font-size:0.95rem;">Contrato</h4>';
-    if (contract) {
+    if (window.__nuevos_contracts === null) {
+      html += '<div class="rv-row"><div class="rv-value" style="color:var(--amber);">'
+        + '— no disponible / no se pudo cargar</div></div>';
+    } else if (contract) {
       html += '<div class="rv-row"><div class="rv-label">Generado</div><div class="rv-value">'
         + esc(String(contract.generated_at || '').slice(0, 19).replace('T', ' '))
         + '</div></div>';
