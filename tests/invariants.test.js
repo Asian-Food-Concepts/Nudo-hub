@@ -173,4 +173,39 @@ module.exports = function (t) {
       t.ok(html.indexOf(marker) === -1, 'debug scaffolding left in the file: ' + marker);
     }
   });
+
+  // =========================================================================
+  // Planner: an "empty role" message must NEVER contradict the slot picker
+  // =========================================================================
+  // Regression for a real defect (2026-09-24): the empty-role check counted staff
+  // strictly by branch, so Roma Norte rendered "sin personal de Capitán en Roma
+  // Norte" while the slot picker directly below it offered the 4 Del Valle
+  // captains. Captains are deliberately outlet-agnostic (v0.180 — Ben: "for now
+  // let capitans be visible from all outlets"), so the two MUST agree. A syntax
+  // check cannot catch this; only comparing the two decisions can.
+  t.test('planner empty-role message never contradicts the assignable staff', () => {
+    // Real shape: 4 captains, ALL Del Valle; Roma Norte has none of its own.
+    const staff = [
+      { id: 'a', name: 'Antonio B. S.', role: 'Capitán de Piso', branch: 'Del Valle' },
+      { id: 'b', name: 'Oscar M. O.', role: 'Capitán de Piso', branch: 'Del Valle' },
+      { id: 'c', name: 'Melanie G. R.', role: 'Mesero', branch: 'Roma Norte' },
+    ];
+    let checked = 0;
+    for (const branch of ['Roma Norte', 'Del Valle']) {
+      for (const role of ['Capitán', 'Mesero']) {
+        const s = t.sandbox(['planStaffForRole', 'planStaffForBranch'], {
+          globals: { planState: { branch, staff, shifts: [], extraSlots: {} } },
+        });
+        // What the slot picker can actually assign here...
+        const offered = s.planStaffForRole(role).length;
+        // ...vs. whether the row would claim there is nobody at all.
+        const claimsEmpty = s.planStaffForBranch(role, branch).length === 0;
+        t.ok(!(claimsEmpty && offered > 0),
+          branch + '/' + role + ': row would claim "sin personal" while the picker ' +
+          'offers ' + offered + ' person(s) — the message contradicts the picker');
+        checked++;
+      }
+    }
+    t.ok(checked === 4, 'expected to check 4 branch/role combinations');
+  });
 };
