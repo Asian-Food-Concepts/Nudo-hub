@@ -5520,8 +5520,12 @@
 
     // Also load maintenance assets / history so cards and storyline can use them
     try {
-      const { data: ahData } = await supabase.from('maintenance_asset_history').select('*');
-      if (ahData && ahData.length) {
+      const { data: ahData, error: ahErr } = await supabase.from('maintenance_asset_history').select('*');
+      if (ahErr) {
+        allAssetsCache = [];
+        allAssetHistoryCache = [];
+        nudoWarn('loadEstatus:asset_history', ahErr);
+      } else if (ahData && ahData.length) {
         allAssetHistoryCache = ahData;
         allAssetsCache = ahData.map(h => ({
           id: h.asset_id,
@@ -5538,14 +5542,26 @@
         }));
       }
     } catch (e) {
+      allAssetsCache = [];
+      allAssetHistoryCache = [];
       nudoWarn('loadEstatus:asset_history', e);
     }
     if (!allAssetsCache.length) {
       try {
-        const { data: maData } = await supabase.from('maintenance_assets').select('*');
-        if (maData) allAssetsCache = maData;
+        const { data: maData, error: maErr } = await supabase.from('maintenance_assets').select('*');
+        if (maErr) {
+          allAssetsCache = [];
+          allAssetHistoryCache = [];
+          nudoWarn('loadEstatus:assets', maErr);
+          if (msgEl) showMsg(msgEl, 'No se pudo cargar la lista de equipos.', 'err');
+        } else if (maData) {
+          allAssetsCache = maData;
+        }
       } catch (e) {
+        allAssetsCache = [];
+        allAssetHistoryCache = [];
         nudoWarn('loadEstatus:assets', e);
+        if (msgEl) showMsg(msgEl, 'No se pudo cargar la lista de equipos.', 'err');
       }
     }
     const assetById = {};
