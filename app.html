@@ -456,15 +456,185 @@
   .plan-table th { background: var(--frame-bg); position: sticky; top: env(safe-area-inset-top, 0px); }
   .plan-table th.day { min-width: 74px; }
   .plan-table td.name { text-align: left; white-space: nowrap; font-weight: 600; }
-  /* On a desktop-sized planner the grid has real room, so stop wrapping names/times and
-     let each day column take an even share (Ben 2026-09-23). Mobile keeps the current
-     compact behaviour — the min-width + sideways scroll is correct there. */
+  /* On a desktop-sized planner the grid has real room, so each day column takes an even
+     share without sideways scrolling (Ben 2026-09-23). Mobile keeps the compact behaviour
+     with min-width + scroll. */
   @media (min-width: 900px) {
-    .wrap.wrap-wide .plan-table { min-width: 0; }
-    .wrap.wrap-wide .plan-table th.day { min-width: 0; }
-    .wrap.wrap-wide .plan-table .nm,
-    .wrap.wrap-wide .plan-table .tm { white-space: nowrap; overflow: visible; text-overflow: clip; }
-    .wrap.wrap-wide .plan-table .tm { font-variant-numeric: tabular-nums; }
+    .wrap.wrap-wide .plan-grid { overflow-x: auto; }
+    .wrap.wrap-wide .plan-table {
+      min-width: 0;
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+    .wrap.wrap-wide .plan-table th:first-child,
+    .wrap.wrap-wide .plan-table td.name,
+    .wrap.wrap-wide .plan-table td.plan-role-head:first-child {
+      width: 110px;
+      max-width: 110px;
+    }
+    .wrap.wrap-wide .plan-table th.day {
+      min-width: 0;
+      width: calc((100% - 110px) / 7);
+      padding: 8px 4px;
+      font-size: 0.82rem;
+    }
+    .wrap.wrap-wide .plan-table td.name {
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+      text-align: left;
+    }
+    .wrap.wrap-wide .plan-table td.plan-role-head {
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 7px 8px;
+    }
+    .wrap.wrap-wide .plan-table td.plan-cov-cell {
+      padding: 5px 2px !important;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .wrap.wrap-wide .plan-cov-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      line-height: 1.3;
+    }
+    .wrap.wrap-wide .plan-cov-badge.red {
+      background: rgba(220,80,60,0.15);
+      color: #c0392b;
+      font-weight: 700;
+    }
+    .wrap.wrap-wide .plan-cov-badge.ok {
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .wrap.wrap-wide .plan-empty-role-cell {
+      padding: 7px 10px !important;
+      text-align: center;
+    }
+    .wrap.wrap-wide .plan-empty-role-msg {
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+    .wrap.wrap-wide .plan-table td.plan-slot-cell {
+      padding: 4px 3px !important;
+      vertical-align: middle;
+    }
+    .wrap.wrap-wide .plan-slot-btn {
+      min-height: 52px;
+      padding: 5px 4px;
+      border-radius: 8px;
+      box-sizing: border-box;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+    .wrap.wrap-wide .plan-slot-btn:hover {
+      background: var(--frame-bg, rgba(125,125,125,0.08));
+      border-color: var(--accent);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .wrap.wrap-wide .plan-slot-btn:focus {
+      outline: none;
+    }
+    .wrap.wrap-wide .plan-slot-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+      z-index: 2;
+    }
+    .wrap.wrap-wide .plan-slot-btn.has-dup:hover {
+      border-color: #d97706;
+      background: rgba(217,119,6,0.13);
+    }
+    .wrap.wrap-wide .plan-slot-btn.has-cross:hover {
+      border-color: rgba(220,160,40,0.7);
+      background: rgba(220,160,40,0.13);
+    }
+    .wrap.wrap-wide .plan-slot-btn.off:hover {
+      background: rgba(150,150,150,0.18);
+    }
+    .wrap.wrap-wide .plan-table .nm {
+      width: 100%;
+      max-width: 100%;
+      font-size: 0.76rem;
+      font-weight: 600;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+      display: block;
+    }
+    .wrap.wrap-wide .plan-table .tm {
+      font-size: 0.65rem;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-variant-numeric: tabular-nums;
+      margin-top: 1px;
+    }
+    .wrap.wrap-wide .plan-slot-flags {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      max-width: 100%;
+      flex-shrink: 0;
+      margin-bottom: 2px;
+    }
+    .wrap.wrap-wide .plan-cross-badge {
+      font-size: 0.62rem;
+      font-weight: 600;
+      line-height: 1.15;
+      padding: 1px 4px;
+      border-radius: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      max-width: 100%;
+      overflow: visible;
+      text-overflow: clip;
+      vertical-align: middle;
+    }
+    .wrap.wrap-wide .plan-dup-flag {
+      display: inline-block;
+      font-size: 0.72rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .wrap.wrap-wide .plan-add-slot {
+      text-align: left;
+      padding: 6px 10px !important;
+      background: var(--frame-bg, rgba(125,125,125,0.03));
+    }
+    .wrap.wrap-wide .plan-add-slot-btn {
+      width: auto !important;
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 4px 12px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .wrap.wrap-wide .plan-modal .box {
+      max-height: min(90vh, 580px);
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
   }
   .plan-table td.role { color: var(--muted); font-size: 0.72rem; }
   .plan-cell { cursor: pointer; border-radius: 6px; min-height: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
@@ -4344,7 +4514,7 @@
             const flagsHtml = (dupMark || crossMark)
               ? `<span class="plan-slot-flags">${dupMark}${crossMark}</span>`
               : '';
-            inner += `${flagsHtml}<span class="nm">${esc(assigned.name)}</span><span class="tm">${planFormatShiftTime(sh)}</span>`;
+            inner += `${flagsHtml}<span class="nm" title="${escAttr(assigned.name)}">${esc(assigned.name)}</span><span class="tm">${planFormatShiftTime(sh)}</span>`;
           } else {
             inner += `<span class="empty">—</span>`;
           }
