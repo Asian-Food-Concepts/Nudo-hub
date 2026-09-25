@@ -1767,7 +1767,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.14";
+  const APP_VERSION = "v0.209.15";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate. "Visto como" is a LEVEL-1-ONLY control.
@@ -9332,8 +9332,20 @@
         body: JSON.stringify({ onboarding_id: id }),
       });
       if (res.status === 404) {
-        showMsg(msgEl, 'La generación en el servidor todavía no está activa. Pídele a '
-          + 'Oversight que la instale.', 'err');
+        // The function IS deployed, so a 404 no longer means "not installed" — saying that
+        // would send Rosy to ask for work that is already done. 404 here means the request
+        // reached a path that does not exist, which is a deployment/routing fault worth
+        // reporting as such.
+        showMsg(msgEl, 'No se encontró el servicio de generación (404). Avísale a Oversight.',
+          'err');
+        return;
+      }
+      if (res.status === 403) {
+        // Permission failures are distinct from breakage: the person is not an owner/manager,
+        // or their account is deactivated. Telling them "algo falló" would hide the real cause.
+        const p403 = await res.json().catch(() => ({}));
+        showMsg(msgEl, 'No tienes permiso para generar contratos. '
+          + esc(p403.error || ''), 'err');
         return;
       }
       const payload = await res.json().catch(() => ({}));
