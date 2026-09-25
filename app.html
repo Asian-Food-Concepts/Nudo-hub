@@ -473,7 +473,7 @@
      same day. Allowed to save; this marks it so it is not missed in the grid. */
   .plan-dup-flag { display: inline-block; font-size: 0.7rem; line-height: 1; margin-right: 3px;
                    vertical-align: middle; }
-  .plan-slot-btn.has-dup { border-color: #d97706; box-shadow: inset 0 0 0 1px rgba(217,119,6,0.35); background: rgba(217,119,6,0.08); }
+  .plan-slot-btn.has-dup, .plan-day-shift.has-dup { border-color: #d97706; box-shadow: inset 0 0 0 1px rgba(217,119,6,0.35); background: rgba(217,119,6,0.08); }
   /* Cross-outlet shift indicator — person's profile branch differs from planner branch */
   .plan-slot-flags { display: inline-flex; align-items: center; justify-content: center; gap: 3px; max-width: 100%; line-height: 1; margin-bottom: 1px; }
   .plan-slot-flags .plan-dup-flag { margin-right: 0; }
@@ -3935,9 +3935,15 @@
   // Only possible via "+ Agregar" extra slots; the unique index does not prevent it.
   function planSameBranchDupes(staffId, date, excludeShiftId) {
     if (!staffId || !date) return [];
-    return (planState.shifts || []).filter(x =>
-      x && x.staff_id === staffId && x.shift_date === date && x.status !== 'descanso'
-      && x.id !== excludeShiftId);
+    return (planState.shifts || []).filter(x => {
+      if (!x || x.staff_id !== staffId || x.shift_date !== date || x.status === 'descanso') return false;
+      if (excludeShiftId != null) {
+        if (x === excludeShiftId) return false;
+        if (x.id && (x.id === excludeShiftId || (typeof excludeShiftId === 'object' && x.id === excludeShiftId.id))) return false;
+        if (typeof excludeShiftId === 'object' && excludeShiftId.slot && x.slot === excludeShiftId.slot) return false;
+      }
+      return true;
+    });
   }
 
   // Build the list of slots for a role: minimums + any extra slots added.
@@ -4080,8 +4086,11 @@
           const sh = planShiftForSlot(slot, i);
           const assigned = sh ? (planState.staff.find(s => s.id === sh.staff_id) || (sh.staff_id ? { name: planStaffName(sh.staff_id) } : null)) : null;
           const isDescanso = sh && sh.status === 'descanso';
-          const rowDup = (sh && !isDescanso && sh.staff_id)
-            ? planCrossBranchDupes(sh.staff_id, date).length : 0;
+          const crossDupes = (sh && !isDescanso && sh.staff_id)
+            ? planCrossBranchDupes(sh.staff_id, date) : [];
+          const sameDupes = (sh && !isDescanso && sh.staff_id)
+            ? planSameBranchDupes(sh.staff_id, date, sh.id || sh) : [];
+          const rowDup = crossDupes.length + sameDupes.length;
           const isCross = (sh && !isDescanso && sh.staff_id)
             ? planIsCrossBranch(sh.staff_id) : false;
           const staffBranch = isCross ? planStaffBranch(sh.staff_id) : null;
@@ -4090,14 +4099,21 @@
           if (isDescanso) {
             inner += `<span class="off-label">Descanso</span>`;
           } else if (assigned) {
-            // 🚩 Cross-outlet duplicate (Ben 2026-09-23): same person, same day, other
-            // branch. Allowed to pass — but flagged in the cell so it is visible without
-            // opening the modal, plus a title for the detail on hover/long-press.
-            const dupes = planCrossBranchDupes(sh.staff_id, date);
-            const dupTime = (dupes.length && (dupes[0].start_time || dupes[0].end_time)) ? ' ' + esc(planFormatShiftTime(dupes[0])) : '';
-            const dupMark = dupes.length
-              ? `<span class="plan-dup-flag" title="También programado en ${esc(dupes.map(d => d.branch).join(', '))}${dupTime} el mismo día">🚩</span>`
-              : '';
+            // 🚩 Duplicate shift flag (cross-outlet or same-outlet) (Ben 2026-09-23 / 2026-09-24):
+            // Same person, same day, another slot at this or other branch. Allowed to pass —
+            // but flagged in the cell so it is visible without opening the modal, plus a title
+            // for the detail on hover/long-press.
+            const allDupes = crossDupes.concat(sameDupes);
+            let dupMark = '';
+            if (allDupes.length) {
+              const dupDescs = allDupes.map(d => {
+                const b = d.branch || planState.branch;
+                const sl = d.slot ? ` (${d.slot})` : '';
+                const tm = (d.start_time || d.end_time) ? ' ' + planFormatShiftTime(d) : '';
+                return `${b}${sl}${tm}`;
+              }).join(', ');
+              dupMark = `<span class="plan-dup-flag" title="También programado en ${esc(dupDescs)} el mismo día">🚩</span>`;
+            }
             // ⚠️ Cross-outlet assignment flag: assigned person's profile branch does not match planner branch.
             const crossMark = isCross
               ? `<span class="plan-cross-badge" title="Sucursal de perfil: ${esc(staffBranch)}">${esc(staffBranch)}</span>`
@@ -4210,30 +4226,34 @@
     // a notice, never a block, and it is computed from the reloaded state so it reflects
     // what is actually in the database rather than what we intended to write.
     await planLoadShifts();
-    await planNoticeDuplicates(staffId, date);
+    const savedShift = planShiftForSlot(slot, dayIdx) || saved || existing;
+    await planNoticeDuplicates(staffId, date, savedShift ? (savedShift.id || savedShift) : null);
     planRender();
     planCloseModal();
   }
 
   // Show a dismissible banner when the person just scheduled is already working the other
   // outlet (or another slot at this one) on the same day. Never blocks the save.
-  async function planNoticeDuplicates(staffId, date) {
+  async function planNoticeDuplicates(staffId, date, excludeShiftId) {
     const box = $('plan-errors');
     if (!box) return;
     box.innerHTML = '';
     if (!staffId || !date) return;
     const cross = planCrossBranchDupes(staffId, date);
-    const same = planSameBranchDupes(staffId, date, null);
+    let same = planSameBranchDupes(staffId, date, excludeShiftId);
+    if (!excludeShiftId && same.length <= 1) same = [];
     if (!cross.length && !same.length) return;
     const sname = planStaffName(staffId);
     const bits = [];
     cross.forEach(d => {
       const tm = (d.start_time || d.end_time) ? ` ${planFormatShiftTime(d)}` : '';
-      bits.push(`${esc(d.branch)}${esc(tm)}`);
+      const slot = d.slot ? ` (${d.slot})` : '';
+      bits.push(`${esc(d.branch)}${esc(slot)}${esc(tm)}`);
     });
     same.forEach(d => {
       const tm = (d.start_time || d.end_time) ? ` ${planFormatShiftTime(d)}` : '';
-      bits.push(`${esc(planState.branch)}${esc(tm)}`);
+      const slot = d.slot ? ` (${d.slot})` : '';
+      bits.push(`${esc(d.branch || planState.branch)}${esc(slot)}${esc(tm)}`);
     });
     box.innerHTML = `<div class="plan-warn red">
       🚩 ${esc(sname)} ya está programado el mismo día en: ${bits.join(' · ')}.
@@ -4310,16 +4330,33 @@
       }
       shiftsToday.forEach(sh => {
         const name = planStaffName(sh.staff_id);
-        const isCross = (sh.status !== 'descanso' && sh.staff_id)
+        const isDescanso = sh.status === 'descanso';
+        const crossDupes = (!isDescanso && sh.staff_id)
+          ? planCrossBranchDupes(sh.staff_id, date) : [];
+        const sameDupes = (!isDescanso && sh.staff_id)
+          ? planSameBranchDupes(sh.staff_id, date, sh.id || sh) : [];
+        const allDupes = crossDupes.concat(sameDupes);
+        const hasDup = allDupes.length > 0;
+        let dupMark = '';
+        if (hasDup) {
+          const dupDescs = allDupes.map(d => {
+            const b = d.branch || planState.branch;
+            const sl = d.slot ? ` (${d.slot})` : '';
+            const tm = (d.start_time || d.end_time) ? ' ' + planFormatShiftTime(d) : '';
+            return `${b}${sl}${tm}`;
+          }).join(', ');
+          dupMark = `<span class="plan-dup-flag" title="También programado en ${esc(dupDescs)} el mismo día">🚩</span>`;
+        }
+        const isCross = (!isDescanso && sh.staff_id)
           ? planIsCrossBranch(sh.staff_id) : false;
         const staffBranch = isCross ? planStaffBranch(sh.staff_id) : null;
         const crossBadge = isCross
           ? ` <span class="plan-cross-badge" title="Sucursal de perfil: ${esc(staffBranch)}">${esc(staffBranch)}</span>`
           : '';
-        if (sh.status === 'descanso') {
+        if (isDescanso) {
           html += `<button class="plan-day-shift" data-shift="${sh.id}" style="opacity:0.7;">😴 ${esc(name)} · Descanso</button>`;
         } else {
-          html += `<button class="plan-day-shift" data-shift="${sh.id}"><span class="t">${planFormatShiftTime(sh)}</span> ${esc(name)}${crossBadge}</button>`;
+          html += `<button class="plan-day-shift${hasDup ? ' has-dup' : ''}" data-shift="${sh.id}"><span class="t">${planFormatShiftTime(sh)}</span> ${dupMark}${esc(name)}${crossBadge}</button>`;
         }
       });
       html += `<button class="btn btn-secondary plan-day-add" data-role="${role}" style="margin-top:8px;">+ Agregar ${role}</button></div>`;
@@ -4418,7 +4455,8 @@
     planCloseDayModal();
     await planLoadShifts();
     // Day-view path needs the same duplicate flag as the week view (Ben 2026-09-23).
-    await planNoticeDuplicates(staffId, date);
+    const savedShiftId = (saved && saved.id) || shiftId;
+    await planNoticeDuplicates(staffId, date, savedShiftId);
     planRender();
   }
 
@@ -4615,28 +4653,47 @@
       }
     });
 
-    // ── DUPLICATE ASSIGNMENTS (Ben 2026-09-23) ───────────────────────────────────
-    // Same person on the same day at BOTH outlets. Allowed to pass through — Ben asked
-    // for a FLAG, not a block — but it must be visible, because a person cannot work two
-    // outlets at once and the second shift will silently go uncovered.
+    // ── DUPLICATE ASSIGNMENTS (Ben 2026-09-23 / 2026-09-24) ──────────────────────
+    // Same person on the same day at multiple slots (either same outlet or both outlets).
+    // Allowed to pass through — Ben asked for a FLAG, not a block — but it must be visible.
     const dupWarns = [];
     const seenDup = {};
     planState.shifts.forEach(sh => {
       if (sh.status === 'descanso' || !sh.staff_id || !sh.shift_date) return;
-      const dupes = planCrossBranchDupes(sh.staff_id, sh.shift_date);
-      if (!dupes.length) return;
+      const crossDupes = planCrossBranchDupes(sh.staff_id, sh.shift_date);
+      const sameDupes = planSameBranchDupes(sh.staff_id, sh.shift_date, sh.id || sh);
+      if (!crossDupes.length && !sameDupes.length) return;
       const key = sh.staff_id + '|' + sh.shift_date;
       if (seenDup[key]) return;
       seenDup[key] = true;
       const sname = planStaffName(sh.staff_id);
-      const other = dupes.map(d => {
-        const tm = (d.start_time || d.end_time) ? ' ' + planFormatShiftTime(d) : '';
-        return `${d.branch}${tm}`;
-      }).join(', ');
-      dupWarns.push({
-        type: 'red',
-        text: `🚩 ${sname}: mismo día en ${planState.branch} y ${esc(other)} (${sh.shift_date.slice(8,10)}/${sh.shift_date.slice(5,7)})`
-      });
+      const dateStr = `${sh.shift_date.slice(8,10)}/${sh.shift_date.slice(5,7)}`;
+      if (crossDupes.length && sameDupes.length) {
+        const sameSlots = [sh].concat(sameDupes).map(d => d.slot).filter(Boolean).join(', ');
+        const other = crossDupes.map(d => {
+          const tm = (d.start_time || d.end_time) ? ' ' + planFormatShiftTime(d) : '';
+          return `${d.branch}${tm}`;
+        }).join(', ');
+        dupWarns.push({
+          type: 'red',
+          text: `🚩 ${sname}: ${sameDupes.length + 1} turnos en ${planState.branch} (${esc(sameSlots)}) y en ${esc(other)} (${dateStr})`
+        });
+      } else if (sameDupes.length) {
+        const sameSlots = [sh].concat(sameDupes).map(d => d.slot).filter(Boolean).join(', ');
+        dupWarns.push({
+          type: 'red',
+          text: `🚩 ${sname}: ${sameDupes.length + 1} turnos en ${planState.branch} (${esc(sameSlots)}) el mismo día (${dateStr})`
+        });
+      } else {
+        const other = crossDupes.map(d => {
+          const tm = (d.start_time || d.end_time) ? ' ' + planFormatShiftTime(d) : '';
+          return `${d.branch}${tm}`;
+        }).join(', ');
+        dupWarns.push({
+          type: 'red',
+          text: `🚩 ${sname}: mismo día en ${planState.branch} y ${esc(other)} (${dateStr})`
+        });
+      }
     });
 
     const total = coverageWarns.length + hoursWarns.length + dupWarns.length;
