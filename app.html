@@ -895,16 +895,16 @@
   .bitacora-desktop, .buzon-desktop, .compras-desktop, .descansos-desktop,
   .editar-entrevista-desktop, .entrevistados-desktop, .entrevistas-desktop,
   .equipo-desktop, .guide-desktop, .horario-desktop, .mantenimiento-desktop,
-  .nuevos-desktop, .usuarios-desktop {
+  .nuevos-desktop, .usuarios-desktop, .roadmap-desktop {
     display: none !important;
   }
   .bitacora-mobile, .buzon-mobile, .compras-mobile, .descansos-mobile,
   .editar-entrevista-mobile, .entrevistados-mobile, .entrevistas-mobile,
   .equipo-mobile, .guide-mobile, .horario-mobile, .mantenimiento-mobile,
-  .nuevos-mobile, .usuarios-mobile {
+  .nuevos-mobile, .usuarios-mobile, .roadmap-mobile {
     display: block;
   }
-  .entrevistados-table-header, .usuarios-table-header { display: none; }
+  .entrevistados-table-header, .usuarios-table-header, .roadmap-table-header { display: none; }
 
   .estatus-mant-card {
     border: 1px solid var(--border);
@@ -1210,7 +1210,8 @@
     .wrap:has(#form-entrevistados.active),
     .wrap:has(#form-editar-entrevista.active),
     .wrap:has(#form-usuarios.active),
-    .wrap:has(#form-nuevos.active) {
+    .wrap:has(#form-nuevos.active),
+    .wrap:has(#form-roadmap.active) {
       max-width: min(96vw, 1180px);
     }
 
@@ -1453,10 +1454,9 @@
     .nuevos-desktop { display: block !important; }
     .nuevos-mobile { display: none !important; }
     #nuevos-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
-      gap: 14px;
-      align-items: start;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
     div[data-nuevo-row] .nuevo-actions-wrap .btn {
       width: auto !important;
@@ -1675,6 +1675,318 @@
     border-radius: 6px;
     color: var(--muted);
   }
+  .roadmap-why-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.35;
+  }
+  .roadmap-table-header {
+    display: none;
+    grid-template-columns: 36px minmax(160px, 1.3fr) 110px minmax(180px, 2fr) 120px 110px 24px;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    margin: 12px 0 6px;
+    background: var(--frame-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    text-transform: uppercase;
+    box-sizing: border-box;
+  }
+  @media (min-width: 701px) {
+    .roadmap-table-header {
+      display: grid !important;
+    }
+    .roadmap-desktop {
+      display: grid !important;
+      grid-template-columns: 36px minmax(160px, 1.3fr) 110px minmax(180px, 2fr) 120px 110px 24px;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .roadmap-mobile {
+      display: none !important;
+    }
+    .roadmap-item {
+      padding: 10px 14px !important;
+      margin-bottom: 8px !important;
+    }
+  }
+
+  /* Calendario de Mantenimiento (Ben) */
+  .cal-header-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .cal-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .cal-cumplimiento-section {
+    margin: 12px 0 16px;
+    background: var(--frame-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .cal-section-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .cal-cumplimiento-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  @media (min-width: 701px) {
+    .cal-cumplimiento-grid {
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    }
+  }
+  .cal-branch-summary {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: 0 1px 2px var(--shadow);
+  }
+  .cal-branch-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cal-kpi-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .cal-kpi {
+    text-align: center;
+    flex: 1;
+  }
+  .cal-kpi-val {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+  .cal-kpi-lbl {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-top: 2px;
+  }
+  .cal-kpi-bad { color: #d32f2f !important; }
+  .cal-kpi-warn { color: #f57c00 !important; }
+  .cal-kpi-ok { color: #2e7d32 !important; }
+  .cal-kpi-rate { color: var(--accent); }
+
+  .cal-group-header {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent);
+    margin: 18px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cal-group-count {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .cal-task-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px var(--shadow);
+    transition: transform 0.08s ease, border-color 0.15s ease;
+    position: relative;
+  }
+  .cal-task-card.overdue {
+    border-color: #e53935;
+    border-left: 5px solid #e53935;
+    background: rgba(229, 57, 53, 0.05);
+  }
+  .cal-task-card.due-today {
+    border-color: #f9a825;
+    border-left: 5px solid #f9a825;
+    background: rgba(249, 168, 37, 0.05);
+  }
+  .cal-task-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .cal-task-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .cal-task-category {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--input-bg);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    margin-left: 6px;
+  }
+  .cal-badge-overdue {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #d32f2f;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+  }
+  .cal-badge-today {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #f9a825;
+    color: #000;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .cal-badge-soon {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .cal-task-meta {
+    font-size: 0.85rem;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 6px 0 10px;
+  }
+  .cal-task-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .cal-task-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+  }
+  .cal-evidence-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .cal-evidence-badge.ok {
+    background: rgba(46, 125, 50, 0.1);
+    border-color: #2e7d32;
+    color: #2e7d32;
+  }
+  .cal-evidence-badge.req {
+    background: rgba(229, 57, 53, 0.1);
+    border-color: #e53935;
+    color: #d32f2f;
+  }
+
+  .cal-hist-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  .cal-hist-evidence-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .cal-hist-thumb {
+    width: 80px;
+    height: 80px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    background: var(--input-bg);
+  }
+  .cal-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--frame-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
 
   .hidden { display: none !important; }
 </style>
@@ -1855,6 +2167,11 @@
             <div class="icon icon-sheet">🧯</div>
             <div class="text"><div class="title">Mantenimiento preventivo</div><div class="sub">Próximamente · fechas de extintores, inventarios programados</div></div>
           </div>
+          <a class="card" href="#" id="calendario-mant-card" data-form="calendario-mant" style="display:none;">
+            <div class="icon icon-sheet">🗓️</div>
+            <div class="text"><div class="title">Calendario de Mantenimiento</div><div class="sub">Servicios recurrentes · fumigación, filtros, trampas y desazolve</div></div>
+            <div class="arrow">›</div>
+          </a>
         </div>
 
         <div class="section-title" id="recl-section">Equipo y Reclutamiento</div>
@@ -1889,7 +2206,7 @@
           <!-- Roadmap (Ben): Plan de trabajo y sugerencias -->
           <a class="card" href="#" id="roadmap-card" data-form="roadmap" style="display:none;">
             <div class="icon icon-form">🗺️</div>
-            <div class="text"><div class="title">Roadmap</div><div class="sub">Plan de trabajo y sugerencias</div></div>
+            <div class="text"><div class="title">Nudo Hub Roadmap</div><div class="sub">Plan de trabajo y sugerencias</div></div>
             <div class="arrow">›</div>
           </a>
         </div>
@@ -2679,14 +2996,89 @@
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
         <div class="form-card">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
-            <h2 style="margin:0;">🗺️ Roadmap</h2>
+            <h2 style="margin:0;">🗺️ Nudo Hub Roadmap</h2>
             <button type="button" class="btn btn-outline" id="roadmap-refresh-btn" style="min-height:44px;padding:6px 12px;font-size:14px;margin:0;">🔄 Actualizar</button>
           </div>
           <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">
             Plan de trabajo y sugerencias. Arrastra las tarjetas para ordenar prioridades (o usa los controles ▲/▼). Edita comentarios y estados para Antigravity.
           </p>
           <div id="roadmap-msg" class="msg hidden"></div>
+          <div class="roadmap-table-header">
+            <div>#</div>
+            <div>Título</div>
+            <div>Área</div>
+            <div>Descripción</div>
+            <div>Estado</div>
+            <div style="text-align:center;">Acción</div>
+            <div></div>
+          </div>
           <div id="roadmap-list"><p style="color:var(--muted);">Cargando roadmap…</p></div>
+        </div>
+      </div>
+
+      <!-- CALENDARIO DE MANTENIMIENTO RECURRENTE (Ben) -->
+      <div id="form-calendario-mant" class="form-page">
+        <button class="back" data-back><span class="chev">‹</span> Volver</button>
+        <div id="view-calendario-mant" class="form-card">
+          <div class="cal-header-row">
+            <div>
+              <h2 style="margin:0;">🗓️ Calendario de Mantenimiento</h2>
+              <p style="font-size:0.9rem;color:var(--muted);margin:4px 0 12px;">Servicios recurrentes con evidencia: fumigación, filtros, trampas y desazolve.</p>
+            </div>
+            <div class="cal-header-actions">
+              <button type="button" class="btn btn-outline" id="cal-feed-btn" title="Descargar o suscribirse al calendario .ics" style="margin:0;font-size:14px;padding:8px 12px;min-height:44px;">📅 Calendario .ics</button>
+              <button type="button" class="btn btn-outline" id="cal-schedules-btn" style="margin:0;font-size:14px;padding:8px 12px;min-height:44px;display:none;">⚙️ Programaciones</button>
+              <button type="button" class="btn btn-outline" id="cal-refresh-btn" title="Actualizar datos" style="margin:0;font-size:14px;padding:8px 12px;min-height:44px;">🔄 Actualizar</button>
+            </div>
+          </div>
+
+          <div id="cal-mant-msg" class="msg hidden"></div>
+
+          <!-- Cumplimiento Summary per Branch (Requirement E) -->
+          <div class="cal-cumplimiento-section">
+            <div class="cal-section-title">📊 Cumplimiento Operativo</div>
+            <div id="cal-cumplimiento-cards" class="cal-cumplimiento-grid">
+              <!-- dynamically rendered summary per branch -->
+            </div>
+          </div>
+
+          <!-- Segmented Tab Switcher (Requirement B) -->
+          <div class="seg" id="cal-mant-tabs" style="margin:16px 0 14px;">
+            <button type="button" data-cal-tab="vencer" class="on" style="font-size:15px;font-weight:600;">⚡ Por Vencer</button>
+            <button type="button" data-cal-tab="historial" style="font-size:15px;font-weight:600;">📜 Historial</button>
+          </div>
+
+          <!-- Tab 1: POR VENCER -->
+          <div id="cal-tab-vencer-panel">
+            <div id="cal-vencer-list">
+              <p style="color:var(--muted);padding:12px;">Cargando tareas por vencer…</p>
+            </div>
+          </div>
+
+          <!-- Tab 2: HISTORIAL -->
+          <div id="cal-tab-historial-panel" class="hidden">
+            <div class="cal-filter-bar">
+              <div class="field" style="margin:0;flex:1;min-width:140px;">
+                <label style="font-size:0.75rem;margin-bottom:2px;">Sucursal</label>
+                <select id="cal-hist-branch-filter" style="min-height:44px;font-size:15px;width:100%;box-sizing:border-box;">
+                  <option value="all">Todas las sucursales</option>
+                  <option value="Roma Norte">Roma Norte</option>
+                  <option value="Del Valle">Del Valle</option>
+                  <option value="Los dos">Los dos</option>
+                </select>
+              </div>
+              <div class="field" style="margin:0;flex:1;min-width:140px;">
+                <label style="font-size:0.75rem;margin-bottom:2px;">Categoría</label>
+                <select id="cal-hist-cat-filter" style="min-height:44px;font-size:15px;width:100%;box-sizing:border-box;">
+                  <option value="all">Todas las categorías</option>
+                </select>
+              </div>
+            </div>
+            <div id="cal-historial-list" style="margin-top:14px;">
+              <p style="color:var(--muted);padding:12px;">Cargando historial…</p>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -2782,10 +3174,139 @@
               <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Evidencia (medición / prueba)</label>
               <textarea id="roadmap-modal-evidence" rows="2" style="width:100%;min-height:50px;font-size:14px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;padding:8px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);resize:vertical;"></textarea>
             </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Estado</label>
+              <select id="roadmap-modal-status" style="width:100%;min-height:44px;font-size:16px;padding:8px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);"></select>
+            </div>
           </div>
           <div class="review-actions" style="margin-top:12px;display:flex;gap:8px;">
             <button type="button" class="btn" id="roadmap-modal-save" style="flex:1;min-height:44px;font-size:16px;margin:0;">Guardar cambios</button>
             <button type="button" class="btn btn-outline" id="roadmap-modal-cancel" style="flex:1;min-height:44px;font-size:16px;margin:0;">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CALENDARIO: MODAL COMPLETAR TAREA (Evidencia requerida) -->
+      <div class="review-modal hidden" id="cal-complete-modal">
+        <div class="review-box" style="max-height:90vh;overflow-y:auto;">
+          <h3 id="cal-complete-title" style="margin:0 0 6px;">✅ Completar servicio</h3>
+          <div id="cal-complete-info" style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;"></div>
+          <div id="cal-complete-msg" class="msg hidden" style="margin-bottom:10px;"></div>
+
+          <div class="field" style="margin-bottom:10px;">
+            <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Fecha de realización *</label>
+            <input type="date" id="cal-complete-date" class="input" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" required />
+          </div>
+
+          <div class="field" style="margin-bottom:10px;">
+            <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Realizado o supervisado por *</label>
+            <input type="text" id="cal-complete-by" class="input" placeholder="Nombre completo" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" required />
+          </div>
+
+          <div class="field" style="margin-bottom:10px;">
+            <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Proveedor / Empresa (opcional)</label>
+            <input type="text" id="cal-complete-vendor" class="input" placeholder="Nombre de la empresa o técnico" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" />
+          </div>
+
+          <div class="field" style="margin-bottom:10px;">
+            <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Costo total MXN (opcional)</label>
+            <input type="number" step="0.01" id="cal-complete-cost" class="input" placeholder="0.00" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" />
+          </div>
+
+          <div class="field" style="margin-bottom:10px;">
+            <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Notas u observaciones</label>
+            <textarea id="cal-complete-notes" rows="2" placeholder="Detalles de lo realizado, garantía o comentarios..." style="width:100%;min-height:50px;font-size:16px;padding:8px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);resize:vertical;"></textarea>
+          </div>
+
+          <div class="field" style="margin-bottom:14px;">
+            <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">
+              Fotos de evidencia <span id="cal-evidence-req-tag" style="color:var(--red);font-weight:700;">* (Requeridas)</span>
+            </label>
+            <input type="file" id="cal-complete-photos" accept="image/*,application/pdf" multiple style="width:100%;min-height:44px;font-size:15px;box-sizing:border-box;" />
+            <span style="font-size:0.75rem;color:var(--muted);display:block;margin-top:4px;">Sube fotos claras del servicio completado, comprobante o certificado.</span>
+          </div>
+
+          <div class="review-actions" style="margin-top:12px;display:flex;gap:8px;">
+            <button type="button" class="btn" id="cal-complete-submit" style="flex:1;min-height:44px;font-size:16px;margin:0;">Guardar y completar</button>
+            <button type="button" class="btn btn-outline" id="cal-complete-cancel" style="flex:1;min-height:44px;font-size:16px;margin:0;">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CALENDARIO: MODAL SOLICITAR ANTES (Requirement F) -->
+      <div class="review-modal hidden" id="cal-sooner-modal">
+        <div class="review-box" style="max-height:90vh;overflow-y:auto;">
+          <h3 id="cal-sooner-title" style="margin:0 0 6px;">⚡ Solicitar servicio antes de tiempo</h3>
+          <div id="cal-sooner-info" style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;"></div>
+          <p style="font-size:0.85rem;color:var(--muted);margin:0 0 10px;">
+            Si hay un problema con este equipo o instalación (ej. trampa de grasa saturada o plaga), solicita que se atienda de inmediato. La solicitud se registrará en Seguimiento de mantenimiento para acción del equipo directivo.
+          </p>
+          <div id="cal-sooner-msg" class="msg hidden" style="margin-bottom:10px;"></div>
+
+          <div class="field" style="margin-bottom:10px;">
+            <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Motivo o problema presentado *</label>
+            <textarea id="cal-sooner-reason" rows="3" placeholder="Describe qué ocurrió y por qué se necesita adelantar el servicio..." style="width:100%;min-height:70px;font-size:16px;padding:8px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);resize:vertical;" required></textarea>
+          </div>
+
+          <div class="field" style="margin-bottom:14px;">
+            <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Prioridad</label>
+            <select id="cal-sooner-priority" style="width:100%;min-height:44px;font-size:16px;padding:8px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);">
+              <option value="Urgente" selected>🔴 Urgente (requiere atención rápida)</option>
+              <option value="Normal">🟡 Normal</option>
+            </select>
+          </div>
+
+          <div class="review-actions" style="margin-top:12px;display:flex;gap:8px;">
+            <button type="button" class="btn" id="cal-sooner-submit" style="flex:1;min-height:44px;font-size:16px;margin:0;">Enviar solicitud</button>
+            <button type="button" class="btn btn-outline" id="cal-sooner-cancel" style="flex:1;min-height:44px;font-size:16px;margin:0;">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CALENDARIO: MODAL PROGRAMACIONES (Management Only) -->
+      <div class="review-modal hidden" id="cal-schedules-modal">
+        <div class="review-box" style="max-height:90vh;overflow-y:auto;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <h3 style="margin:0;font-size:1.05rem;">⚙️ Programaciones de mantenimiento</h3>
+            <button type="button" class="btn btn-outline" id="cal-schedules-close-top" style="margin:0;padding:4px 10px;font-size:0.8rem;min-height:44px;min-width:44px;">✕</button>
+          </div>
+          <p style="font-size:0.85rem;color:var(--muted);margin:0 0 12px;">
+            Configura los ciclos de mantenimiento recurrente (fumigación, filtros, etc.) por sucursal. Solo gerentes y dueños.
+          </p>
+          <div id="cal-schedules-msg" class="msg hidden" style="margin-bottom:10px;"></div>
+          <div id="cal-schedules-list"></div>
+          <div class="review-actions" style="margin-top:14px;">
+            <button type="button" class="btn btn-outline" id="cal-schedules-close" style="width:100%;min-height:44px;font-size:16px;margin:0;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CALENDARIO: MODAL SUSCRIPCIÓN .ICS (RFC 5545) -->
+      <div class="review-modal hidden" id="cal-feed-modal">
+        <div class="review-box" style="max-height:90vh;overflow-y:auto;">
+          <h3 style="margin:0 0 6px;">📅 Calendario iCalendar (.ics)</h3>
+          <p style="font-size:0.85rem;color:var(--muted);margin:0 0 12px;">
+            Sincroniza todas las tareas de mantenimiento abiertas directamente en tu Google Calendar, Apple Calendar o Outlook (solo lectura).
+          </p>
+          <div style="margin-bottom:16px;">
+            <button type="button" class="btn" id="cal-feed-download-btn" style="width:100%;min-height:44px;font-size:16px;margin:0 0 12px;">📥 Descargar archivo .ics</button>
+          </div>
+          <div class="field" style="margin-bottom:12px;">
+            <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Enlace del feed de suscripción:</label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="cal-feed-url" readonly value="https://asian-food-concepts.github.io/Nudo-hub/maintenance.ics" style="flex:1;min-height:44px;font-size:14px;box-sizing:border-box;" />
+              <button type="button" class="btn btn-outline" id="cal-feed-copy-btn" style="min-height:44px;font-size:14px;padding:8px 12px;margin:0;white-space:nowrap;">📋 Copiar</button>
+            </div>
+          </div>
+          <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:0.8rem;color:var(--muted);line-height:1.4;">
+            <b>Cómo suscribirse en Google Calendar:</b><br>
+            1. Abre Google Calendar en tu navegador.<br>
+            2. En el panel izquierdo, busca <i>Otros calendarios</i> y haz clic en el botón <b>＋</b>.<br>
+            3. Selecciona <b>Desde URL</b> y pega el enlace del feed.<br>
+            4. Haz clic en <i>Añadir calendario</i>. Google actualizará las tareas automáticamente.
+          </div>
+          <div class="review-actions" style="margin-top:14px;">
+            <button type="button" class="btn btn-outline" id="cal-feed-close" style="width:100%;min-height:44px;font-size:16px;margin:0;">Cerrar</button>
           </div>
         </div>
       </div>
@@ -3754,6 +4275,7 @@
     // without management role) get greyed "Próximamente" placeholders parked
     // at the BOTTOM of Home; non-leaders see nothing (unchanged).
     const isRecl = currentProfile ? isManagement(currentProfile.role, currentProfile.level, currentProfile.active) : false;
+    const isOwnerUser = currentProfile ? isOwner(currentProfile.role, currentProfile.level, currentProfile.active) : false;
     const isCaptainOnly = (isLeader && !isRecl);
     const reclSection = document.getElementById('recl-section');
     const reclList = document.getElementById('recl-list');
@@ -3771,7 +4293,7 @@
     const nuevosCard = document.getElementById('nuevos-card');
     if (nuevosCard) nuevosCard.style.display = isRecl ? '' : 'none';
     const roadmapCard = document.getElementById('roadmap-card');
-    if (roadmapCard) roadmapCard.style.display = isRecl ? '' : 'none';
+    if (roadmapCard) roadmapCard.style.display = isOwnerUser ? '' : 'none';
     // v0.149 — the org chart is readable by any leader (captains and up).
     // v0.176 (Ben) — the Equipo page is management-only: Gerente + Dueño.
     // isRecl is exactly that set (Dueño OR role contains 'gerente'), reused so the
@@ -3813,11 +4335,18 @@
     const mantprevSection = document.getElementById('mantprev-section');
     const mantprevList = document.getElementById('mantprev-list');
     const mantprevCard = document.getElementById('mantprev-card');
+    const calMantCard = document.getElementById('calendario-mant-card');
+    const isCapitanOEnc = (r) => {
+      const s = String(r || '').toLowerCase();
+      return s.includes('capit') || s.includes('encargad');
+    };
+    const canSeeCalMant = isRecl || (currentProfile && isCapitanOEnc(currentProfile.role));
+    if (calMantCard) calMantCard.style.display = canSeeCalMant ? '' : 'none';
     if (mantprevSection && mantprevList && mantprevCard) {
-      const show = isLeader ? '' : 'none';
-      mantprevSection.style.display = show;
-      mantprevList.style.display = show;
-      mantprevCard.style.display = show;
+      const showSection = (isLeader || canSeeCalMant) ? '' : 'none';
+      mantprevSection.style.display = showSection;
+      mantprevList.style.display = showSection;
+      mantprevCard.style.display = isLeader ? '' : 'none';
     }
     // Owner follow-up badge on Estatus de solicitudes (Dueño only)
     if (role === 'Dueño') updateEstatusBadge();
@@ -4339,8 +4868,8 @@
       }
       if (f === 'roadmap') {
         const prof = currentProfile || window.currentProfile;
-        const isRecl = prof ? isManagement(prof.role, prof.level, prof.active) : false;
-        if (!isRecl) return;
+        const isOwnerUser = prof ? isOwner(prof.role, prof.level, prof.active) : false;
+        if (!isOwnerUser) return;
       }
       document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
       $('home-view').style.display = 'none';
@@ -4355,6 +4884,7 @@
       if (f === 'usuarios') { loadUsuarios(); loadRoleOptions(); }
       if (f === 'nuevos') { loadNuevos(); loadRoleOptions(); }
       if (f === 'roadmap') { loadRoadmap(); }
+      if (f === 'calendario-mant') { loadCalendarioMant(); }
       if (f === 'equipo') { loadEquipo(); }
       if (f === 'plan') loadPlanner();
       // v0.179: recompute the target week on every open. A form left open across
@@ -9951,6 +10481,13 @@
     return false;
   }
 
+  // Single named predicate for Dueño (owner-only views, e.g. Roadmap).
+  // Matches DB is_dueno() policy: coalesce(p.active, true) AND role = 'Dueño'.
+  function isOwner(role, level, active) {
+    if (!coalesceActive(active)) return false;
+    return String(role || '').trim() === 'Dueño';
+  }
+
   // Mirrors the DB's coalesce(p.active, true): null/undefined mean "active".
   function coalesceActive(v) {
     return v === null || v === undefined ? true : !!v;
@@ -10617,6 +11154,7 @@
           + 'empezado el formulario, o que tu cuenta no tenga permiso para verlo.</div>';
       return;
     }
+    if (!window.__nuevos_open_ids) window.__nuevos_open_ids = new Set();
     // Which of these already have a staff account? That is the activation state.
     const haveProfile = new Set((window.__usu_cache || []).map(u => (u.email || '').toLowerCase()));
     // A record with no name (or no email) cannot be activated — manage-user requires
@@ -10629,6 +11167,7 @@
       const activated = haveProfile.has(email);
       const complete = isComplete(r);
       const isHidden = !!r.hidden_at;
+      const isOpen = window.__nuevos_open_ids.has(r.id);
       const step = Number(r.current_step || 1);
       const pct = Math.min(100, Math.round((step / 4) * 100));
       const contract = (window.__nuevos_contracts || {})[r.id] || null;
@@ -10641,69 +11180,130 @@
       ].filter(Boolean).join(' · ');
 
       const docs = (window.__nuevos_docs || {})[r.id] || [];
-      let docLine = '';
-      if (window.__nuevos_docs === null) {
-        docLine = '<div style="color:var(--amber);font-size:13px;">📎 no disponible / no se pudieron cargar</div>';
-      } else if (!docs.length) {
-        docLine = '<div style="color:var(--muted);font-size:13px;">📎 Sin documentos subidos</div>';
+      const totalDocs = docs.length;
+      const verifiedDocs = docs.filter(d => d.tier2_ok === true).length;
+      const reqDocs = docs.filter(d => d.required);
+      const hasFailedReq = docs.some(d => (d.required || reqDocs.length === 0) && d.tier2_ok === false);
+      const allReqVerified = reqDocs.length > 0
+        ? reqDocs.every(d => d.tier2_ok === true)
+        : (totalDocs > 0 && verifiedDocs === totalDocs);
+
+      // Single status marker for the collapsed row (A1)
+      let statusMarker = '';
+      if (isHidden) {
+        statusMarker = '<span style="font-size:11px;color:var(--muted);white-space:nowrap;background:var(--border);padding:2px 6px;border-radius:6px;font-weight:600;">⛔ Desactivado</span>';
+      } else if (activated) {
+        statusMarker = '<span style="font-size:11px;color:var(--green);white-space:nowrap;font-weight:600;">✓ con cuenta</span>';
+      } else if (!complete) {
+        statusMarker = '<span style="font-size:11px;color:var(--muted);white-space:nowrap;">incompleto</span>';
+      } else if (hasFailedReq) {
+        statusMarker = '<span style="font-size:11px;color:var(--amber);white-space:nowrap;font-weight:600;">⚠️ Por revisar</span>';
+      } else if (allReqVerified && verifiedDocs > 0) {
+        statusMarker = '<span style="font-size:11px;color:var(--green);white-space:nowrap;font-weight:600;">✅ Verificado</span>';
       } else {
-        const totalDocs = docs.length;
-        const verifiedDocs = docs.filter(d => d.tier2_ok === true).length;
-        const reqDocs = docs.filter(d => d.required);
-        const hasFailedReq = docs.some(d => (d.required || reqDocs.length === 0) && d.tier2_ok === false);
-        const allReqVerified = reqDocs.length > 0
-          ? reqDocs.every(d => d.tier2_ok === true)
-          : (verifiedDocs === totalDocs);
-
-        let docBadge = '';
-        let docColor = 'var(--muted)';
-
-        if (hasFailedReq) {
-          docBadge = '⚠️';
-          docColor = 'var(--amber)';
-        } else if (allReqVerified && verifiedDocs > 0) {
-          docBadge = '✅';
-          docColor = 'var(--green)';
-        } else {
-          docBadge = '⏳';
-          docColor = 'var(--amber)';
-        }
-
-        const chipsHtml = docs.map(d => {
-          const typeName = String(d.doc_type || '').toUpperCase();
-          const tierBadge = renderDocTierBadge(d.doc_type);
-          const statusIco = d.tier2_ok === true ? '✅' : (d.tier2_ok === false ? '⚠️' : '⏳');
-          return '<span style="display:inline-flex;align-items:center;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:11px;margin-right:4px;margin-top:4px;">'
-            + statusIco + ' ' + esc(typeName) + tierBadge + '</span>';
-        }).join('');
-
-        docLine = '<div style="color:' + docColor + ';font-size:13px;">📎 Documentos: '
-          + verifiedDocs + '/' + totalDocs + ' verificados ' + docBadge + '</div>'
-          + '<div style="display:flex;flex-wrap:wrap;margin:4px 0 6px;">' + chipsHtml + '</div>';
+        statusMarker = '<span style="font-size:11px;color:var(--amber);white-space:nowrap;">⏳ Pendiente</span>';
       }
 
-      const cardStyle = 'border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;'
-        + (isHidden ? 'opacity:0.65;background:var(--frame-bg);' : '');
+      // Group uploads by document type (A2)
+      const typeMap = {};
+      docs.forEach(d => {
+        const t = String(d.doc_type || 'otro').trim().toLowerCase();
+        if (!typeMap[t]) typeMap[t] = [];
+        typeMap[t].push(d);
+      });
+      const numTypes = Object.keys(typeMap).length;
 
-      return '<div data-nuevo-row="' + esc(r.id) + '" style="' + cardStyle + '">'
-        + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
-        +   '<div style="font-weight:600;">' + esc(full) + '</div>'
-        +   (isHidden
-              ? '<span style="font-size:11px;color:var(--muted);white-space:nowrap;background:var(--border);padding:2px 6px;border-radius:6px;font-weight:600;">⛔ Desactivado</span>'
-              : (activated
-                  ? '<span style="font-size:11px;color:var(--green);white-space:nowrap;">✓ con cuenta</span>'
-                  : (complete
-                      ? '<span style="font-size:11px;color:var(--amber);white-space:nowrap;">sin cuenta</span>'
-                      : '<span style="font-size:11px;color:var(--muted);white-space:nowrap;">incompleto</span>')))
+      // Count wording (A4): "33 archivos · 6 tipos de documento · 28 verificados"
+      const docCountSummary = totalDocs + ' archivos · ' + numTypes + ' tipos de documento · ' + verifiedDocs + ' verificados';
+
+      const verifCountLabel = totalDocs ? (verifiedDocs + '/' + totalDocs + ' verificados') : 'Sin archivos';
+
+      // Summary row up front (A1)
+      const summaryHtml = '<div class="nuevo-summary-row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;user-select:none;min-height:44px;padding:4px 0;">'
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div style="font-weight:600;font-size:15px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(full) + '</div>'
+        +   '<div style="font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
+        +     esc(r.puesto || 'Sin puesto') + ' · ' + esc(verifCountLabel)
+        +   '</div>'
         + '</div>'
-        + '<div style="color:var(--muted);font-size:13px;">' + esc(r.email || '—') + '</div>'
-        + '<div style="color:var(--muted);font-size:13px;">' + esc(r.movil || 'sin móvil')
-        +   ' · paso ' + step + '/4</div>'
-        + (details ? '<div style="color:var(--muted);font-size:13px;">' + details + '</div>' : '')
-        + docLine
-        + '<div style="height:6px;background:var(--border);border-radius:99px;margin:8px 0;">'
-        +   '<div style="height:6px;width:' + pct + '%;background:var(--accent2);border-radius:99px;"></div></div>'
-        + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+        + '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'
+        +   statusMarker
+        +   '<span class="nuevo-chevron" style="font-size:13px;color:var(--muted);padding-left:4px;">' + (isOpen ? '▼' : '▶') + '</span>'
+        + '</div>'
+        + '</div>';
+
+      // Details inside (A2, A3, A4)
+      const infoHtml = '<div style="color:var(--muted);font-size:13px;margin-bottom:2px;">' + esc(r.email || '—') + '</div>'
+        + '<div style="color:var(--muted);font-size:13px;margin-bottom:4px;">' + esc(r.movil || 'sin móvil') + ' · paso ' + step + '/4</div>'
+        + (details ? ('<div style="color:var(--muted);font-size:13px;margin-bottom:6px;">' + details + '</div>') : '')
+        + '<div style="height:6px;background:var(--border);border-radius:99px;margin:8px 0 12px;">'
+        +   '<div style="height:6px;width:' + pct + '%;background:var(--accent2);border-radius:99px;"></div>'
+        + '</div>';
+
+      // Tier legend once at top of opened detail (A3)
+      const legendHtml = '<div class="nuevo-tier-legend" style="background:var(--input-bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin:10px 0;font-size:12px;line-height:1.5;color:var(--muted);">'
+        + '<div style="font-weight:600;color:var(--ink);margin-bottom:4px;">Prioridad de documentos:</div>'
+        + '<div>🔴 <strong>Crítico</strong> = obligatorio para poder contratar</div>'
+        + '<div>🟡 <strong>Importante</strong> = recomendado, no bloquea</div>'
+        + '<div>⚪ <strong>Opcional</strong> = no requerido</div>'
+        + '</div>';
+
+      let docGroupSection = '';
+      if (window.__nuevos_docs === null) {
+        docGroupSection = '<div style="color:var(--amber);font-size:13px;margin:8px 0;">📎 no disponible / no se pudieron cargar</div>';
+      } else if (!docs.length) {
+        docGroupSection = '<div style="color:var(--muted);font-size:13px;margin:8px 0;">📎 Sin archivos subidos</div>';
+      } else {
+        const ORDERED_TYPES = ['ine', 'nss', 'csf', 'comprobante', 'carta', 'certificacion'];
+        const allTypes = Array.from(new Set([...ORDERED_TYPES.filter(t => typeMap[t]), ...Object.keys(typeMap)]));
+
+        const groupsHtml = allTypes.map(t => {
+          const gDocs = typeMap[t] || [];
+          const gTotal = gDocs.length;
+          const gVerified = gDocs.filter(d => d.tier2_ok === true).length;
+          const gHasFailed = gDocs.some(d => d.tier2_ok === false);
+          const gAllOk = gTotal > 0 && gVerified === gTotal;
+
+          const typeName = t.toUpperCase();
+          const tierInfo = getDocTier(t);
+          const tierName = tierInfo ? tierInfo.tier : null;
+
+          let statusIco = '⏳';
+          let tierBadge = '';
+          if (gHasFailed) {
+            statusIco = '⚠️';
+            if (tierName === 'critical' || tierName === 'important') {
+              tierBadge = renderDocTierBadge(t);
+            }
+          } else if (gAllOk || gVerified > 0) {
+            statusIco = '✅';
+          } else {
+            statusIco = '⏳';
+            if (tierName === 'critical') {
+              tierBadge = renderDocTierBadge(t);
+            }
+          }
+
+          const fileCountStr = gTotal === 1 ? '1 archivo' : (gTotal + ' archivos');
+          const verifCountStr = gVerified + ' verificados';
+
+          return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;font-size:13px;margin-bottom:6px;">'
+            + '<div style="display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;text-overflow:ellipsis;">'
+            +   '<span>' + statusIco + '</span>'
+            +   '<strong style="color:var(--ink);">' + esc(typeName) + '</strong>'
+            +   '<span style="color:var(--muted);font-size:12px;">· ' + esc(fileCountStr) + ' · ' + esc(verifCountStr) + '</span>'
+            + '</div>'
+            + (tierBadge ? ('<div>' + tierBadge + '</div>') : '')
+            + '</div>';
+        }).join('');
+
+        docGroupSection = '<div style="font-weight:600;font-size:13px;color:var(--ink);margin:8px 0 6px;">'
+          + '📎 ' + esc(docCountSummary)
+          + '</div>'
+          + '<div style="margin-bottom:10px;">' + groupsHtml + '</div>';
+      }
+
+      const actionsHtml = '<div class="nuevo-actions-wrap" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">'
         + (isHidden
             ? '<button class="btn btn-outline" data-nuevo-reactivate="' + esc(r.id) + '"'
               + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;color:var(--green);font-weight:600;">🔄 Reactivar</button>'
@@ -10738,9 +11338,50 @@
             ? '<button class="btn btn-outline" data-nuevo-delete="' + esc(r.id) + '"'
               + ' style="min-height:44px;font-size:16px;padding:10px 14px;margin:0;width:100%;color:var(--red);">🗑️ Eliminar</button>'
             : '')
-        + '</div></div>';
+        + '</div>';
+
+      const detailsHtml = '<div class="nuevo-details ' + (isOpen ? '' : 'hidden') + '" data-no-card-open style="'
+        + (isOpen ? '' : 'display:none;') + 'margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">'
+        + infoHtml + legendHtml + docGroupSection + actionsHtml
+        + '</div>';
+
+      const cardStyle = 'border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;'
+        + (isHidden ? 'opacity:0.65;background:var(--frame-bg);' : '');
+
+      return '<div data-nuevo-row="' + esc(r.id) + '" style="' + cardStyle + '">'
+        + summaryHtml + detailsHtml
+        + '</div>';
     }).join('');
   }
+
+  // Delegated toggle handler for nuevo summary rows (A1)
+  document.addEventListener('click', (e) => {
+    if (!e.target || !e.target.closest) return;
+    if (e.target.closest('[data-no-card-open]')) return;
+    const summaryRow = e.target.closest('.nuevo-summary-row');
+    if (!summaryRow) return;
+    const card = summaryRow.closest('div[data-nuevo-row]');
+    if (!card) return;
+    const id = card.getAttribute('data-nuevo-row');
+    if (!id) return;
+    if (!window.__nuevos_open_ids) window.__nuevos_open_ids = new Set();
+    const wasOpen = window.__nuevos_open_ids.has(id);
+    if (wasOpen) {
+      window.__nuevos_open_ids.delete(id);
+    } else {
+      window.__nuevos_open_ids.add(id);
+    }
+    const isOpen = window.__nuevos_open_ids.has(id);
+    const details = card.querySelector('.nuevo-details');
+    const chevron = card.querySelector('.nuevo-chevron');
+    if (details) {
+      details.style.display = isOpen ? '' : 'none';
+      details.classList.toggle('hidden', !isOpen);
+    }
+    if (chevron) {
+      chevron.textContent = isOpen ? '▼' : '▶';
+    }
+  });
 
   // Activation creates the auth user + profiles row through the same manage-user
   // function Usuarios uses — one code path for account creation, not a second one.
@@ -11547,8 +12188,8 @@
 
   async function loadRoadmap() {
     const prof = currentProfile || window.currentProfile;
-    const isRecl = prof ? isManagement(prof.role, prof.level, prof.active) : false;
-    if (!isRecl) {
+    const isOwnerUser = prof ? isOwner(prof.role, prof.level, prof.active) : false;
+    if (!isOwnerUser) {
       goHome();
       return;
     }
@@ -11591,6 +12232,8 @@
     const listEl = $('roadmap-list');
     if (!listEl) return;
 
+    if (!window.__roadmap_open_ids) window.__roadmap_open_ids = new Set();
+
     if (!rows || !rows.length) {
       listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:12px;margin:12px 0;">'
         + '<div style="font-size:2rem;margin-bottom:8px;">🗺️</div>'
@@ -11601,13 +12244,70 @@
     }
 
     const prof = currentProfile || window.currentProfile;
-    const isDueno = prof && String(prof.role || '') === 'Dueño' && coalesceActive(prof.active);
+    const isOwnerUser = prof ? isOwner(prof.role, prof.level, prof.active) : false;
+
+    // B5: Count of items awaiting approval & prominent banner
+    const waitingCount = rows.filter(r => (r.status || 'suggested') === 'suggested').length;
+    let waitingBannerHtml = '';
+    if (waitingCount > 0) {
+      const countText = waitingCount === 1 ? '1 sugerencia pendiente de aprobación' : (waitingCount + ' sugerencias pendientes de aprobación');
+      waitingBannerHtml = '<div class="roadmap-waiting-banner" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;background:rgba(26,86,219,0.08);border:1px solid rgba(26,86,219,0.25);border-radius:10px;margin-bottom:12px;font-size:14px;color:var(--ink);">'
+        + '<div style="display:flex;align-items:center;gap:8px;">'
+        +   '<span style="font-size:18px;">💡</span>'
+        +   '<strong>' + esc(countText) + '</strong>'
+        + '</div>'
+        + '<span style="font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;">Esperando tu decisión</span>'
+        + '</div>';
+    }
 
     const html = rows.map((r, idx) => {
+      const isOpen = window.__roadmap_open_ids.has(r.id);
       const isAgy = !!(r.agy_task && String(r.agy_task).trim());
       const stKey = (r.status && ROADMAP_STATUSES[r.status]) ? r.status : 'suggested';
       const st = ROADMAP_STATUSES[stKey];
+      const isSuggested = stKey === 'suggested';
 
+      // Status chip (B5: prominent '💡 Sugerido' chip)
+      const statusChipHtml = isSuggested
+        ? '<span class="roadmap-chip" style="background:rgba(26,86,219,0.18);border:1px solid rgba(26,86,219,0.4);color:#1a56db;font-weight:700;">💡 Sugerido</span>'
+        : '<span class="roadmap-chip" style="background:' + st.bg + ';color:' + st.color + ';">' + st.ico + ' ' + esc(st.label) + '</span>';
+
+      // Explicit approve action button in collapsed row (B5)
+      const approveBtnHtml = isSuggested
+        ? '<button type="button" class="btn btn-outline" data-roadmap-approve="' + esc(r.id) + '" data-no-card-open style="min-height:44px;font-size:13px;padding:6px 12px;margin:0;color:var(--green);font-weight:700;border-color:var(--green);white-space:nowrap;background:rgba(31,122,77,0.08);">👍 Aprobar</button>'
+        : '';
+
+      // Desktop collapsed row (B4: dense table-like row; B2: title, category, description, status)
+      const desktopRowHtml = '<div class="roadmap-desktop roadmap-row-collapsed" style="cursor:pointer;padding:10px 14px;align-items:center;user-select:none;">'
+        + '<div style="font-weight:700;font-size:12px;color:var(--muted);">#' + (idx + 1) + '</div>'
+        + '<div style="font-weight:600;font-size:0.95rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(r.title || '') + '">' + esc(r.title || '(sin título)') + '</div>'
+        + '<div><span class="roadmap-chip roadmap-chip-area">' + esc(r.area || 'General') + '</span></div>'
+        + '<div class="roadmap-why-clamp" title="' + esc(r.why || '') + '">' + esc(r.why || '—') + '</div>'
+        + '<div>' + statusChipHtml + '</div>'
+        + '<div style="text-align:center;">' + (approveBtnHtml || '<span style="color:var(--muted);font-size:12px;">—</span>') + '</div>'
+        + '<div class="roadmap-chevron" style="color:var(--muted);text-align:right;font-size:13px;">' + (isOpen ? '▼' : '▶') + '</div>'
+        + '</div>';
+
+      // Mobile collapsed row (B4: compressed card; B2: title, category, description, status; no horizontal scroll)
+      const mobileRowHtml = '<div class="roadmap-mobile roadmap-row-collapsed" style="cursor:pointer;padding:12px;user-select:none;">'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'
+        +   '<div style="flex:1;min-width:0;display:flex;align-items:flex-start;gap:6px;">'
+        +     '<span style="font-size:12px;color:var(--muted);font-weight:700;padding-top:2px;">#' + (idx + 1) + '</span>'
+        +     '<span style="font-weight:700;font-size:0.95rem;color:var(--ink);word-break:break-word;">' + esc(r.title || '(sin título)') + '</span>'
+        +   '</div>'
+        +   '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
+        +     statusChipHtml
+        +     '<span class="roadmap-chevron" style="color:var(--muted);font-size:13px;padding-left:2px;">' + (isOpen ? '▼' : '▶') + '</span>'
+        +   '</div>'
+        + '</div>'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap;">'
+        +   '<span class="roadmap-chip roadmap-chip-area">' + esc(r.area || 'General') + '</span>'
+        +   approveBtnHtml
+        + '</div>'
+        + '<div class="roadmap-why-clamp">' + esc(r.why || '—') + '</div>'
+        + '</div>';
+
+      // Details behind a click (B3: agy_task, result_note, drag handle, ▲/▼, and delete)
       let inFlightHtml = '';
       if (r.dispatched_at || r.dispatched_model || r.result_ref) {
         const dAt = r.dispatched_at ? new Date(r.dispatched_at).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : null;
@@ -11648,28 +12348,24 @@
         return '<option value="' + k + '"' + sel + '>' + opt.ico + ' ' + esc(opt.label) + '</option>';
       }).join('');
 
-      return '<div class="roadmap-item" data-id="' + esc(r.id) + '" tabindex="0">'
+      const detailsHtml = '<div class="roadmap-item-details ' + (isOpen ? '' : 'hidden') + '" data-no-card-open style="'
+        + (isOpen ? '' : 'display:none;') + 'margin-top:12px;padding:12px;border-top:1px solid var(--border);">'
         + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;">'
         +   '<div class="roadmap-drag-handle" touch-action="none" title="Arrastrar para ordenar" style="touch-action:none;-webkit-touch-action:none;min-height:44px;padding:0 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:6px;cursor:grab;user-select:none;-webkit-user-select:none;">'
         +     '<span style="font-size:16px;pointer-events:none;">⠿</span>'
         +     '<span style="font-size:13px;font-weight:600;color:var(--muted);pointer-events:none;">Arrastrar</span>'
         +   '</div>'
         +   '<div style="display:flex;align-items:center;gap:6px;">'
-        +     '<span style="font-size:12px;color:var(--muted);font-weight:600;margin-right:2px;">#' + (idx + 1) + '</span>'
+        +     '<span style="font-size:12px;color:var(--muted);font-weight:600;margin-right:2px;">Prioridad #' + (idx + 1) + '</span>'
         +     '<button type="button" class="btn btn-outline roadmap-move-btn" data-roadmap-move="up" data-id="' + esc(r.id) + '" style="min-height:44px;min-width:44px;padding:0;margin:0;display:flex;align-items:center;justify-content:center;font-size:16px;" aria-label="Subir prioridad" title="Subir prioridad"' + (idx === 0 ? ' disabled' : '') + '>▲</button>'
         +     '<button type="button" class="btn btn-outline roadmap-move-btn" data-roadmap-move="down" data-id="' + esc(r.id) + '" style="min-height:44px;min-width:44px;padding:0;margin:0;display:flex;align-items:center;justify-content:center;font-size:16px;" aria-label="Bajar prioridad" title="Bajar prioridad"' + (idx === rows.length - 1 ? ' disabled' : '') + '>▼</button>'
         +   '</div>'
         + '</div>'
-        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'
-        +   '<div style="font-weight:700;font-size:1.05rem;color:var(--ink);flex:1;">' + esc(r.title || '(sin título)') + '</div>'
-        +   '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">'
-        +     '<span class="roadmap-chip roadmap-chip-area">' + esc(r.area || 'General') + '</span>'
-        +     '<span class="roadmap-chip" style="background:' + st.bg + ';color:' + st.color + ';">' + st.ico + ' ' + esc(st.label) + '</span>'
-        +   '</div>'
+        + '<div style="font-size:0.9rem;line-height:1.4;color:var(--ink);margin:8px 0;">'
+        +   '<strong>Descripción:</strong> ' + esc(r.why || 'Sin descripción')
         + '</div>'
-        + (r.why ? ('<div style="font-size:0.9rem;line-height:1.4;color:var(--ink);margin:6px 0;">' + esc(r.why) + '</div>') : '')
         + '<div style="font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:0.8rem;color:var(--muted);background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin:8px 0;word-break:break-word;">'
-        +   '<code>' + esc(r.evidence || 'Sin evidencia') + '</code>'
+        +   '<strong>Evidencia:</strong> <code>' + esc(r.evidence || 'Sin evidencia') + '</code>'
         + '</div>'
         + kindBadgeHtml
         + inFlightHtml
@@ -11687,13 +12383,18 @@
         + '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">'
         +   '<button type="button" class="btn btn-outline" data-roadmap-edit="' + esc(r.id) + '" style="flex:1;min-height:44px;font-size:16px;margin:0;padding:10px 14px;">✏️ Editar</button>'
         +   '<button type="button" class="btn" data-roadmap-save="' + esc(r.id) + '" style="flex:1;min-height:44px;font-size:16px;margin:0;padding:10px 14px;">💾 Guardar</button>'
+        +   '<button type="button" class="btn btn-outline" data-roadmap-delete="' + esc(r.id) + '" style="min-height:44px;font-size:16px;margin:0;padding:10px 14px;color:var(--red);border-color:var(--red);">🗑️ Eliminar</button>'
         + '</div>'
+        + '</div>';
+
+      return '<div class="roadmap-item" data-id="' + esc(r.id) + '" tabindex="0" style="padding:0;">'
+        + desktopRowHtml
+        + mobileRowHtml
+        + detailsHtml
         + '</div>';
     }).join('');
 
-    const noticeHtml = isDueno ? '' : '<div style="padding:8px 12px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--muted);font-size:0.85rem;margin-bottom:12px;">👁️ Vista de consulta (Gerente). Solo el Dueño puede guardar cambios en el roadmap.</div>';
-
-    listEl.innerHTML = noticeHtml + html;
+    listEl.innerHTML = waitingBannerHtml + html;
 
     attachRoadmapListeners();
   }
@@ -11701,6 +12402,51 @@
   function attachRoadmapListeners() {
     const container = $('roadmap-list');
     if (!container) return;
+
+    // Collapsed row click toggle
+    container.querySelectorAll('.roadmap-row-collapsed').forEach(rowEl => {
+      rowEl.addEventListener('click', (e) => {
+        if (e.target.closest('[data-no-card-open]')) return;
+        if (e.target.closest('[data-roadmap-approve]')) return;
+        const itemEl = rowEl.closest('.roadmap-item');
+        if (!itemEl) return;
+        const id = itemEl.getAttribute('data-id');
+        if (!id) return;
+        if (!window.__roadmap_open_ids) window.__roadmap_open_ids = new Set();
+        const wasOpen = window.__roadmap_open_ids.has(id);
+        if (wasOpen) {
+          window.__roadmap_open_ids.delete(id);
+        } else {
+          window.__roadmap_open_ids.add(id);
+        }
+        const isOpen = window.__roadmap_open_ids.has(id);
+        const detailsEl = itemEl.querySelector('.roadmap-item-details');
+        const chevrons = itemEl.querySelectorAll('.roadmap-chevron');
+        if (detailsEl) {
+          detailsEl.style.display = isOpen ? '' : 'none';
+          detailsEl.classList.toggle('hidden', !isOpen);
+        }
+        chevrons.forEach(ch => { ch.textContent = isOpen ? '▼' : '▶'; });
+      });
+    });
+
+    // Explicit approve action (B5)
+    container.querySelectorAll('[data-roadmap-approve]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const id = btn.getAttribute('data-roadmap-approve');
+        await approveRoadmapItem(id, btn);
+      });
+    });
+
+    // Delete item (B3)
+    container.querySelectorAll('[data-roadmap-delete]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const id = btn.getAttribute('data-roadmap-delete');
+        await deleteRoadmapItem(id);
+      });
+    });
 
     container.querySelectorAll('.roadmap-drag-handle').forEach(handle => {
       handle.addEventListener('pointerdown', onDragPointerDown);
@@ -11727,6 +12473,59 @@
         await saveRoadmapRow(id, btn);
       });
     });
+  }
+
+  async function approveRoadmapItem(id, btn) {
+    if (!id) return;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Aprobando…';
+    }
+    try {
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from('roadmap')
+        .update({ status: 'approved', updated_at: nowIso })
+        .eq('id', id);
+      if (error) throw error;
+      const item = (window.__roadmap_cache || []).find(r => r.id === id);
+      if (item) {
+        item.status = 'approved';
+        item.updated_at = nowIso;
+      }
+      toast('Tarea aprobada 👍');
+      renderRoadmap(window.__roadmap_cache || []);
+    } catch (err) {
+      console.error('[nudo:roadmap-approve]', err);
+      showMsg($('roadmap-msg'), 'Error al aprobar tarea: ' + (err.message || String(err)), 'err');
+      toast('Error al aprobar: ' + (err.message || String(err)), 3000);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '👍 Aprobar';
+      }
+    }
+  }
+
+  async function deleteRoadmapItem(id) {
+    if (!id) return;
+    const item = (window.__roadmap_cache || []).find(r => r.id === id);
+    const title = item ? (item.title || 'esta tarea') : 'esta tarea';
+    if (!confirm('¿Deseas eliminar del roadmap: "' + title + '"?')) return;
+    try {
+      const { error } = await supabase
+        .from('roadmap')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      window.__roadmap_cache = (window.__roadmap_cache || []).filter(r => r.id !== id);
+      if (window.__roadmap_open_ids) window.__roadmap_open_ids.delete(id);
+      toast('Tarea eliminada');
+      renderRoadmap(window.__roadmap_cache || []);
+    } catch (err) {
+      console.error('[nudo:roadmap-delete]', err);
+      showMsg($('roadmap-msg'), 'Error al eliminar tarea: ' + (err.message || String(err)), 'err');
+      toast('Error al eliminar: ' + (err.message || String(err)), 3000);
+    }
   }
 
   function onDragPointerDown(e) {
@@ -11846,8 +12645,8 @@
     if (newIndex === -1 || !newRows[newIndex]) return;
 
     const prof = currentProfile || window.currentProfile;
-    const isDueno = prof && String(prof.role || '') === 'Dueño' && coalesceActive(prof.active);
-    if (!isDueno) {
+    const isOwnerUser = prof ? isOwner(prof.role, prof.level, prof.active) : false;
+    if (!isOwnerUser) {
       if (fallbackNodes && container) {
         fallbackNodes.forEach(n => container.appendChild(n));
       }
@@ -12015,6 +12814,14 @@
     $('roadmap-modal-area').value = item.area || '';
     $('roadmap-modal-why').value = item.why || '';
     $('roadmap-modal-evidence').value = item.evidence || '';
+    const stEl = $('roadmap-modal-status');
+    if (stEl) {
+      stEl.innerHTML = Object.keys(ROADMAP_STATUSES).map(k => {
+        const opt = ROADMAP_STATUSES[k];
+        const sel = (k === (item.status || 'suggested')) ? ' selected' : '';
+        return '<option value="' + k + '"' + sel + '>' + opt.ico + ' ' + esc(opt.label) + '</option>';
+      }).join('');
+    }
     clearMsg($('roadmap-edit-msg'));
 
     $('roadmap-edit-modal').classList.remove('hidden');
@@ -12031,6 +12838,7 @@
     const area = ($('roadmap-modal-area').value || '').trim();
     const why = ($('roadmap-modal-why').value || '').trim();
     const evidence = ($('roadmap-modal-evidence').value || '').trim();
+    const status = ($('roadmap-modal-status') ? $('roadmap-modal-status').value : null) || 'suggested';
 
     if (!title) {
       showMsg($('roadmap-edit-msg'), 'El título es obligatorio.', 'err');
@@ -12048,6 +12856,7 @@
         area: area || null,
         why: why || null,
         evidence: evidence || null,
+        status: status,
         updated_at: new Date().toISOString()
       })
       .eq('id', roadmapEditTargetId);
@@ -12064,6 +12873,7 @@
         item.area = area || null;
         item.why = why || null;
         item.evidence = evidence || null;
+        item.status = status;
         item.updated_at = new Date().toISOString();
       }
       closeRoadmapEditModal();
@@ -12077,9 +12887,1037 @@
   if ($('roadmap-edit-close-top')) $('roadmap-edit-close-top').addEventListener('click', closeRoadmapEditModal);
   if ($('roadmap-refresh-btn')) $('roadmap-refresh-btn').addEventListener('click', loadRoadmap);
 
+  // =========================================================================
+  // CALENDARIO DE MANTENIMIENTO RECURRENTE (Ben)
+  // =========================================================================
+  let calSchedulesCache = [];
+  let calTasksCache = [];
+  let calEvidenceCache = [];
+  let calSignedUrlsCache = {};
+  let calCurrentTab = 'vencer';
+  let calActiveTaskId = null;
+  let calActiveScheduleId = null;
+  let calExpandedHistTaskIds = new Set();
+  let calIsSubmitting = false;
+
+  function formatCalDate(dStr) {
+    if (!dStr) return '—';
+    try {
+      const parts = dStr.split('-');
+      if (parts.length === 3) {
+        const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        const mIdx = parseInt(parts[1], 10) - 1;
+        return parseInt(parts[2], 10) + ' ' + (months[mIdx] || parts[1]) + ' ' + parts[0];
+      }
+      return dStr;
+    } catch (e) {
+      console.warn('[cal-mant] formatCalDate err:', e);
+      return dStr;
+    }
+  }
+
+  function formatCalDateTime(isoStr) {
+    if (!isoStr) return '—';
+    try {
+      const dt = new Date(isoStr);
+      if (isNaN(dt.getTime())) return isoStr;
+      const d = dt.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+      const t = dt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+      return d + ' ' + t;
+    } catch (e) {
+      console.warn('[cal-mant] formatCalDateTime err:', e);
+      return isoStr;
+    }
+  }
+
+  function getDaysDiff(dateStr) {
+    if (!dateStr) return 0;
+    try {
+      const now = new Date();
+      const todayStr = (new Date(now.getTime() - now.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
+      const tDue = new Date(dateStr + 'T00:00:00').getTime();
+      const tNow = new Date(todayStr + 'T00:00:00').getTime();
+      return Math.round((tDue - tNow) / 86400000);
+    } catch (e) {
+      console.warn('[cal-mant] getDaysDiff err:', e);
+      return 0;
+    }
+  }
+
+  async function loadCalendarioMant() {
+    const msgEl = $('cal-mant-msg');
+    clearMsg(msgEl);
+
+    // Guard schedule admin button by management role
+    const prof = currentProfile || window.currentProfile;
+    const isMgmt = prof ? isManagement(prof.role, prof.level, prof.active) : false;
+    const schedBtn = $('cal-schedules-btn');
+    if (schedBtn) schedBtn.style.display = isMgmt ? '' : 'none';
+
+    try {
+      const [sRes, tRes, eRes] = await Promise.all([
+        supabase.from('maintenance_schedules').select('*').order('title'),
+        supabase.from('maintenance_tasks').select('*').order('due_date'),
+        supabase.from('maintenance_evidence').select('*').order('uploaded_at', { ascending: false })
+      ]);
+
+      if (sRes.error) throw sRes.error;
+      if (tRes.error) throw tRes.error;
+      if (eRes.error) throw eRes.error;
+
+      calSchedulesCache = sRes.data || [];
+      calTasksCache = tRes.data || [];
+      calEvidenceCache = eRes.data || [];
+
+      // Auto-populate category filter in Historial
+      const catFilter = $('cal-hist-cat-filter');
+      if (catFilter) {
+        const curVal = catFilter.value || 'all';
+        const cats = Array.from(new Set(calSchedulesCache.map(s => s.category).filter(Boolean))).sort();
+        catFilter.innerHTML = '<option value="all">Todas las categorías</option>' +
+          cats.map(c => '<option value="' + esc(c) + '"' + (c === curVal ? ' selected' : '') + '>' + esc(c) + '</option>').join('');
+      }
+
+      renderCalCumplimiento();
+      renderCalPorVencer();
+      renderCalHistorial();
+    } catch (err) {
+      console.error('[cal-mant] loadCalendarioMant err:', err);
+      showMsg(msgEl, 'Error al cargar calendario de mantenimiento: ' + (err.message || String(err)), 'err');
+      const vList = $('cal-vencer-list');
+      if (vList) vList.innerHTML = '<div style="padding:16px;color:var(--red);">⚠️ No se pudieron cargar las tareas pendientes: ' + esc(err.message || String(err)) + '</div>';
+      const hList = $('cal-historial-list');
+      if (hList) hList.innerHTML = '<div style="padding:16px;color:var(--red);">⚠️ No se pudo cargar el historial: ' + esc(err.message || String(err)) + '</div>';
+    }
+  }
+
+  function renderCalCumplimiento() {
+    const container = $('cal-cumplimiento-cards');
+    if (!container) return;
+
+    const now = new Date();
+    const todayStr = (new Date(now.getTime() - now.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 86400000).toISOString().slice(0, 10);
+
+    const schedMap = new Map(calSchedulesCache.map(s => [s.id, s]));
+
+    // Determine branches: 'Roma Norte', 'Del Valle', 'Los dos'
+    const branchSet = new Set(['Roma Norte', 'Del Valle', 'Los dos']);
+    calTasksCache.forEach(t => { if (t.branch) branchSet.add(t.branch); });
+    calSchedulesCache.forEach(s => { if (s.branch) branchSet.add(s.branch); });
+    const branches = Array.from(branchSet);
+
+    let html = '';
+    branches.forEach(br => {
+      const openBranchTasks = calTasksCache.filter(t => t.branch === br && t.status === 'pendiente');
+      let overdueCount = 0;
+      let dueSoonCount = 0;
+
+      openBranchTasks.forEach(t => {
+        const s = schedMap.get(t.schedule_id) || {};
+        const lead = (s.lead_days != null ? s.lead_days : 7);
+        const diff = getDaysDiff(t.due_date);
+        if (diff < 0) {
+          overdueCount++;
+        } else if (diff <= lead) {
+          dueSoonCount++;
+        }
+      });
+
+      // 90-day completion rate
+      const completed90d = calTasksCache.filter(t => t.branch === br && t.status === 'hecho' && t.completed_at && t.completed_at.slice(0, 10) >= ninetyDaysAgo);
+      let onTimeCount = 0;
+      completed90d.forEach(t => {
+        const compDate = (t.completed_at || '').slice(0, 10);
+        if (compDate && t.due_date && compDate <= t.due_date) {
+          onTimeCount++;
+        }
+      });
+      const ratePct = completed90d.length > 0 ? Math.round((onTimeCount / completed90d.length) * 100) : 100;
+
+      const overdueClass = overdueCount > 0 ? 'cal-kpi-bad' : 'cal-kpi-ok';
+      const dueSoonClass = dueSoonCount > 0 ? 'cal-kpi-warn' : '';
+
+      html += '<div class="cal-branch-summary">'
+        + '<div class="cal-branch-name">'
+        +   '<span>📍 ' + esc(br) + '</span>'
+        +   '<span style="font-size:0.75rem;font-weight:600;color:var(--muted);">' + openBranchTasks.length + ' pendiente' + (openBranchTasks.length === 1 ? '' : 's') + '</span>'
+        + '</div>'
+        + '<div class="cal-kpi-row">'
+        +   '<div class="cal-kpi">'
+        +     '<span class="cal-kpi-val ' + overdueClass + '">' + overdueCount + '</span>'
+        +     '<span class="cal-kpi-lbl">Vencidas</span>'
+        +   '</div>'
+        +   '<div class="cal-kpi">'
+        +     '<span class="cal-kpi-val ' + dueSoonClass + '">' + dueSoonCount + '</span>'
+        +     '<span class="cal-kpi-lbl">Por vencer</span>'
+        +   '</div>'
+        +   '<div class="cal-kpi">'
+        +     '<span class="cal-kpi-val cal-kpi-rate">' + ratePct + '%</span>'
+        +     '<span class="cal-kpi-lbl">A tiempo (90d)</span>'
+        +   '</div>'
+        + '</div>'
+        + '</div>';
+    });
+
+    container.innerHTML = html;
+  }
+
+  function renderCalPorVencer() {
+    const listEl = $('cal-vencer-list');
+    if (!listEl) return;
+
+    const schedMap = new Map(calSchedulesCache.map(s => [s.id, s]));
+
+    // Evidence count map
+    const evCountMap = new Map();
+    calEvidenceCache.forEach(e => {
+      evCountMap.set(e.task_id, (evCountMap.get(e.task_id) || 0) + 1);
+    });
+
+    // Tab 1: every task whose due_date is within lead_days, PLUS overdue
+    const qualifyingTasks = calTasksCache.filter(t => {
+      if (t.status !== 'pendiente') return false;
+      const sched = schedMap.get(t.schedule_id) || {};
+      const lead = (sched.lead_days != null ? sched.lead_days : 7);
+      const diff = getDaysDiff(t.due_date);
+      return diff < 0 || diff <= lead;
+    });
+
+    // Group by branch FIRST
+    const branchBuckets = {
+      'Roma Norte': [],
+      'Del Valle': [],
+      'Los dos': []
+    };
+    qualifyingTasks.forEach(t => {
+      const br = t.branch || 'Roma Norte';
+      if (!branchBuckets[br]) branchBuckets[br] = [];
+      branchBuckets[br].push(t);
+    });
+
+    // Sort tasks in each branch by due_date ascending
+    Object.keys(branchBuckets).forEach(br => {
+      branchBuckets[br].sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''));
+    });
+
+    let html = '';
+    const branches = Object.keys(branchBuckets);
+
+    branches.forEach(br => {
+      const tasks = branchBuckets[br];
+      html += '<div class="cal-group-header">'
+        + '<span>📍 ' + esc(br) + '</span>'
+        + '<span class="cal-group-count">' + tasks.length + ' tarea' + (tasks.length === 1 ? '' : 's') + '</span>'
+        + '</div>';
+
+      if (tasks.length === 0) {
+        html += '<div style="padding:12px;background:var(--input-bg);border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-size:0.85rem;margin-bottom:10px;">'
+          + '✅ Todo al día en ' + esc(br) + '. No hay servicios pendientes por vencer.'
+          + '</div>';
+        return;
+      }
+
+      tasks.forEach(t => {
+        const sched = schedMap.get(t.schedule_id) || {};
+        const diff = getDaysDiff(t.due_date);
+        const isOverdue = diff < 0;
+        const isDueToday = diff === 0;
+        const evCount = evCountMap.get(t.id) || 0;
+        const reqEvidence = (sched.requires_evidence !== false);
+
+        // Status badge
+        let badgeHtml = '';
+        if (isOverdue) {
+          const daysOver = Math.abs(diff);
+          badgeHtml = '<span class="cal-badge-overdue">🔴 Vencido hace ' + daysOver + ' día' + (daysOver === 1 ? '' : 's') + '</span>';
+        } else if (isDueToday) {
+          badgeHtml = '<span class="cal-badge-today">🟡 Vence hoy</span>';
+        } else {
+          badgeHtml = '<span class="cal-badge-soon">⏳ Quedan ' + diff + ' día' + (diff === 1 ? '' : 's') + '</span>';
+        }
+
+        // Evidence badge
+        let evBadgeHtml = '';
+        if (evCount > 0) {
+          evBadgeHtml = '<span class="cal-evidence-badge ok">📎 ' + evCount + ' foto' + (evCount === 1 ? '' : 's') + '</span>';
+        } else if (reqEvidence) {
+          evBadgeHtml = '<span class="cal-evidence-badge req">📷 Requiere foto</span>';
+        } else {
+          evBadgeHtml = '<span class="cal-evidence-badge">Sin fotos</span>';
+        }
+
+        const title = sched.title || 'Mantenimiento recurrente';
+        const category = sched.category || 'Mantenimiento';
+        const vendorText = sched.vendor_name ? '🏢 ' + esc(sched.vendor_name) : '';
+        const cardClass = 'cal-task-card' + (isOverdue ? ' overdue' : (isDueToday ? ' due-today' : ''));
+
+        html += '<div class="' + cardClass + '" data-id="' + esc(t.id) + '">'
+          + '<div class="cal-task-top">'
+          +   '<div>'
+          +     '<span class="cal-task-title">' + esc(title) + '</span>'
+          +     '<span class="cal-task-category">' + esc(category) + '</span>'
+          +   '</div>'
+          +   '<div>' + badgeHtml + '</div>'
+          + '</div>'
+          + '<div class="cal-task-meta">'
+          +   '<span>📅 Programada: <b>' + esc(formatCalDate(t.due_date)) + '</b></span>'
+          +   (vendorText ? '<span>' + vendorText + '</span>' : '')
+          +   '<span>' + evBadgeHtml + '</span>'
+          + '</div>'
+          + (sched.notes ? '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;font-style:italic;">💡 ' + esc(sched.notes) + '</div>' : '')
+          + '<div class="cal-task-actions">'
+          +   '<button type="button" class="btn" data-cal-complete="' + esc(t.id) + '" data-no-card-open style="flex:1;min-height:44px;font-size:15px;margin:0;padding:8px 14px;">✅ Marcar hecho</button>'
+          +   '<button type="button" class="btn btn-outline" data-cal-sooner="' + esc(t.id) + '" data-no-card-open style="flex:1;min-height:44px;font-size:15px;margin:0;padding:8px 14px;">⚡ Solicitar antes</button>'
+          + '</div>'
+          + '</div>';
+      });
+    });
+
+    listEl.innerHTML = html;
+    attachCalVencerListeners();
+  }
+
+  function attachCalVencerListeners() {
+    const container = $('cal-vencer-list');
+    if (!container) return;
+
+    container.querySelectorAll('[data-cal-complete]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const id = btn.getAttribute('data-cal-complete');
+        openCalCompleteModal(id);
+      });
+    });
+
+    container.querySelectorAll('[data-cal-sooner]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const id = btn.getAttribute('data-cal-sooner');
+        openCalSoonerModal(id);
+      });
+    });
+  }
+
+  function renderCalHistorial() {
+    const listEl = $('cal-historial-list');
+    if (!listEl) return;
+
+    const schedMap = new Map(calSchedulesCache.map(s => [s.id, s]));
+
+    // Completed tasks, newest first
+    let completedTasks = calTasksCache.filter(t => t.status === 'hecho');
+    completedTasks.sort((a, b) => {
+      const da = a.completed_at || a.due_date || '';
+      const db = b.completed_at || b.due_date || '';
+      return db.localeCompare(da);
+    });
+
+    // Apply branch filter
+    const branchFilter = ($('cal-hist-branch-filter') && $('cal-hist-branch-filter').value) || 'all';
+    if (branchFilter !== 'all') {
+      completedTasks = completedTasks.filter(t => t.branch === branchFilter);
+    }
+
+    // Apply category filter
+    const catFilter = ($('cal-hist-cat-filter') && $('cal-hist-cat-filter').value) || 'all';
+    if (catFilter !== 'all') {
+      completedTasks = completedTasks.filter(t => {
+        const s = schedMap.get(t.schedule_id) || {};
+        return s.category === catFilter;
+      });
+    }
+
+    if (completedTasks.length === 0) {
+      listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:8px;">'
+        + 'No hay registros completados que coincidan con los filtros seleccionados.'
+        + '</div>';
+      return;
+    }
+
+    let html = '';
+    completedTasks.forEach(t => {
+      const sched = schedMap.get(t.schedule_id) || {};
+      const title = sched.title || 'Mantenimiento';
+      const category = sched.category || 'Mantenimiento';
+      const isOpen = calExpandedHistTaskIds.has(t.id);
+      const evList = calEvidenceCache.filter(e => e.task_id === t.id);
+
+      html += '<div class="cal-hist-item" data-hist-id="' + esc(t.id) + '">'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">'
+        +   '<div>'
+        +     '<span style="font-weight:700;font-size:1rem;color:var(--ink);">' + esc(title) + '</span>'
+        +     '<span class="cal-task-category">' + esc(category) + '</span>'
+        +     '<div style="font-size:0.85rem;color:var(--muted);margin-top:4px;">📍 ' + esc(t.branch || '—') + ' · Fecha: ' + esc(formatCalDateTime(t.completed_at || t.due_date)) + '</div>'
+        +   '</div>'
+        +   '<div style="text-align:right;">'
+        +     '<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:6px;background:rgba(46,125,50,0.1);color:#2e7d32;font-weight:700;">✅ Hecho</span>'
+        +     '<div style="font-size:0.8rem;color:var(--muted);margin-top:4px;">' + (isOpen ? '▲ Menos' : '▼ Ver fotos (' + evList.length + ')') + '</div>'
+        +   '</div>'
+        + '</div>';
+
+      if (isOpen) {
+        html += '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);font-size:0.85rem;">'
+          + '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:8px;margin-bottom:8px;">'
+          +   '<div><b>Realizado por:</b> ' + esc(t.completed_by_name || '—') + '</div>'
+          +   '<div><b>Proveedor:</b> ' + esc(t.vendor_name || sched.vendor_name || '—') + '</div>'
+          +   '<div><b>Costo:</b> ' + (t.cost != null ? '$' + Number(t.cost).toFixed(2) : '—') + '</div>'
+          +   '<div><b>Vencimiento original:</b> ' + esc(formatCalDate(t.due_date)) + '</div>'
+          + '</div>'
+          + (t.notes ? '<div style="margin:8px 0;background:var(--input-bg);padding:8px 10px;border-radius:6px;"><b>Notas:</b> ' + esc(t.notes) + '</div>' : '');
+
+        if (evList.length > 0) {
+          html += '<div style="margin-top:10px;">'
+            + '<b>Evidencia (' + evList.length + '):</b>'
+            + '<div class="cal-hist-evidence-grid" id="cal-ev-grid-' + esc(t.id) + '">'
+            +   evList.map(ev => {
+                  const signed = calSignedUrlsCache[ev.storage_path];
+                  const srcAttr = signed ? ' src="' + esc(signed) + '"' : ' data-storage-path="' + esc(ev.storage_path) + '"';
+                  return '<div style="display:inline-block;text-align:center;">'
+                    + '<img class="cal-hist-thumb"' + srcAttr + ' alt="Evidencia" title="Toca para ver en grande" data-open-photo />'
+                    + '<span style="display:block;font-size:0.7rem;color:var(--muted);">' + esc(ev.kind || 'foto') + '</span>'
+                    + '</div>';
+                }).join('')
+            + '</div>'
+            + '</div>';
+        } else {
+          html += '<div style="margin-top:8px;color:var(--muted);font-style:italic;">Sin fotos de evidencia adjuntas.</div>';
+        }
+
+        html += '</div>';
+      }
+
+      html += '</div>';
+    });
+
+    listEl.innerHTML = html;
+    attachCalHistorialListeners();
+  }
+
+  function attachCalHistorialListeners() {
+    const listEl = $('cal-historial-list');
+    if (!listEl) return;
+
+    listEl.querySelectorAll('.cal-hist-item').forEach(itemEl => {
+      itemEl.addEventListener('click', async (e) => {
+        if (e.target.closest('[data-open-photo]')) {
+          const img = e.target.closest('img');
+          if (img && img.src) window.open(img.src, '_blank');
+          return;
+        }
+        const id = itemEl.getAttribute('data-hist-id');
+        if (!id) return;
+        if (calExpandedHistTaskIds.has(id)) {
+          calExpandedHistTaskIds.delete(id);
+        } else {
+          calExpandedHistTaskIds.add(id);
+        }
+        renderCalHistorial();
+        loadEvidenceThumbnailsForTask(id);
+      });
+    });
+  }
+
+  async function loadEvidenceThumbnailsForTask(taskId) {
+    const evList = calEvidenceCache.filter(e => e.task_id === taskId);
+    for (const ev of evList) {
+      if (!calSignedUrlsCache[ev.storage_path]) {
+        try {
+          const { data, error } = await supabase.storage.from('onboarding-documents').createSignedUrl(ev.storage_path, 3600);
+          if (!error && data && data.signedUrl) {
+            calSignedUrlsCache[ev.storage_path] = data.signedUrl;
+            const img = document.querySelector(`img[data-storage-path="${ev.storage_path}"]`);
+            if (img) img.src = data.signedUrl;
+          }
+        } catch (err) {
+          console.warn('[cal-mant] sign err:', err);
+        }
+      } else {
+        const img = document.querySelector(`img[data-storage-path="${ev.storage_path}"]`);
+        if (img) img.src = calSignedUrlsCache[ev.storage_path];
+      }
+    }
+  }
+
+  // Complete Task Modal
+  function openCalCompleteModal(taskId) {
+    const task = calTasksCache.find(t => t.id === taskId);
+    if (!task) return;
+    calActiveTaskId = taskId;
+
+    const sched = calSchedulesCache.find(s => s.id === task.schedule_id) || {};
+    calActiveScheduleId = sched.id || null;
+
+    $('cal-complete-title').textContent = '✅ Completar: ' + (sched.title || 'Mantenimiento');
+    $('cal-complete-info').innerHTML = '<b>Sucursal:</b> ' + esc(task.branch) + ' · <b>Fecha programada:</b> ' + esc(formatCalDate(task.due_date));
+    clearMsg($('cal-complete-msg'));
+
+    const now = new Date();
+    const todayStr = (new Date(now.getTime() - now.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
+    $('cal-complete-date').value = todayStr;
+
+    const prof = currentProfile || window.currentProfile;
+    $('cal-complete-by').value = (prof && prof.name) || '';
+    $('cal-complete-vendor').value = sched.vendor_name || '';
+    $('cal-complete-cost').value = sched.estimated_cost != null ? sched.estimated_cost : '';
+    $('cal-complete-notes').value = '';
+    $('cal-complete-photos').value = '';
+
+    const reqEvidence = (sched.requires_evidence !== false);
+    const reqTag = $('cal-evidence-req-tag');
+    if (reqTag) reqTag.style.display = reqEvidence ? 'inline' : 'none';
+
+    $('cal-complete-submit').disabled = false;
+    $('cal-complete-submit').textContent = 'Guardar y completar';
+
+    $('cal-complete-modal').classList.remove('hidden');
+  }
+
+  function closeCalCompleteModal() {
+    $('cal-complete-modal').classList.add('hidden');
+    calActiveTaskId = null;
+    calActiveScheduleId = null;
+  }
+
+  async function submitCalComplete() {
+    if (calIsSubmitting) return;
+    const task = calTasksCache.find(t => t.id === calActiveTaskId);
+    if (!task) return;
+
+    const sched = calSchedulesCache.find(s => s.id === task.schedule_id) || {};
+    const reqEvidence = (sched.requires_evidence !== false);
+
+    const compDate = $('cal-complete-date').value;
+    if (!compDate) {
+      showMsg($('cal-complete-msg'), 'Debes indicar la fecha de realización.', 'err');
+      return;
+    }
+
+    const compBy = ($('cal-complete-by').value || '').trim();
+    if (!compBy) {
+      showMsg($('cal-complete-msg'), 'Debes indicar quién realizó o supervisó el trabajo.', 'err');
+      return;
+    }
+
+    const files = $('cal-complete-photos').files;
+    if (reqEvidence && (!files || files.length === 0)) {
+      showMsg($('cal-complete-msg'), 'Debes adjuntar al menos una foto de evidencia para completar este servicio (requerido).', 'err');
+      return;
+    }
+
+    calIsSubmitting = true;
+    const submitBtn = $('cal-complete-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Guardando…';
+
+    try {
+      const user = await requireUser();
+      const nowIso = new Date().toISOString();
+
+      // 1. Upload photos (if any)
+      if (files && files.length > 0) {
+        submitBtn.textContent = 'Subiendo fotos…';
+        for (let fi = 0; fi < files.length; fi++) {
+          const file = files[fi];
+          const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+          const path = user.id + '/cal_ev_' + task.id + '_' + Date.now() + '_' + fi + '.' + ext;
+
+          const { error: upErr } = await supabase.storage.from('onboarding-documents').upload(path, file, { upsert: true });
+          if (upErr) {
+            throw new Error('Fallo al subir archivo ' + file.name + ': ' + upErr.message);
+          }
+
+          const kind = (file.type && file.type.includes('pdf')) ? 'documento' : 'foto';
+          const { error: insEvErr } = await supabase.from('maintenance_evidence').insert({
+            task_id: task.id,
+            kind: kind,
+            storage_path: path,
+            caption: '',
+            uploaded_by: user.id,
+            uploaded_at: nowIso
+          });
+          if (insEvErr) {
+            throw new Error('Fallo al registrar evidencia en base de datos: ' + insEvErr.message);
+          }
+        }
+      }
+
+      // 2. Update task to 'hecho'
+      submitBtn.textContent = 'Actualizando tarea…';
+      const costVal = $('cal-complete-cost').value ? parseFloat($('cal-complete-cost').value) : null;
+      const vendorVal = ($('cal-complete-vendor').value || '').trim() || null;
+      const notesVal = ($('cal-complete-notes').value || '').trim() || null;
+
+      const { error: updErr } = await supabase.from('maintenance_tasks').update({
+        status: 'hecho',
+        completed_at: compDate + 'T12:00:00.000Z',
+        completed_by: user.id,
+        completed_by_name: compBy,
+        vendor_name: vendorVal,
+        cost: costVal,
+        notes: notesVal,
+        updated_at: nowIso
+      }).eq('id', task.id);
+
+      if (updErr) throw updErr;
+
+      // 3. Generate NEXT occurrence (Requirement D)
+      const freqDays = sched.frequency_days || 30;
+      const baseDt = new Date((task.due_date || compDate) + 'T00:00:00');
+      const nextDt = new Date(baseDt.getTime() + freqDays * 86400000);
+      const nextDueStr = nextDt.toISOString().slice(0, 10);
+
+      // Check if an open occurrence already exists to prevent duplication
+      const { data: openTasks } = await supabase
+        .from('maintenance_tasks')
+        .select('id')
+        .eq('schedule_id', sched.id)
+        .eq('branch', task.branch)
+        .eq('status', 'pendiente')
+        .limit(1);
+
+      if (!openTasks || openTasks.length === 0) {
+        const { error: nextErr } = await supabase.from('maintenance_tasks').insert({
+          schedule_id: sched.id,
+          branch: task.branch,
+          due_date: nextDueStr,
+          status: 'pendiente',
+          created_at: nowIso,
+          updated_at: nowIso
+        });
+        if (nextErr) {
+          console.warn('[cal-mant] next occurrence insert error:', nextErr);
+        }
+      }
+
+      closeCalCompleteModal();
+      toast('Servicio completado y siguiente fecha programada ✅');
+      await loadCalendarioMant();
+    } catch (err) {
+      console.error('[cal-mant] submitCalComplete err:', err);
+      showMsg($('cal-complete-msg'), 'Error al completar servicio: ' + (err.message || String(err)), 'err');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Guardar y completar';
+    } finally {
+      calIsSubmitting = false;
+    }
+  }
+
+  // Request Sooner Modal (Requirement F)
+  function openCalSoonerModal(taskId) {
+    const task = calTasksCache.find(t => t.id === taskId);
+    if (!task) return;
+    calActiveTaskId = taskId;
+
+    const sched = calSchedulesCache.find(s => s.id === task.schedule_id) || {};
+    calActiveScheduleId = sched.id || null;
+
+    $('cal-sooner-title').textContent = '⚡ Adelantar: ' + (sched.title || 'Mantenimiento');
+    $('cal-sooner-info').innerHTML = '<b>Sucursal:</b> ' + esc(task.branch) + '<br><b>Próxima fecha programada:</b> ' + esc(formatCalDate(task.due_date));
+    clearMsg($('cal-sooner-msg'));
+    $('cal-sooner-reason').value = '';
+    $('cal-sooner-priority').value = 'Urgente';
+
+    $('cal-sooner-submit').disabled = false;
+    $('cal-sooner-submit').textContent = 'Enviar solicitud';
+
+    $('cal-sooner-modal').classList.remove('hidden');
+  }
+
+  function closeCalSoonerModal() {
+    $('cal-sooner-modal').classList.add('hidden');
+    calActiveTaskId = null;
+    calActiveScheduleId = null;
+  }
+
+  async function submitCalSooner() {
+    if (calIsSubmitting) return;
+    const task = calTasksCache.find(t => t.id === calActiveTaskId);
+    if (!task) return;
+
+    const sched = calSchedulesCache.find(s => s.id === task.schedule_id) || {};
+    const reason = ($('cal-sooner-reason').value || '').trim();
+    if (!reason) {
+      showMsg($('cal-sooner-msg'), 'Por favor describe el motivo o problema por el que se requiere adelantar el servicio.', 'err');
+      return;
+    }
+
+    const priority = $('cal-sooner-priority').value || 'Urgente';
+
+    calIsSubmitting = true;
+    const submitBtn = $('cal-sooner-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando…';
+
+    try {
+      const user = await requireUser();
+      const notesWithRef = '[Mantenimiento programado anticipado]\n'
+        + 'Programación: ' + (sched.title || 'Mantenimiento') + ' (' + (sched.category || 'Servicio') + ')\n'
+        + 'Tarea ref: ' + task.id + '\n'
+        + 'Fecha programada original: ' + task.due_date + '\n'
+        + 'Motivo: ' + reason;
+
+      const { error: insErr } = await supabase.from('maintenance_requests').insert({
+        submitted_by: user.id,
+        branch: task.branch || sched.branch || 'Roma Norte',
+        area: sched.category || 'Mantenimiento',
+        description: 'Adelantar servicio: ' + (sched.title || 'Mantenimiento') + '. ' + reason,
+        notes: notesWithRef,
+        priority: priority,
+        status: 'Solicitado',
+        asset_id: sched.asset_id || null
+      });
+
+      if (insErr) throw insErr;
+
+      closeCalSoonerModal();
+      toast('Solicitud registrada en Seguimiento 👍');
+    } catch (err) {
+      console.error('[cal-mant] submitCalSooner err:', err);
+      showMsg($('cal-sooner-msg'), 'Error al registrar solicitud: ' + (err.message || String(err)), 'err');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Enviar solicitud';
+    } finally {
+      calIsSubmitting = false;
+    }
+  }
+
+  // Schedule Administration Modal (Management Only)
+  function openCalSchedulesModal() {
+    clearMsg($('cal-schedules-msg'));
+    renderCalSchedulesList();
+    $('cal-schedules-modal').classList.remove('hidden');
+  }
+
+  function closeCalSchedulesModal() {
+    $('cal-schedules-modal').classList.add('hidden');
+  }
+
+  function renderCalSchedulesList() {
+    const listEl = $('cal-schedules-list');
+    if (!listEl) return;
+
+    if (calSchedulesCache.length === 0) {
+      listEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);">'
+        + '<p>No hay programaciones registradas en este momento.</p>'
+        + '<button type="button" class="btn" id="cal-init-defaults-btn" style="margin-top:8px;">⚡ Inicializar programas estándar de Ben</button>'
+        + '</div>';
+      const initBtn = $('cal-init-defaults-btn');
+      if (initBtn) initBtn.addEventListener('click', initDefaultSchedules);
+      return;
+    }
+
+    let html = '<div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">'
+      + '<span style="font-weight:700;font-size:0.9rem;">' + calSchedulesCache.length + ' reglas registradas</span>'
+      + '<button type="button" class="btn btn-outline" id="cal-toggle-add-sched-btn" style="margin:0;font-size:13px;padding:6px 10px;min-height:38px;">➕ Nueva regla</button>'
+      + '</div>'
+      + '<div id="cal-add-sched-form" class="hidden" style="background:var(--input-bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;">'
+      +   '<div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;">Crear regla recurrente</div>'
+      +   '<div class="field"><label>Título *</label><input type="text" id="cal-ns-title" placeholder="Ej. Filtros de agua"></div>'
+      +   '<div class="field"><label>Categoría *</label><input type="text" id="cal-ns-cat" placeholder="Ej. Filtros de agua, Fumigación..."></div>'
+      +   '<div class="field"><label>Sucursal *</label><select id="cal-ns-branch"><option value="Roma Norte">Roma Norte</option><option value="Del Valle">Del Valle</option><option value="Los dos">Los dos</option></select></div>'
+      +   '<div class="field"><label>Frecuencia en días *</label><input type="number" id="cal-ns-freq" value="30"></div>'
+      +   '<div class="field"><label>Días de aviso previo (lead days)</label><input type="number" id="cal-ns-lead" value="7"></div>'
+      +   '<div class="field"><label>Proveedor (opcional)</label><input type="text" id="cal-ns-vendor"></div>'
+      +   '<div class="field"><label>Notas (opcional)</label><textarea id="cal-ns-notes" rows="2"></textarea></div>'
+      +   '<div style="display:flex;gap:8px;margin-top:8px;">'
+      +     '<button type="button" class="btn" id="cal-ns-save" style="flex:1;margin:0;">Guardar regla</button>'
+      +     '<button type="button" class="btn btn-outline" id="cal-ns-cancel" style="flex:1;margin:0;">Cancelar</button>'
+      +   '</div>'
+      + '</div>';
+
+    html += calSchedulesCache.map(s => {
+      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;">'
+        + '<div>'
+        +   '<div style="font-weight:700;font-size:0.95rem;color:var(--ink);">' + esc(s.title) + '</div>'
+        +   '<div style="font-size:0.8rem;color:var(--muted);">' + esc(s.category || 'Mantenimiento') + ' · 📍 ' + esc(s.branch) + ' · Cada ' + s.frequency_days + ' días (aviso ' + (s.lead_days || 7) + 'd)</div>'
+        + '</div>'
+        + '<div>'
+        +   '<span style="font-size:0.75rem;padding:2px 8px;border-radius:999px;' + (s.active !== false ? 'background:rgba(46,125,50,0.1);color:#2e7d32;' : 'background:var(--input-bg);color:var(--muted);') + '">' + (s.active !== false ? 'Activo' : 'Pausado') + '</span>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+
+    listEl.innerHTML = html;
+
+    const toggleBtn = $('cal-toggle-add-sched-btn');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const form = $('cal-add-sched-form');
+        if (form) form.classList.toggle('hidden');
+      });
+    }
+
+    const cancelBtn = $('cal-ns-cancel');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        const form = $('cal-add-sched-form');
+        if (form) form.classList.add('hidden');
+      });
+    }
+
+    const saveBtn = $('cal-ns-save');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', saveNewCalSchedule);
+    }
+  }
+
+  async function saveNewCalSchedule() {
+    const title = ($('cal-ns-title').value || '').trim();
+    const cat = ($('cal-ns-cat').value || '').trim() || 'Mantenimiento';
+    const branch = $('cal-ns-branch').value || 'Roma Norte';
+    const freq = parseInt($('cal-ns-freq').value, 10) || 30;
+    const lead = parseInt($('cal-ns-lead').value, 10) || 7;
+    const vendor = ($('cal-ns-vendor').value || '').trim() || null;
+    const notes = ($('cal-ns-notes').value || '').trim() || null;
+
+    if (!title) {
+      alert('El título de la regla es obligatorio.');
+      return;
+    }
+
+    try {
+      const nowIso = new Date().toISOString();
+      const { data: newSched, error } = await supabase.from('maintenance_schedules').insert({
+        title,
+        category: cat,
+        branch,
+        frequency_days: freq,
+        lead_days: lead,
+        active: true,
+        vendor_name: vendor,
+        notes,
+        created_at: nowIso,
+        updated_at: nowIso
+      }).select('id, title, branch, frequency_days').single();
+
+      if (error) throw error;
+
+      // Seed initial pending task
+      const nextDt = new Date(Date.now() + freq * 86400000).toISOString().slice(0, 10);
+      await supabase.from('maintenance_tasks').insert({
+        schedule_id: newSched.id,
+        branch: branch,
+        due_date: nextDt,
+        status: 'pendiente',
+        created_at: nowIso,
+        updated_at: nowIso
+      });
+
+      toast('Regla creada y tarea programada');
+      await loadCalendarioMant();
+      renderCalSchedulesList();
+    } catch (err) {
+      console.error('[cal-mant] saveNewCalSchedule err:', err);
+      showMsg($('cal-schedules-msg'), 'Error al guardar regla: ' + (err.message || String(err)), 'err');
+    }
+  }
+
+  async function initDefaultSchedules() {
+    const btn = $('cal-init-defaults-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Creando programas…'; }
+
+    try {
+      const defaults = [
+        { title: 'Filtros de agua', category: 'Filtros de agua', branch: 'Roma Norte', frequency_days: 90, lead_days: 10 },
+        { title: 'Filtros de agua', category: 'Filtros de agua', branch: 'Del Valle', frequency_days: 90, lead_days: 10 },
+        { title: 'Fumigación general', category: 'Fumigación', branch: 'Roma Norte', frequency_days: 30, lead_days: 7 },
+        { title: 'Fumigación general', category: 'Fumigación', branch: 'Del Valle', frequency_days: 30, lead_days: 7 },
+        { title: 'Trampa de grasa', category: 'Trampa de grasa', branch: 'Roma Norte', frequency_days: 30, lead_days: 5 },
+        { title: 'Trampa de grasa', category: 'Trampa de grasa', branch: 'Del Valle', frequency_days: 30, lead_days: 5 },
+        { title: 'Desazolve de drenaje', category: 'Desazolve de drenaje', branch: 'Roma Norte', frequency_days: 30, lead_days: 7 },
+        { title: 'Desazolve de drenaje', category: 'Desazolve de drenaje', branch: 'Del Valle', frequency_days: 30, lead_days: 7 },
+        { title: 'Limpieza profunda con proveedor', category: 'Limpieza profunda', branch: 'Roma Norte', frequency_days: 30, lead_days: 7 },
+        { title: 'Limpieza profunda con proveedor', category: 'Limpieza profunda', branch: 'Del Valle', frequency_days: 30, lead_days: 7 }
+      ];
+
+      const nowIso = new Date().toISOString();
+      const rows = defaults.map(d => Object.assign({}, d, {
+        active: true,
+        requires_evidence: true,
+        created_at: nowIso,
+        updated_at: nowIso
+      }));
+
+      const { data: inserted, error } = await supabase.from('maintenance_schedules').insert(rows).select('id, title, branch, frequency_days');
+      if (error) throw error;
+
+      // Seed initial tasks for each
+      const taskRows = (inserted || []).map(s => {
+        const dt = new Date(Date.now() + (s.frequency_days || 30) * 86400000).toISOString().slice(0, 10);
+        return {
+          schedule_id: s.id,
+          branch: s.branch,
+          due_date: dt,
+          status: 'pendiente',
+          created_at: nowIso,
+          updated_at: nowIso
+        };
+      });
+
+      if (taskRows.length > 0) {
+        await supabase.from('maintenance_tasks').insert(taskRows);
+      }
+
+      toast('Programas inicializados con éxito ✅');
+      await loadCalendarioMant();
+      renderCalSchedulesList();
+    } catch (err) {
+      console.error('[cal-mant] initDefaultSchedules err:', err);
+      showMsg($('cal-schedules-msg'), 'Error al inicializar programas: ' + (err.message || String(err)), 'err');
+      if (btn) { btn.disabled = false; btn.textContent = '⚡ Inicializar programas estándar'; }
+    }
+  }
+
+  // Calendar Feed (.ics) generator & subscriber modal
+  function generateMaintenanceIcs(tasks, schedules) {
+    const openTasks = (tasks || []).filter(t => t.status === 'pendiente');
+    const schedMap = new Map((schedules || []).map(s => [s.id, s]));
+    const nowIso = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+    let lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Nudo Hub//Calendario de Mantenimiento//ES',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'X-WR-CALNAME:Nudo Hub - Mantenimiento',
+      'X-WR-TIMEZONE:America/Mexico_City'
+    ];
+
+    openTasks.forEach(task => {
+      const sched = schedMap.get(task.schedule_id) || {};
+      const title = sched.title || 'Mantenimiento';
+      const branch = task.branch || sched.branch || 'Nudo';
+      const cat = sched.category || 'Mantenimiento';
+      const dueStr = (task.due_date || '').replace(/-/g, '');
+      if (!dueStr || dueStr.length !== 8) return;
+
+      let nextDayStr = dueStr;
+      try {
+        const dt = new Date(task.due_date + 'T00:00:00');
+        const nextDt = new Date(dt.getTime() + 86400000);
+        nextDayStr = nextDt.toISOString().slice(0, 10).replace(/-/g, '');
+      } catch (err) {
+        console.warn('[cal-mant] ics next day err:', err);
+      }
+
+      const uid = 'nudo-maint-' + task.id + '@asian-food-concepts.github.io';
+      const descParts = [];
+      if (sched.category) descParts.push('Categoría: ' + sched.category);
+      if (task.branch) descParts.push('Sucursal: ' + task.branch);
+      if (sched.vendor_name) descParts.push('Proveedor: ' + sched.vendor_name);
+      if (sched.vendor_contact) descParts.push('Contacto: ' + sched.vendor_contact);
+      if (task.notes || sched.notes) descParts.push('Notas: ' + (task.notes || sched.notes));
+      const descClean = descParts.join(' \\n ').replace(/,/g, '\\,').replace(/;/g, '\\;');
+      const summaryClean = ('[' + branch + '] ' + title).replace(/,/g, '\\,').replace(/;/g, '\\;');
+
+      lines.push('BEGIN:VEVENT');
+      lines.push('UID:' + uid);
+      lines.push('DTSTAMP:' + nowIso);
+      lines.push('DTSTART;VALUE=DATE:' + dueStr);
+      lines.push('DTEND;VALUE=DATE:' + nextDayStr);
+      lines.push('SUMMARY:' + summaryClean);
+      lines.push('DESCRIPTION:' + descClean);
+      lines.push('CATEGORIES:' + cat);
+      lines.push('LOCATION:' + branch);
+      lines.push('STATUS:CONFIRMED');
+      lines.push('END:VEVENT');
+    });
+
+    lines.push('END:VCALENDAR');
+    return lines.join('\r\n');
+  }
+
+  function downloadMaintenanceIcs() {
+    try {
+      const ics = generateMaintenanceIcs(calTasksCache, calSchedulesCache);
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mantenimiento-nudo.ics';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      toast('Descargando archivo .ics 📅');
+    } catch (err) {
+      console.error('[cal-mant] download ics err:', err);
+      toast('Error al generar calendario: ' + err.message);
+    }
+  }
+
+  function openCalFeedModal() {
+    const feedUrl = 'https://asian-food-concepts.github.io/Nudo-hub/maintenance.ics';
+    const feedUrlInput = $('cal-feed-url');
+    if (feedUrlInput) feedUrlInput.value = feedUrl;
+    $('cal-feed-modal').classList.remove('hidden');
+  }
+
+  function closeCalFeedModal() {
+    $('cal-feed-modal').classList.add('hidden');
+  }
+
+  // Calendar Event Wiring
+  document.querySelectorAll('#cal-mant-tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.getAttribute('data-cal-tab');
+      document.querySelectorAll('#cal-mant-tabs button').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      calCurrentTab = tab;
+      if ($('cal-tab-vencer-panel')) $('cal-tab-vencer-panel').classList.toggle('hidden', tab !== 'vencer');
+      if ($('cal-tab-historial-panel')) $('cal-tab-historial-panel').classList.toggle('hidden', tab !== 'historial');
+    });
+  });
+
+  if ($('cal-hist-branch-filter')) $('cal-hist-branch-filter').addEventListener('change', renderCalHistorial);
+  if ($('cal-hist-cat-filter')) $('cal-hist-cat-filter').addEventListener('change', renderCalHistorial);
+
+  if ($('cal-refresh-btn')) $('cal-refresh-btn').addEventListener('click', loadCalendarioMant);
+  if ($('cal-feed-btn')) $('cal-feed-btn').addEventListener('click', openCalFeedModal);
+  if ($('cal-schedules-btn')) $('cal-schedules-btn').addEventListener('click', openCalSchedulesModal);
+
+  if ($('cal-complete-cancel')) $('cal-complete-cancel').addEventListener('click', closeCalCompleteModal);
+  if ($('cal-complete-submit')) $('cal-complete-submit').addEventListener('click', submitCalComplete);
+
+  if ($('cal-sooner-cancel')) $('cal-sooner-cancel').addEventListener('click', closeCalSoonerModal);
+  if ($('cal-sooner-submit')) $('cal-sooner-submit').addEventListener('click', submitCalSooner);
+
+  if ($('cal-schedules-close')) $('cal-schedules-close').addEventListener('click', closeCalSchedulesModal);
+  if ($('cal-schedules-close-top')) $('cal-schedules-close-top').addEventListener('click', closeCalSchedulesModal);
+
+  if ($('cal-feed-close')) $('cal-feed-close').addEventListener('click', closeCalFeedModal);
+  if ($('cal-feed-download-btn')) $('cal-feed-download-btn').addEventListener('click', downloadMaintenanceIcs);
+  if ($('cal-feed-copy-btn')) {
+    $('cal-feed-copy-btn').addEventListener('click', () => {
+      const input = $('cal-feed-url');
+      if (input) {
+        input.select();
+        try {
+          navigator.clipboard.writeText(input.value).then(() => {
+            toast('Enlace copiado al portapapeles 📋');
+          }).catch((err) => {
+            console.warn('[cal-mant] copy err:', err);
+            toast('Copia el enlace manualmente');
+          });
+        } catch (clipErr) {
+          console.warn('[cal-mant] clipboard err:', clipErr);
+          toast('Copia el enlace manualmente');
+        }
+      }
+    });
+  }
+
+  window.loadCalendarioMant = loadCalendarioMant;
+  window.generateMaintenanceIcs = generateMaintenanceIcs;
   window.loadRoadmap = loadRoadmap;
   window.renderRoadmap = renderRoadmap;
+  window.renderNuevos = renderNuevos;
   window.isManagement = isManagement;
+  window.isOwner = isOwner;
 
   // Keep a cache for search filtering (set inside loadUsuarios).
   } // end initApp
