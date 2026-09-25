@@ -1234,6 +1234,62 @@
      second logo. Replaces the old "Bienvenido" / "Acceso del equipo" subtitle. */
   .brand-hub { font-size: 0.95rem; font-weight: 400; letter-spacing: 0.22em;
                text-transform: uppercase; color: var(--muted); margin: 2px 0 0 2px; }
+
+  /* Roadmap (Ben): Plan de trabajo y sugerencias */
+  .roadmap-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    position: relative;
+    outline: none;
+  }
+  .roadmap-item:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(47,58,47,0.25);
+  }
+  .roadmap-item.is-dragging {
+    opacity: 0.88;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+    transform: scale(1.015);
+    z-index: 10;
+    position: relative;
+  }
+  .roadmap-drag-handle {
+    touch-action: none;
+    -webkit-touch-action: none;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .roadmap-drag-handle:active {
+    cursor: grabbing;
+  }
+  body.roadmap-dragging {
+    overflow: hidden !important;
+    touch-action: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+  }
+  .roadmap-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .roadmap-chip-area {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+  }
+
   .hidden { display: none !important; }
 </style>
 </head>
@@ -1442,6 +1498,12 @@
           <a class="card" href="#" id="nuevos-card" data-form="nuevos" style="display:none;">
             <div class="icon icon-form">🆕</div>
             <div class="text"><div class="title">Nuevos ingresos</div><div class="sub">Registros del formulario, activa sus cuentas</div></div>
+            <div class="arrow">›</div>
+          </a>
+          <!-- Roadmap (Ben): Plan de trabajo y sugerencias -->
+          <a class="card" href="#" id="roadmap-card" data-form="roadmap" style="display:none;">
+            <div class="icon icon-form">🗺️</div>
+            <div class="text"><div class="title">Roadmap</div><div class="sub">Plan de trabajo y sugerencias</div></div>
             <div class="arrow">›</div>
           </a>
         </div>
@@ -2074,6 +2136,22 @@
         </div>
       </div>
 
+      <!-- ROADMAP (Ben): Plan de trabajo y sugerencias -->
+      <div id="form-roadmap" class="form-page">
+        <button class="back" data-back><span class="chev">‹</span> Volver</button>
+        <div class="form-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+            <h2 style="margin:0;">🗺️ Roadmap</h2>
+            <button type="button" class="btn btn-outline" id="roadmap-refresh-btn" style="min-height:44px;padding:6px 12px;font-size:14px;margin:0;">🔄 Actualizar</button>
+          </div>
+          <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">
+            Plan de trabajo y sugerencias. Arrastra las tarjetas para ordenar prioridades (o usa los controles ▲/▼). Edita comentarios y estados para Antigravity.
+          </p>
+          <div id="roadmap-msg" class="msg hidden"></div>
+          <div id="roadmap-list"><p style="color:var(--muted);">Cargando roadmap…</p></div>
+        </div>
+      </div>
+
       <!-- BOTTOM TAB BAR (v0.126) — floating dock, 2 tabs (Ben: "Inicio and Seguimiento
            should be enough"; Bitácora/Planear/Guía stay reachable via Home cards) -->
       <nav class="bottom-tabs" id="bottom-tabs" aria-label="Navegación principal">
@@ -2137,6 +2215,39 @@
           <div class="review-body" id="nuevo-ficha-body"></div>
           <div class="review-actions" style="margin-top:8px;">
             <button class="btn btn-outline" id="nuevo-ficha-close" style="margin:0;min-height:44px;font-size:16px;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROADMAP EDIT MODAL -->
+      <div class="review-modal hidden" id="roadmap-edit-modal">
+        <div class="review-box">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <h3 id="roadmap-edit-modal-title" style="margin:0;font-size:1.05rem;">✏️ Editar tarea del roadmap</h3>
+            <button type="button" class="btn btn-outline" id="roadmap-edit-close-top" style="margin:0;padding:4px 10px;font-size:0.8rem;min-height:44px;min-width:44px;">✕</button>
+          </div>
+          <div id="roadmap-edit-msg" class="msg hidden" style="margin-bottom:8px;"></div>
+          <div class="review-body" id="roadmap-edit-body">
+            <div class="field" style="margin-bottom:10px;">
+              <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Título</label>
+              <input type="text" id="roadmap-modal-title" class="input" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" required />
+            </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Área</label>
+              <input type="text" id="roadmap-modal-area" class="input" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" placeholder="Ej. Bitácora, Horario, General..." />
+            </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Por qué (Motivo)</label>
+              <textarea id="roadmap-modal-why" rows="3" style="width:100%;min-height:70px;font-size:16px;padding:8px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);resize:vertical;"></textarea>
+            </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Evidencia (medición / prueba)</label>
+              <textarea id="roadmap-modal-evidence" rows="2" style="width:100%;min-height:50px;font-size:14px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;padding:8px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);resize:vertical;"></textarea>
+            </div>
+          </div>
+          <div class="review-actions" style="margin-top:12px;display:flex;gap:8px;">
+            <button type="button" class="btn" id="roadmap-modal-save" style="flex:1;min-height:44px;font-size:16px;margin:0;">Guardar cambios</button>
+            <button type="button" class="btn btn-outline" id="roadmap-modal-cancel" style="flex:1;min-height:44px;font-size:16px;margin:0;">Cancelar</button>
           </div>
         </div>
       </div>
@@ -2573,6 +2684,7 @@
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
     auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
   });
+  window.__supabase = supabase;
 
   const $ = id => document.getElementById(id);
   const views = { login: $('login-view'), app: $('app-view') };
@@ -3120,6 +3232,8 @@
     if (usuariosCard) usuariosCard.style.display = isRecl ? '' : 'none';
     const nuevosCard = document.getElementById('nuevos-card');
     if (nuevosCard) nuevosCard.style.display = isRecl ? '' : 'none';
+    const roadmapCard = document.getElementById('roadmap-card');
+    if (roadmapCard) roadmapCard.style.display = isRecl ? '' : 'none';
     // v0.149 — the org chart is readable by any leader (captains and up).
     // v0.176 (Ben) — the Equipo page is management-only: Gerente + Dueño.
     // isRecl is exactly that set (Dueño OR role contains 'gerente'), reused so the
@@ -3685,6 +3799,11 @@
         // v0.172: reanuda el borrador guardado (si lo hay) en cuanto se abre el formulario
         bitacoraDraftOpen().catch(function () {});
       }
+      if (f === 'roadmap') {
+        const prof = currentProfile || window.currentProfile;
+        const isRecl = prof ? isManagement(prof.role, prof.level, prof.active) : false;
+        if (!isRecl) return;
+      }
       document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
       $('home-view').style.display = 'none';
       $('form-' + f).classList.add('active');
@@ -3700,6 +3819,7 @@
       if (f === 'entrevistados') { loadEntrevistados(); }
       if (f === 'usuarios') { loadUsuarios(); loadRoleOptions(); }
       if (f === 'nuevos') { loadNuevos(); loadRoleOptions(); }
+      if (f === 'roadmap') { loadRoadmap(); }
       if (f === 'equipo') { loadEquipo(); }
       if (f === 'plan') loadPlanner();
       // v0.179: recompute the target week on every open. A form left open across
@@ -10739,6 +10859,556 @@
       }
     }
   });
+
+  // ================= ROADMAP (Ben) =================
+  const ROADMAP_STATUSES = {
+    suggested:   { label: 'Sugerido',    ico: '💡', bg: 'rgba(26,86,219,0.1)',   color: '#1a56db' },
+    approved:    { label: 'Aprobado',    ico: '👍', bg: 'rgba(19,115,51,0.12)',  color: '#137333' },
+    queued:      { label: 'En cola',     ico: '⏳', bg: 'rgba(176,96,0,0.12)',   color: '#b06000' },
+    in_progress: { label: 'En progreso', ico: '🚀', bg: 'rgba(118,39,187,0.12)', color: '#7627bb' },
+    review:      { label: 'En revisión', ico: '🔍', bg: 'rgba(194,65,12,0.12)',  color: '#c2410c' },
+    done:        { label: 'Hecho',       ico: '✅', bg: 'rgba(31,122,77,0.12)',  color: '#1f7a4d' },
+    rejected:    { label: 'Rechazado',   ico: '❌', bg: 'rgba(198,40,40,0.12)',  color: '#c62828' },
+    blocked:     { label: 'Bloqueado',   ico: '🚫', bg: 'rgba(185,28,28,0.15)',  color: '#b91c1c' }
+  };
+
+  let roadmapEditTargetId = null;
+
+  async function loadRoadmap() {
+    const prof = currentProfile || window.currentProfile;
+    const isRecl = prof ? isManagement(prof.role, prof.level, prof.active) : false;
+    if (!isRecl) {
+      goHome();
+      return;
+    }
+
+    const listEl = $('roadmap-list');
+    const msgEl = $('roadmap-msg');
+    if (!listEl) return;
+    if (msgEl) clearMsg(msgEl);
+    listEl.innerHTML = '<p style="color:var(--muted);padding:16px;text-align:center;">Cargando roadmap…</p>';
+
+    try {
+      const { data, error } = await supabase
+        .from('roadmap')
+        .select('*')
+        .order('priority_rank', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        showMsg(msgEl, 'Error al cargar el roadmap: ' + (error.message || String(error)), 'err');
+        listEl.innerHTML = '<div style="padding:16px;border:1px solid var(--red);border-radius:12px;background:var(--msg-err-bg);color:var(--red);font-size:0.9rem;"><strong>⚠️ No se pudo cargar el roadmap:</strong> ' + esc(error.message || String(error)) + '</div>';
+        return;
+      }
+
+      const rows = (data || []).slice().sort((a, b) => {
+        const ra = a.priority_rank != null ? a.priority_rank : Infinity;
+        const rb = b.priority_rank != null ? b.priority_rank : Infinity;
+        if (ra !== rb) return ra - rb;
+        return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+      });
+
+      window.__roadmap_cache = rows;
+      renderRoadmap(rows);
+    } catch (err) {
+      showMsg(msgEl, 'Error al cargar el roadmap: ' + (err.message || String(err)), 'err');
+      listEl.innerHTML = '<div style="padding:16px;border:1px solid var(--red);border-radius:12px;background:var(--msg-err-bg);color:var(--red);font-size:0.9rem;"><strong>⚠️ Error de red o sistema:</strong> ' + esc(err.message || String(err)) + '</div>';
+    }
+  }
+
+  function renderRoadmap(rows) {
+    const listEl = $('roadmap-list');
+    if (!listEl) return;
+
+    if (!rows || !rows.length) {
+      listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:12px;margin:12px 0;">'
+        + '<div style="font-size:2rem;margin-bottom:8px;">🗺️</div>'
+        + '<div style="font-weight:600;color:var(--ink);">No hay tareas en el roadmap actualmente.</div>'
+        + '<div style="font-size:0.85rem;margin-top:4px;">Las sugerencias y tareas aparecerán aquí en cuanto se registren.</div>'
+        + '</div>';
+      return;
+    }
+
+    const prof = currentProfile || window.currentProfile;
+    const isDueno = prof && String(prof.role || '') === 'Dueño' && coalesceActive(prof.active);
+
+    const html = rows.map((r, idx) => {
+      const isAgy = !!(r.agy_task && String(r.agy_task).trim());
+      const stKey = (r.status && ROADMAP_STATUSES[r.status]) ? r.status : 'suggested';
+      const st = ROADMAP_STATUSES[stKey];
+
+      let inFlightHtml = '';
+      if (r.dispatched_at || r.dispatched_model || r.result_ref) {
+        const dAt = r.dispatched_at ? new Date(r.dispatched_at).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : null;
+        inFlightHtml = '<div style="margin:8px 0;padding:8px 12px;border-radius:8px;background:rgba(11,87,208,0.08);border:1px solid rgba(11,87,208,0.25);font-size:0.82rem;">'
+          + '<div style="font-weight:700;color:#0b57d0;display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+          + '<span>⚡ En ejecución / Despachado</span>'
+          + '</div>'
+          + (dAt ? '<div><span style="color:var(--muted);">Despachado:</span> <strong>' + esc(dAt) + '</strong></div>' : '')
+          + (r.dispatched_model ? '<div><span style="color:var(--muted);">Modelo:</span> <strong>' + esc(r.dispatched_model) + '</strong></div>' : '')
+          + (r.result_ref ? '<div><span style="color:var(--muted);">Referencia:</span> <code style="font-size:0.8rem;background:var(--input-bg);padding:2px 4px;border-radius:4px;border:1px solid var(--border);">' + esc(r.result_ref) + '</code></div>' : '')
+          + '</div>';
+      }
+
+      let resultNoteHtml = '';
+      if (r.result_note && String(r.result_note).trim()) {
+        resultNoteHtml = '<div style="margin:8px 0;padding:8px 12px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);font-size:0.85rem;color:var(--ink);">'
+          + '<strong style="color:var(--accent);">Nota de resultado:</strong> ' + esc(r.result_note)
+          + '</div>';
+      }
+
+      let kindBadgeHtml = '';
+      if (!isAgy) {
+        kindBadgeHtml = '<div class="roadmap-kind-badge" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;background:rgba(232,161,58,0.18);color:#935300;margin:6px 0 8px 0;">'
+          + '<span>⚠️ Requiere tu decisión / no es código</span>'
+          + '</div>';
+      } else {
+        kindBadgeHtml = '<div class="roadmap-kind-badge" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;background:rgba(46,125,50,0.14);color:var(--green);margin:6px 0 8px 0;">'
+          + '<span>🤖 Antigravity / Código de repositorio</span>'
+          + '</div>'
+          + '<div style="font-size:0.8rem;color:var(--muted);font-family:ui-monospace,monospace;margin-bottom:6px;">'
+          + '<span style="font-weight:600;">Tarea AGY:</span> ' + esc(r.agy_task)
+          + '</div>';
+      }
+
+      const statusOptionsHtml = Object.keys(ROADMAP_STATUSES).map(k => {
+        const opt = ROADMAP_STATUSES[k];
+        const sel = (k === stKey) ? ' selected' : '';
+        return '<option value="' + k + '"' + sel + '>' + opt.ico + ' ' + esc(opt.label) + '</option>';
+      }).join('');
+
+      return '<div class="roadmap-item" data-id="' + esc(r.id) + '" tabindex="0">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;">'
+        +   '<div class="roadmap-drag-handle" touch-action="none" title="Arrastrar para ordenar" style="touch-action:none;-webkit-touch-action:none;min-height:44px;padding:0 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:6px;cursor:grab;user-select:none;-webkit-user-select:none;">'
+        +     '<span style="font-size:16px;pointer-events:none;">⠿</span>'
+        +     '<span style="font-size:13px;font-weight:600;color:var(--muted);pointer-events:none;">Arrastrar</span>'
+        +   '</div>'
+        +   '<div style="display:flex;align-items:center;gap:6px;">'
+        +     '<span style="font-size:12px;color:var(--muted);font-weight:600;margin-right:2px;">#' + (idx + 1) + '</span>'
+        +     '<button type="button" class="btn btn-outline roadmap-move-btn" data-roadmap-move="up" data-id="' + esc(r.id) + '" style="min-height:44px;min-width:44px;padding:0;margin:0;display:flex;align-items:center;justify-content:center;font-size:16px;" aria-label="Subir prioridad" title="Subir prioridad"' + (idx === 0 ? ' disabled' : '') + '>▲</button>'
+        +     '<button type="button" class="btn btn-outline roadmap-move-btn" data-roadmap-move="down" data-id="' + esc(r.id) + '" style="min-height:44px;min-width:44px;padding:0;margin:0;display:flex;align-items:center;justify-content:center;font-size:16px;" aria-label="Bajar prioridad" title="Bajar prioridad"' + (idx === rows.length - 1 ? ' disabled' : '') + '>▼</button>'
+        +   '</div>'
+        + '</div>'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'
+        +   '<div style="font-weight:700;font-size:1.05rem;color:var(--ink);flex:1;">' + esc(r.title || '(sin título)') + '</div>'
+        +   '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">'
+        +     '<span class="roadmap-chip roadmap-chip-area">' + esc(r.area || 'General') + '</span>'
+        +     '<span class="roadmap-chip" style="background:' + st.bg + ';color:' + st.color + ';">' + st.ico + ' ' + esc(st.label) + '</span>'
+        +   '</div>'
+        + '</div>'
+        + (r.why ? ('<div style="font-size:0.9rem;line-height:1.4;color:var(--ink);margin:6px 0;">' + esc(r.why) + '</div>') : '')
+        + '<div style="font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:0.8rem;color:var(--muted);background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin:8px 0;word-break:break-word;">'
+        +   '<code>' + esc(r.evidence || 'Sin evidencia') + '</code>'
+        + '</div>'
+        + kindBadgeHtml
+        + inFlightHtml
+        + resultNoteHtml
+        + '<div style="margin-top:10px;">'
+        +   '<label style="font-size:0.8rem;font-weight:600;color:var(--ink);display:block;margin-bottom:4px;">Comentario de Ben:</label>'
+        +   '<textarea class="roadmap-ben-comment" data-id="' + esc(r.id) + '" rows="2" style="width:100%;font-size:16px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);box-sizing:border-box;resize:vertical;" placeholder="Instrucciones o notas...">' + esc(r.ben_comment || '') + '</textarea>'
+        + '</div>'
+        + '<div style="margin-top:8px;">'
+        +   '<label style="font-size:0.8rem;font-weight:600;color:var(--ink);display:block;margin-bottom:4px;">Estado:</label>'
+        +   '<select class="roadmap-status-select" data-id="' + esc(r.id) + '" style="min-height:44px;font-size:16px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);width:100%;box-sizing:border-box;">'
+        +     statusOptionsHtml
+        +   '</select>'
+        + '</div>'
+        + '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">'
+        +   '<button type="button" class="btn btn-outline" data-roadmap-edit="' + esc(r.id) + '" style="flex:1;min-height:44px;font-size:16px;margin:0;padding:10px 14px;">✏️ Editar</button>'
+        +   '<button type="button" class="btn" data-roadmap-save="' + esc(r.id) + '" style="flex:1;min-height:44px;font-size:16px;margin:0;padding:10px 14px;">💾 Guardar</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+
+    const noticeHtml = isDueno ? '' : '<div style="padding:8px 12px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--muted);font-size:0.85rem;margin-bottom:12px;">👁️ Vista de consulta (Gerente). Solo el Dueño puede guardar cambios en el roadmap.</div>';
+
+    listEl.innerHTML = noticeHtml + html;
+
+    attachRoadmapListeners();
+  }
+
+  function attachRoadmapListeners() {
+    const container = $('roadmap-list');
+    if (!container) return;
+
+    container.querySelectorAll('.roadmap-drag-handle').forEach(handle => {
+      handle.addEventListener('pointerdown', onDragPointerDown);
+    });
+
+    container.querySelectorAll('[data-roadmap-move]').forEach(btn => {
+      btn.addEventListener('click', onReorderBtnClick);
+    });
+
+    container.querySelectorAll('.roadmap-item').forEach(row => {
+      row.addEventListener('keydown', onRowKeyDown);
+    });
+
+    container.querySelectorAll('[data-roadmap-edit]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-roadmap-edit');
+        openRoadmapEditModal(id);
+      });
+    });
+
+    container.querySelectorAll('[data-roadmap-save]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-roadmap-save');
+        await saveRoadmapRow(id, btn);
+      });
+    });
+  }
+
+  function onDragPointerDown(e) {
+    if (e.button !== undefined && e.button !== 0) return;
+    const handle = e.currentTarget;
+    const row = handle.closest('.roadmap-item');
+    const container = $('roadmap-list');
+    if (!row || !container) return;
+
+    const pointerId = e.pointerId;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let isDragging = false;
+
+    const initialNodes = Array.from(container.querySelectorAll('.roadmap-item'));
+
+    try {
+      handle.setPointerCapture(pointerId);
+    } catch (e) { console.warn('[nudo:roadmap-drag]', e); }
+
+    function onPointerMove(ev) {
+      if (ev.pointerId !== pointerId) return;
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+
+      if (!isDragging) {
+        if (Math.hypot(dx, dy) >= 8) {
+          isDragging = true;
+          row.classList.add('is-dragging');
+          document.body.classList.add('roadmap-dragging');
+        } else {
+          return;
+        }
+      }
+
+      const currentY = ev.clientY;
+      const siblings = Array.from(container.querySelectorAll('.roadmap-item')).filter(el => el !== row);
+
+      let targetSibling = null;
+      for (const sib of siblings) {
+        const box = sib.getBoundingClientRect();
+        const mid = box.top + box.height / 2;
+        if (currentY < mid) {
+          targetSibling = sib;
+          break;
+        }
+      }
+
+      if (targetSibling) {
+        if (row.nextElementSibling !== targetSibling) {
+          container.insertBefore(row, targetSibling);
+        }
+      } else {
+        if (row.nextElementSibling !== null) {
+          container.appendChild(row);
+        }
+      }
+    }
+
+    function cleanup() {
+      try {
+        handle.releasePointerCapture(pointerId);
+      } catch (e) { console.warn('[nudo:roadmap-drag]', e); }
+      handle.removeEventListener('pointermove', onPointerMove);
+      handle.removeEventListener('pointerup', onPointerUp);
+      handle.removeEventListener('pointercancel', onPointerCancel);
+      window.removeEventListener('keydown', onKeyDown);
+      row.classList.remove('is-dragging');
+      document.body.classList.remove('roadmap-dragging');
+    }
+
+    function onPointerCancel(ev) {
+      if (ev.pointerId !== pointerId) return;
+      cleanup();
+      if (isDragging) {
+        initialNodes.forEach(node => container.appendChild(node));
+      }
+    }
+
+    function onKeyDown(ev) {
+      if (ev.key === 'Escape') {
+        cleanup();
+        if (isDragging) {
+          initialNodes.forEach(node => container.appendChild(node));
+        }
+      }
+    }
+
+    async function onPointerUp(ev) {
+      if (ev.pointerId !== pointerId) return;
+      cleanup();
+      if (!isDragging) return;
+
+      const currentNodes = Array.from(container.querySelectorAll('.roadmap-item'));
+      const changed = currentNodes.some((node, i) => node !== initialNodes[i]);
+      if (!changed) return;
+
+      const movedId = row.dataset.id;
+      await persistRoadmapOrder(movedId, currentNodes.map(n => n.dataset.id), initialNodes);
+    }
+
+    handle.addEventListener('pointermove', onPointerMove);
+    handle.addEventListener('pointerup', onPointerUp);
+    handle.addEventListener('pointercancel', onPointerCancel);
+    window.addEventListener('keydown', onKeyDown);
+  }
+
+  async function persistRoadmapOrder(movedId, newIds, fallbackNodes) {
+    const container = $('roadmap-list');
+    const msgEl = $('roadmap-msg');
+    const currentRows = window.__roadmap_cache || [];
+    const idToRow = {};
+    currentRows.forEach(r => { idToRow[r.id] = r; });
+
+    const newRows = newIds.map(id => idToRow[id]).filter(Boolean);
+    const newIndex = newIds.indexOf(movedId);
+    if (newIndex === -1 || !newRows[newIndex]) return;
+
+    const prof = currentProfile || window.currentProfile;
+    const isDueno = prof && String(prof.role || '') === 'Dueño' && coalesceActive(prof.active);
+    if (!isDueno) {
+      if (fallbackNodes && container) {
+        fallbackNodes.forEach(n => container.appendChild(n));
+      }
+      showMsg(msgEl, 'Solo Dueño puede reordenar el roadmap.', 'err');
+      toast('Solo Dueño puede reordenar el roadmap', 3000);
+      return;
+    }
+
+    let newRank = null;
+    if (newRows.length === 1) {
+      newRank = 10;
+    } else if (newIndex === 0) {
+      const nextRank = newRows[1].priority_rank;
+      if (nextRank != null && nextRank > 10) newRank = nextRank - 10;
+      else if (nextRank != null && nextRank > 1) newRank = Math.floor(nextRank / 2);
+    } else if (newIndex === newRows.length - 1) {
+      const prevRank = newRows[newRows.length - 2].priority_rank;
+      if (prevRank != null) newRank = prevRank + 10;
+    } else {
+      const prevRank = newRows[newIndex - 1].priority_rank;
+      const nextRank = newRows[newIndex + 1].priority_rank;
+      if (prevRank != null && nextRank != null && nextRank - prevRank > 1) {
+        newRank = Math.floor((prevRank + nextRank) / 2);
+      }
+    }
+
+    if (newRank != null) {
+      newRows[newIndex].priority_rank = newRank;
+      newRows[newIndex].updated_at = new Date().toISOString();
+
+      const { error } = await supabase
+        .from('roadmap')
+        .update({ priority_rank: newRank, updated_at: new Date().toISOString() })
+        .eq('id', movedId);
+
+      if (error) {
+        if (fallbackNodes && container) {
+          fallbackNodes.forEach(n => container.appendChild(n));
+        }
+        showMsg(msgEl, 'Error al guardar prioridad: ' + error.message, 'err');
+        toast('Error al guardar: ' + error.message, 3000);
+      } else {
+        window.__roadmap_cache = newRows;
+        toast('Prioridad actualizada');
+        renderRoadmap(newRows);
+      }
+    } else {
+      const updates = [];
+      newRows.forEach((r, idx) => {
+        const targetRank = (idx + 1) * 10;
+        if (r.priority_rank !== targetRank) {
+          r.priority_rank = targetRank;
+          r.updated_at = new Date().toISOString();
+          updates.push({ id: r.id, priority_rank: targetRank, updated_at: r.updated_at });
+        }
+      });
+
+      try {
+        for (const u of updates) {
+          const { error } = await supabase
+            .from('roadmap')
+            .update({ priority_rank: u.priority_rank, updated_at: u.updated_at })
+            .eq('id', u.id);
+          if (error) throw error;
+        }
+        window.__roadmap_cache = newRows;
+        toast('Prioridades reorganizadas (10, 20, 30…)');
+        renderRoadmap(newRows);
+      } catch (err) {
+        if (fallbackNodes && container) {
+          fallbackNodes.forEach(n => container.appendChild(n));
+        }
+        showMsg(msgEl, 'Error al guardar prioridades: ' + err.message, 'err');
+        toast('Error al guardar: ' + err.message, 3000);
+      }
+    }
+  }
+
+  async function onReorderBtnClick(e) {
+    const btn = e.currentTarget;
+    const dir = btn.getAttribute('data-roadmap-move');
+    const id = btn.getAttribute('data-id');
+    const rows = (window.__roadmap_cache || []).slice();
+    const idx = rows.findIndex(r => r.id === id);
+    if (idx === -1) return;
+
+    if (dir === 'up') {
+      if (idx === 0) return;
+      const tmp = rows[idx];
+      rows[idx] = rows[idx - 1];
+      rows[idx - 1] = tmp;
+    } else if (dir === 'down') {
+      if (idx === rows.length - 1) return;
+      const tmp = rows[idx];
+      rows[idx] = rows[idx + 1];
+      rows[idx + 1] = tmp;
+    }
+
+    const container = $('roadmap-list');
+    const fallbackNodes = container ? Array.from(container.querySelectorAll('.roadmap-item')) : [];
+    await persistRoadmapOrder(id, rows.map(r => r.id), fallbackNodes);
+  }
+
+  async function onRowKeyDown(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const row = e.currentTarget;
+      const id = row.dataset.id;
+      const dir = (e.key === 'ArrowUp') ? 'up' : 'down';
+      const fakeBtn = { currentTarget: { getAttribute: (k) => k === 'data-roadmap-move' ? dir : id } };
+      await onReorderBtnClick(fakeBtn);
+      setTimeout(() => {
+        const nextRow = document.querySelector(`.roadmap-item[data-id="${id}"]`);
+        if (nextRow) nextRow.focus();
+      }, 50);
+    }
+  }
+
+  async function saveRoadmapRow(id, btn) {
+    const rowEl = document.querySelector(`.roadmap-item[data-id="${id}"]`);
+    if (!rowEl) return;
+    const commentEl = rowEl.querySelector('.roadmap-ben-comment');
+    const statusEl = rowEl.querySelector('.roadmap-status-select');
+    const newComment = commentEl ? commentEl.value.trim() : '';
+    const newStatus = statusEl ? statusEl.value : null;
+
+    btn.disabled = true;
+    const origText = btn.textContent;
+    btn.textContent = 'Guardando…';
+
+    const { error } = await supabase
+      .from('roadmap')
+      .update({
+        ben_comment: newComment || null,
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    btn.disabled = false;
+    btn.textContent = origText;
+
+    if (error) {
+      showMsg($('roadmap-msg'), 'Error al guardar fila: ' + error.message, 'err');
+      toast('Error al guardar: ' + error.message, 3000);
+    } else {
+      const item = (window.__roadmap_cache || []).find(r => r.id === id);
+      if (item) {
+        item.ben_comment = newComment || null;
+        item.status = newStatus;
+        item.updated_at = new Date().toISOString();
+      }
+      toast('Guardado');
+      renderRoadmap(window.__roadmap_cache);
+    }
+  }
+
+  function openRoadmapEditModal(id) {
+    roadmapEditTargetId = id;
+    const item = (window.__roadmap_cache || []).find(r => r.id === id);
+    if (!item) return;
+
+    $('roadmap-modal-title').value = item.title || '';
+    $('roadmap-modal-area').value = item.area || '';
+    $('roadmap-modal-why').value = item.why || '';
+    $('roadmap-modal-evidence').value = item.evidence || '';
+    clearMsg($('roadmap-edit-msg'));
+
+    $('roadmap-edit-modal').classList.remove('hidden');
+  }
+
+  function closeRoadmapEditModal() {
+    roadmapEditTargetId = null;
+    $('roadmap-edit-modal').classList.add('hidden');
+  }
+
+  async function saveRoadmapModal() {
+    if (!roadmapEditTargetId) return;
+    const title = ($('roadmap-modal-title').value || '').trim();
+    const area = ($('roadmap-modal-area').value || '').trim();
+    const why = ($('roadmap-modal-why').value || '').trim();
+    const evidence = ($('roadmap-modal-evidence').value || '').trim();
+
+    if (!title) {
+      showMsg($('roadmap-edit-msg'), 'El título es obligatorio.', 'err');
+      return;
+    }
+
+    const saveBtn = $('roadmap-modal-save');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Guardando…';
+
+    const { error } = await supabase
+      .from('roadmap')
+      .update({
+        title,
+        area: area || null,
+        why: why || null,
+        evidence: evidence || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', roadmapEditTargetId);
+
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Guardar cambios';
+
+    if (error) {
+      showMsg($('roadmap-edit-msg'), 'Error: ' + error.message, 'err');
+    } else {
+      const item = (window.__roadmap_cache || []).find(r => r.id === roadmapEditTargetId);
+      if (item) {
+        item.title = title;
+        item.area = area || null;
+        item.why = why || null;
+        item.evidence = evidence || null;
+        item.updated_at = new Date().toISOString();
+      }
+      closeRoadmapEditModal();
+      toast('Cambios guardados');
+      renderRoadmap(window.__roadmap_cache);
+    }
+  }
+
+  if ($('roadmap-modal-save')) $('roadmap-modal-save').addEventListener('click', saveRoadmapModal);
+  if ($('roadmap-modal-cancel')) $('roadmap-modal-cancel').addEventListener('click', closeRoadmapEditModal);
+  if ($('roadmap-edit-close-top')) $('roadmap-edit-close-top').addEventListener('click', closeRoadmapEditModal);
+  if ($('roadmap-refresh-btn')) $('roadmap-refresh-btn').addEventListener('click', loadRoadmap);
+
+  window.loadRoadmap = loadRoadmap;
+  window.renderRoadmap = renderRoadmap;
+  window.isManagement = isManagement;
 
   // Keep a cache for search filtering (set inside loadUsuarios).
   } // end initApp
