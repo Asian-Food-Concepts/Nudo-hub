@@ -138,7 +138,8 @@
      phone has no room to gain, and widening there would only add padding. */
   @media (min-width: 700px) {
     .wrap.wrap-wide { max-width: min(96vw, 1180px); }
-    .wrap.wrap-wide #form-mantestatus .form-card { padding: 18px 22px; }
+    .wrap.wrap-wide #form-mantestatus .form-card,
+    .wrap.wrap-wide #form-estatus .form-card { padding: 18px 22px; }
   }
   @media (min-width: 900px) {
     .wrap.wrap-wide { max-width: 1180px; }
@@ -808,6 +809,142 @@
     .estatus-mant-note-btn { flex: 1 1 auto; }
     .estatus-mant-detail-btn { flex: 0 0 auto; text-align: center; }
     .estatus-mant-advance-btn { width: 100%; flex: 1 1 100%; font-weight: 600; }
+  }
+
+  /* COMPRAS: DENSE ROWS (DESKTOP >1024px) & COMPRESSED CARDS (MOBILE) */
+  .estatus-comp-table-header { display: none; }
+  .estatus-comp-desktop { display: none !important; }
+  .estatus-comp-mobile { display: block; }
+  .estatus-comp-card {
+    border: 1px solid var(--border);
+    background: var(--card);
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .estatus-comp-title { font-weight: 700; color: var(--ink); }
+  .estatus-comp-col-obj { min-width: 0; }
+
+  @media (min-width: 1024px) {
+    .estatus-comp-table-header {
+      display: grid;
+      grid-template-columns: minmax(220px, 3.2fr) 110px 140px 105px 125px minmax(180px, auto);
+      align-items: center;
+      gap: 12px;
+      padding: 8px 14px;
+      margin: 12px 0 6px;
+      background: var(--frame-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      text-transform: uppercase;
+      box-sizing: border-box;
+    }
+    .estatus-comp-th-actions { text-align: right; }
+
+    .estatus-comp-desktop {
+      display: grid !important;
+      grid-template-columns: minmax(220px, 3.2fr) 110px 140px 105px 125px minmax(180px, auto);
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .estatus-comp-mobile { display: none !important; }
+
+    .estatus-comp-card {
+      padding: 8px 14px;
+      margin-bottom: 6px;
+      border-radius: 8px;
+    }
+    .estatus-comp-card:hover { background: var(--input-bg); }
+    .estatus-comp-card.done { padding: 8px 14px; opacity: 0.85; }
+
+    .estatus-comp-col-obj {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .estatus-comp-title {
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .estatus-comp-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .estatus-comp-col-branch {
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+    .estatus-comp-col-status {
+      white-space: nowrap;
+    }
+    .estatus-comp-col-prio {
+      white-space: nowrap;
+    }
+    .estatus-comp-col-date {
+      font-size: 0.8rem;
+      white-space: nowrap;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .estatus-comp-col-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .estatus-comp-col-actions .btn {
+      height: 32px;
+      min-height: 32px;
+      padding: 4px 12px;
+      font-size: 0.82rem;
+      margin: 0;
+      white-space: nowrap;
+      border-radius: 6px;
+      width: auto;
+    }
+    .estatus-comp-col-actions .btn[data-edit] {
+      padding: 4px 8px;
+    }
+    .estatus-comp-detail-btn {
+      height: 32px;
+      min-height: 32px;
+      padding: 4px 10px;
+      font-size: 0.82rem;
+      margin: 0;
+      white-space: nowrap;
+      border-radius: 6px;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .estatus-comp-card {
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .estatus-comp-card.done {
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border-radius: 10px;
+      opacity: 0.85;
+    }
   }
 
   /* Review-before-submit modal */
@@ -3341,7 +3478,7 @@
       // The planner may use a wider wrapper than the rest of the app (Ben 2026-09-23).
       // Applied on the shared .wrap, so it MUST be cleared on every other page — a plain
       // remove here is safer than adding it in 30 places.
-      setPlannerWide(f === 'plan' || f === 'mantestatus');
+      setPlannerWide(f === 'plan' || f === 'mantestatus' || f === 'estatus');
       if (f === 'horario') loadSchedule();
       if (f === 'estatus')     { estatusTab = 'comp'; loadEstatus(); }
       if (f === 'mantestatus') { estatusTab = 'mant'; loadEstatus(); }
@@ -5425,28 +5562,74 @@
     renderEstatusView();
   }
 
+  function renderCompTableHeader() {
+    return `
+      <div class="estatus-comp-table-header">
+        <div class="estatus-comp-th">Objeto / Descripción</div>
+        <div class="estatus-comp-th">Sucursal</div>
+        <div class="estatus-comp-th">Estatus</div>
+        <div class="estatus-comp-th">Prioridad</div>
+        <div class="estatus-comp-th">Fecha</div>
+        <div class="estatus-comp-th estatus-comp-th-actions">Acciones</div>
+      </div>
+    `;
+  }
+
   function renderComprasCard(r, done, isOpenView) {
     const isAdmin = estatusAdminFlag;
     const isMine = !!r.submitted_by && r.submitted_by === __currentUserId;
     const statusLabel = statusMeta(r)[r.status] ? statusMeta(r)[r.status].label : esc(r.status);
     const statusPlain = /^[^\s]+\s/.test(statusLabel) ? statusLabel.replace(/^[^\s]+\s/, '') : statusLabel;
 
+    const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : '—';
+    const branchBadgeDesktop = `<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--input-bg);border:1px solid var(--border);color:var(--ink);font-weight:600;white-space:nowrap;">📍 ${esc(r.branch || '—')}</span>`;
+    const prio = prioBadge(r.priority);
+
     if (done) {
       const isCancelled = r.status === 'Cancelado';
       const badge = isCancelled
-        ? `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;">⛔ Cancelado</span>`
-        : `<span style="display:inline-block;background:#e6f4ea;color:#188038;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;">✓ ${esc(statusPlain)}</span>`;
+        ? `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">⛔ Cancelado</span>`
+        : `<span style="display:inline-block;background:#e6f4ea;color:#188038;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">✓ ${esc(statusPlain)}</span>`;
       const amtStr = (r.amount != null && !isNaN(Number(r.amount))) ? formatMxn(r.amount) : '';
+      const vendorStr = r.vendor ? `🏢 ${esc(r.vendor)}` : '';
+      const submitterStr = r.submitter_name ? `👤 ${esc(r.submitter_name)}` : '';
+
+      const desktopMetaParts = [];
+      if (amtStr) desktopMetaParts.push('💰 ' + amtStr);
+      if (vendorStr) desktopMetaParts.push(vendorStr);
+      if (submitterStr) desktopMetaParts.push(submitterStr);
+      const desktopMetaStr = desktopMetaParts.join(' · ');
 
       return `
-        <div class="estatus-card estatus-comp-card done" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--card);cursor:pointer;opacity:0.85;">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <div style="font-weight:600;font-size:0.92rem;color:var(--ink);">${esc(r.title)}</div>
-            <div>${badge}</div>
+        <div class="estatus-card estatus-comp-card done" data-open-detail="${r.table}|${r.id}">
+          <!-- Desktop Dense Row (>1024px) -->
+          <div class="estatus-comp-desktop">
+            <div class="estatus-comp-col estatus-comp-col-obj">
+              <span class="estatus-comp-title" title="${escAttr(r.title)}">${esc(r.title)}</span>
+              ${desktopMetaStr ? `<span class="estatus-comp-sub" title="${escAttr(desktopMetaStr)}">${desktopMetaStr}</span>` : ''}
+            </div>
+            <div class="estatus-comp-col estatus-comp-col-branch">${branchBadgeDesktop}</div>
+            <div class="estatus-comp-col estatus-comp-col-status">${badge}</div>
+            <div class="estatus-comp-col estatus-comp-col-prio">${prio}</div>
+            <div class="estatus-comp-col estatus-comp-col-date">
+              <span style="font-weight:600;font-size:0.8rem;color:var(--ink);">${dateStr}</span>
+              <span style="font-size:0.75rem;color:var(--muted);">${fmtAgo(r.created_at)}</span>
+            </div>
+            <div class="estatus-comp-col estatus-comp-col-actions" data-no-card-open>
+              <button type="button" class="btn btn-outline estatus-comp-detail-btn" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</button>
+            </div>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:var(--muted);margin-top:4px;">
-            <span>${amtStr ? `💰 ${amtStr}` : ''} ${r.vendor ? `· ${esc(r.vendor)}` : ''}</span>
-            <span>${fmtAgo(r.created_at)}</span>
+
+          <!-- Mobile Compressed Card (<1024px / <700px) -->
+          <div class="estatus-comp-mobile">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+              <div style="font-weight:600;font-size:0.92rem;color:var(--ink);">${esc(r.title)}</div>
+              <div>${badge}</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:var(--muted);margin-top:4px;">
+              <span>${amtStr ? `💰 ${amtStr}` : ''} ${r.vendor ? `· ${esc(r.vendor)}` : ''}</span>
+              <span>${fmtAgo(r.created_at)}</span>
+            </div>
           </div>
         </div>
       `;
@@ -5461,8 +5644,6 @@
     const branchBadge = isOpenView
       ? `<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--input-bg);border:1px solid var(--border);color:var(--ink);font-weight:600;">📍 ${esc(r.branch)}</span>`
       : '';
-
-    const prio = prioBadge(r.priority);
 
     let amountStr = '';
     if (r.amount != null && !isNaN(Number(r.amount))) {
@@ -5479,27 +5660,61 @@
     const canAdvance = (isAdmin && nextStep);
     const canEdit = (isAdmin || (isMine && r.status === 'Solicitado'));
 
+    // Desktop status badge
+    const statusBadge = (r.status === 'Solicitado')
+      ? `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">🔴 Solicitado</span>`
+      : `<span style="display:inline-block;background:#fef7e0;color:#e37400;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">🟡 Comprado</span>`;
+
+    const desktopSubParts = [];
+    if (amountStr) desktopSubParts.push(amountStr);
+    if (vendorStr) desktopSubParts.push(vendorStr);
+    if (submitterStr) desktopSubParts.push(submitterStr);
+    const desktopSubStr = desktopSubParts.join(' · ');
+
     return `
-      <div class="estatus-card estatus-comp-card open" data-open-detail="${r.table}|${r.id}" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card);cursor:pointer;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-          <div style="font-weight:700;font-size:1rem;color:var(--ink);flex:1;">
-            ${esc(r.title)}
+      <div class="estatus-card estatus-comp-card open" data-open-detail="${r.table}|${r.id}">
+        <!-- Desktop Dense Row (>1024px) -->
+        <div class="estatus-comp-desktop">
+          <div class="estatus-comp-col estatus-comp-col-obj">
+            <span class="estatus-comp-title" title="${escAttr(r.title)}">${esc(r.title)}</span>
+            ${desktopSubStr ? `<span class="estatus-comp-sub" title="${escAttr(desktopSubStr)}">${desktopSubStr}</span>` : ''}
           </div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            ${branchBadge}
-            ${prio}
+          <div class="estatus-comp-col estatus-comp-col-branch">${branchBadgeDesktop}</div>
+          <div class="estatus-comp-col estatus-comp-col-status">${statusBadge}</div>
+          <div class="estatus-comp-col estatus-comp-col-prio">${prio}</div>
+          <div class="estatus-comp-col estatus-comp-col-date">
+            <span style="font-weight:600;font-size:0.8rem;color:var(--ink);">${dateStr}</span>
+            <span style="font-size:0.75rem;">${ageBadge}</span>
+          </div>
+          <div class="estatus-comp-col estatus-comp-col-actions" data-no-card-open>
+            ${canEdit ? `<button type="button" class="btn btn-outline" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
+            ${canAdvance ? `<button type="button" class="btn estatus-comp-advance-btn" data-advance="${r.table}|${r.id}|${nextStep}">Marcar ${nextStep}</button>` : ''}
+            <button type="button" class="btn btn-outline estatus-comp-detail-btn" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</button>
           </div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0;flex-wrap:wrap;gap:8px;">
-          <div>${amountStr} ${vendorStr ? (amountStr ? ' · ' : '') + vendorStr : ''}</div>
-          <div>${ageBadge}</div>
-        </div>
-        ${submitterStr ? `<div style="margin-bottom:6px;">${submitterStr}</div>` : ''}
-        <div data-no-card-open style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
-          <div style="font-size:0.8rem;color:var(--accent);cursor:pointer;" onclick="openEstatusDetail('${r.table}','${r.id}')">Ver detalles ›</div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            ${canEdit ? `<button type="button" class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
-            ${canAdvance ? `<button type="button" class="btn" style="min-height:44px;padding:8px 16px;font-size:0.9rem;margin:0;font-weight:600;" data-advance="${r.table}|${r.id}|${nextStep}">Marcar ${nextStep}</button>` : ''}
+
+        <!-- Mobile Compressed Card (<1024px / <700px) -->
+        <div class="estatus-comp-mobile">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <div style="font-weight:700;font-size:1rem;color:var(--ink);flex:1;">
+              ${esc(r.title)}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              ${branchBadge}
+              ${prio}
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0;flex-wrap:wrap;gap:8px;">
+            <div>${amountStr} ${vendorStr ? (amountStr ? ' · ' : '') + vendorStr : ''}</div>
+            <div>${ageBadge}</div>
+          </div>
+          ${submitterStr ? `<div style="margin-bottom:6px;">${submitterStr}</div>` : ''}
+          <div data-no-card-open style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+            <div style="font-size:0.8rem;color:var(--accent);cursor:pointer;" onclick="openEstatusDetail('${r.table}','${r.id}')">Ver detalles ›</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              ${canEdit ? `<button type="button" class="btn btn-outline" style="min-height:44px;min-width:44px;padding:6px 12px;font-size:0.85rem;margin:0;" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
+              ${canAdvance ? `<button type="button" class="btn" style="min-height:44px;padding:8px 16px;font-size:0.9rem;margin:0;font-weight:600;" data-advance="${r.table}|${r.id}|${nextStep}">Marcar ${nextStep}</button>` : ''}
+            </div>
           </div>
         </div>
       </div>
@@ -5727,6 +5942,7 @@
           </p>`;
       } else {
         if (estatusTab === 'mant') html += renderMantTableHeader();
+        if (estatusTab === 'comp') html += renderCompTableHeader();
         openRows.forEach(r => {
           html += (estatusTab === 'comp')
             ? renderComprasCard(r, false, true)
@@ -5755,6 +5971,7 @@
       if (!list || !list.length) return;
       html += `<div class="section-title" style="margin-top:6px;">📍 ${esc(br)} <span style="color:var(--muted);font-weight:400;">(${list.length})</span></div>`;
       if (estatusTab === 'mant') html += renderMantTableHeader();
+      if (estatusTab === 'comp') html += renderCompTableHeader();
       list.forEach(r => {
         html += (estatusTab === 'comp')
           ? renderComprasCard(r, false, false)
@@ -5764,6 +5981,7 @@
     if (doneRows.length) {
       html += `<div class="section-title" style="margin-top:14px;">✅ Completadas <span style="color:var(--muted);font-weight:400;">(${doneRows.length})</span></div>`;
       if (estatusTab === 'mant') html += renderMantDoneTableHeader();
+      if (estatusTab === 'comp') html += renderCompTableHeader();
       doneRows.forEach(r => {
         html += (estatusTab === 'comp')
           ? renderComprasCard(r, true, false)
@@ -8090,7 +8308,7 @@
       estatusTab = (target.table === 'maintenance_requests') ? 'mant' : 'comp';
       const form = $(estatusTab === 'mant' ? 'form-mantestatus' : 'form-estatus');
       if (form) form.classList.add('active');
-      setPlannerWide(estatusTab === 'mant');
+      setPlannerWide(estatusTab === 'mant' || estatusTab === 'comp');
       setActiveTab('estatus');
       await loadEstatus();                 // populates estatusRowsCache
       if (estatusRowsCache.some(r => r.table === target.table && r.id === target.id)) {
