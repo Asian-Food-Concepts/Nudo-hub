@@ -3629,6 +3629,20 @@
     const s = planState.staff.find(x => x.id === id);
     return s ? s.name : (id ? '(persona)' : '');
   }
+  function planFormatShiftTime(shOrStart, end) {
+    let s, e;
+    if (shOrStart && typeof shOrStart === 'object') {
+      s = shOrStart.start_time;
+      e = shOrStart.end_time;
+    } else {
+      s = shOrStart;
+      e = end;
+    }
+    if (s && e) return `${s}–${e}`;
+    if (s) return `${s}–?`;
+    if (e) return `?–${e}`;
+    return 'sin horario';
+  }
   async function planAudit(action, shift, oldShift) {
     try {
       await supabase.from('shift_audit').insert({
@@ -3860,8 +3874,9 @@
       slots.forEach(slot => {
         html += `<tr><td class="name">${slot}</td>`;
         for (let i=0;i<7;i++) {
+          const date = fmtDate(new Date(planState.weekStart.getTime() + i*86400000));
           const sh = planShiftForSlot(slot, i);
-          const assigned = sh ? (planState.staff.find(s => s.id === sh.staff_id) || null) : null;
+          const assigned = sh ? (planState.staff.find(s => s.id === sh.staff_id) || (sh.staff_id ? { name: planStaffName(sh.staff_id) } : null)) : null;
           const isDescanso = sh && sh.status === 'descanso';
           const rowDup = (sh && !isDescanso && sh.staff_id)
             ? planCrossBranchDupes(sh.staff_id, date).length : 0;
@@ -3874,10 +3889,11 @@
             // branch. Allowed to pass — but flagged in the cell so it is visible without
             // opening the modal, plus a title for the detail on hover/long-press.
             const dupes = planCrossBranchDupes(sh.staff_id, date);
+            const dupTime = (dupes.length && (dupes[0].start_time || dupes[0].end_time)) ? ' ' + esc(planFormatShiftTime(dupes[0])) : '';
             const dupMark = dupes.length
-              ? `<span class="plan-dup-flag" title="También programado en ${esc(dupes.map(d => d.branch).join(', '))}${dupes[0].start_time ? ' ' + esc(dupes[0].start_time) + '–' + esc(dupes[0].end_time || '') : ''} el mismo día">🚩</span>`
+              ? `<span class="plan-dup-flag" title="También programado en ${esc(dupes.map(d => d.branch).join(', '))}${dupTime} el mismo día">🚩</span>`
               : '';
-            inner += `${dupMark}<span class="nm">${esc(assigned.name)}</span><span class="tm">${sh.start_time||''}–${sh.end_time||''}</span>`;
+            inner += `${dupMark}<span class="nm">${esc(assigned.name)}</span><span class="tm">${planFormatShiftTime(sh)}</span>`;
           } else {
             inner += `<span class="empty">—</span>`;
           }
@@ -3998,8 +4014,14 @@
     if (!cross.length && !same.length) return;
     const sname = planStaffName(staffId);
     const bits = [];
-    cross.forEach(d => bits.push(`${esc(d.branch)} ${esc(d.start_time || '')}–${esc(d.end_time || '')}`));
-    same.forEach(d => bits.push(`${esc(planState.branch)} ${esc(d.start_time || '')}–${esc(d.end_time || '')}`));
+    cross.forEach(d => {
+      const tm = (d.start_time || d.end_time) ? ` ${planFormatShiftTime(d)}` : '';
+      bits.push(`${esc(d.branch)}${esc(tm)}`);
+    });
+    same.forEach(d => {
+      const tm = (d.start_time || d.end_time) ? ` ${planFormatShiftTime(d)}` : '';
+      bits.push(`${esc(planState.branch)}${esc(tm)}`);
+    });
     box.innerHTML = `<div class="plan-warn red">
       🚩 ${esc(sname)} ya está programado el mismo día en: ${bits.join(' · ')}.
       <div style="margin-top:4px;font-weight:400;">Se guardó de todas formas — revisa que pueda cubrir ambos.</div>
@@ -4066,7 +4088,7 @@
         if (sh.status === 'descanso') {
           html += `<button class="plan-day-shift" data-shift="${sh.id}" style="opacity:0.7;">😴 ${esc(name)} · Descanso</button>`;
         } else {
-          html += `<button class="plan-day-shift" data-shift="${sh.id}"><span class="t">${sh.start_time||'?'}–${sh.end_time||'?'}</span> ${esc(name)}</button>`;
+          html += `<button class="plan-day-shift" data-shift="${sh.id}"><span class="t">${planFormatShiftTime(sh)}</span> ${esc(name)}</button>`;
         }
       });
       html += `<button class="btn btn-secondary plan-day-add" data-role="${role}" style="margin-top:8px;">+ Agregar ${role}</button></div>`;
@@ -4210,8 +4232,8 @@
       const day = a.shift_date ? a.shift_date.slice(8,10) + '/' + a.shift_date.slice(5,7) : '';
       let detail = '';
       if (a.action === 'delete') detail = `quitaron a ${esc(a.old_staff||'—')}`;
-      else if (a.action === 'create') detail = `asignaron a ${esc(a.new_staff||'—')} ${esc(a.new_start||'')}–${esc(a.new_end||'')}`;
-      else detail = `${esc(a.old_staff||'—')} ${esc(a.old_start||'')}–${esc(a.old_end||'')} → ${esc(a.new_staff||'—')} ${esc(a.new_start||'')}–${esc(a.new_end||'')}`;
+      else if (a.action === 'create') detail = `asignaron a ${esc(a.new_staff||'—')} ${esc(planFormatShiftTime(a.new_start, a.new_end))}`;
+      else detail = `${esc(a.old_staff||'—')} ${esc(planFormatShiftTime(a.old_start, a.old_end))} → ${esc(a.new_staff||'—')} ${esc(planFormatShiftTime(a.new_start, a.new_end))}`;
       return `<div class="plan-audit-row" style="padding:7px 0;border-bottom:1px solid var(--frame,#eee);font-size:0.85rem;">
         <b>${ACT[a.action]||'•'} ${esc(a.slot||a.role||'')} ${day}</b> — ${detail}
         <br><span style="color:var(--muted);">${esc(a.changed_by_name||'?')} · ${when}</span></div>`;
@@ -4281,7 +4303,7 @@
             if (sh.status === 'descanso') {
               return '<span style="color:var(--muted);font-style:italic;">Descanso</span>';
             }
-            const tm = (sh.start_time && sh.end_time) ? `${sh.start_time}–${sh.end_time}` : (sh.start_time || '—');
+            const tm = planFormatShiftTime(sh);
             const slotName = sh.slot || sh.role || '';
             return `<span class="plan-person-time">${esc(tm)}</span><span class="plan-person-slot">${esc(slotName)}</span>`;
           }).join('<span style="margin:0 6px;color:var(--muted);">/</span>');
@@ -4368,8 +4390,10 @@
       if (seenDup[key]) return;
       seenDup[key] = true;
       const sname = planStaffName(sh.staff_id);
-      const other = dupes.map(d =>
-        `${d.branch}${d.start_time ? ' ' + d.start_time + '–' + (d.end_time || '') : ''}`).join(', ');
+      const other = dupes.map(d => {
+        const tm = (d.start_time || d.end_time) ? ' ' + planFormatShiftTime(d) : '';
+        return `${d.branch}${tm}`;
+      }).join(', ');
       dupWarns.push({
         type: 'red',
         text: `🚩 ${sname}: mismo día en ${planState.branch} y ${esc(other)} (${sh.shift_date.slice(8,10)}/${sh.shift_date.slice(5,7)})`
