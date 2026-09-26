@@ -222,6 +222,16 @@ module.exports = function (t) {
         $: (id) => dom.getElementById(id),
         toast: (msg) => { toasted = msg; },
         renderRoadmap: () => {},
+        // Same wiring gap as the sibling test: the refinement path can reach renderRoadmap,
+        // whose code reads ROADMAP_STATUSES. Absent from the sandbox → ReferenceError that
+        // masks the assertion actually under test.
+        ROADMAP_STATUSES: {
+          suggested: { label: 'Sugerido', icon: '💡' },
+          queued: { label: 'En cola', icon: '⏳' },
+          building: { label: 'Construyendo', icon: '🚀' },
+          done: { label: 'Hecho', icon: '✅' },
+          failed: { label: 'Falló', icon: '❌' },
+        },
         window: { __roadmap_cache: [] }
       }
     });
@@ -270,6 +280,17 @@ module.exports = function (t) {
         $: (id) => dom.getElementById(id),
         toast: () => {},
         renderRoadmap: () => { reRendered = true; },
+        // `requestRoadmapRefinement` reaches renderRoadmap on success. That stub is replaced here,
+        // but the REAL function's fallback path reads ROADMAP_STATUSES — so the sandbox must
+        // expose it or the call throws ReferenceError and the assertion below reads as a product
+        // bug. Test wiring, not app behaviour. (Found by the new test phase, 2026-09-26.)
+        ROADMAP_STATUSES: {
+          suggested: { label: 'Sugerido', icon: '💡' },
+          queued: { label: 'En cola', icon: '⏳' },
+          building: { label: 'Construyendo', icon: '🚀' },
+          done: { label: 'Hecho', icon: '✅' },
+          failed: { label: 'Falló', icon: '❌' },
+        },
         window: { __roadmap_cache: [initialItem] }
       }
     });

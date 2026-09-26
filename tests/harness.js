@@ -541,6 +541,17 @@ function sandbox(src, names, opts = {}) {
   }
 
   for (const { name, body } of wanted) {
+    // ⚠️ A SUPPLIED GLOBAL MUST WIN (fixed 2026-09-26).
+    //
+    // `opts.globals` is how a test injects a STUB — `renderRoadmap: () => { reRendered = true }`,
+    // `toast: (m) => { toasted = m }`. The closure resolution above pulls in every function the
+    // requested ones call, and `renderRoadmap`/`toast` exist in app.html — so the loop below used
+    // to overwrite the stub with the REAL body, and the spy never ran. The test then failed on an
+    // assertion about its own stub, which reads exactly like a product bug and is not one.
+    //
+    // A caller that names a global is stating "this is the behaviour I want under test". The
+    // closure exists to fill in what the caller did NOT name. So: don't clobber.
+    if (Object.prototype.hasOwnProperty.call(opts.globals || {}, name)) continue;
     try {
       // APPEND AN EXPLICIT EXPORT.
       // A top-level `const f = () => {}` (or `let`) run via runInContext lands in

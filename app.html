@@ -13193,8 +13193,72 @@
 
   let roadmapEditTargetId = null;
 
+  function formatTokens(tokens) {
+    if (tokens == null || isNaN(Number(tokens)) || Number(tokens) <= 0) return 'sin datos de tokens';
+    const num = Number(tokens);
+    if (num >= 1000000) {
+      const m = (num / 1000000).toFixed(1).replace(/\.0$/, '');
+      return `${m}M tokens`;
+    }
+    if (num >= 1000) {
+      const k = (num / 1000).toFixed(1).replace(/\.0$/, '');
+      return `${k}k tokens`;
+    }
+    return `${num} tokens`;
+  }
+
+  function formatRunTime(totalSecs) {
+    if (totalSecs == null || isNaN(Number(totalSecs)) || Number(totalSecs) <= 0) return '';
+    const s = Math.round(Number(totalSecs));
+    const hrs = Math.floor(s / 3600);
+    const mins = Math.floor((s % 3600) / 60);
+    const secs = s % 60;
+    if (hrs > 0) {
+      return `${hrs}h ${mins}m ${secs}s`;
+    }
+    if (mins > 0) {
+      return `${mins}m ${secs}s`;
+    }
+    return `${secs}s`;
+  }
+
+  function formatRoadmapTelemetry(runs) {
+    if (!runs || !runs.length) return '';
+    const count = runs.length;
+    const parts = [];
+    if (count > 1) {
+      parts.push(`${count} intentos`);
+    }
+    let totalSecs = 0;
+    let hasSecs = false;
+    let totalTokens = 0;
+    let hasTokens = false;
+
+    runs.forEach(r => {
+      if (r.elapsed_secs != null && !isNaN(Number(r.elapsed_secs))) {
+        totalSecs += Number(r.elapsed_secs);
+        hasSecs = true;
+      }
+      if (r.tokens != null && !isNaN(Number(r.tokens)) && Number(r.tokens) > 0) {
+        totalTokens += Number(r.tokens);
+        hasTokens = true;
+      }
+    });
+
+    if (hasSecs && totalSecs > 0) {
+      parts.push(formatRunTime(totalSecs));
+    }
+    if (hasTokens) {
+      parts.push(formatTokens(totalTokens));
+    } else {
+      parts.push('sin datos de tokens');
+    }
+
+    return parts.join(' · ');
+  }
+
   async function loadRoadmap() {
-    const prof = currentProfile || window.currentProfile;
+    const prof = (typeof currentProfile !== 'undefined' ? currentProfile : null) || (typeof window !== 'undefined' ? window.currentProfile : null);
     const isOwnerUser = prof ? isOwner(prof.role, prof.level, prof.active) : false;
     if (!isOwnerUser) {
       goHome();
@@ -13208,17 +13272,36 @@
     listEl.innerHTML = '<p style="color:var(--muted);padding:16px;text-align:center;">Cargando roadmap…</p>';
 
     try {
-      const { data, error } = await supabase
-        .from('roadmap')
-        .select('*')
-        .order('priority_rank', { ascending: true, nullsFirst: false })
-        .order('created_at', { ascending: true });
+      const [roadmapRes, runsRes] = await Promise.all([
+        supabase
+          .from('roadmap')
+          .select('*')
+          .order('priority_rank', { ascending: true, nullsFirst: false })
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('roadmap_runs')
+          .select('*')
+          .order('attempt', { ascending: true })
+      ]);
+
+      const data = roadmapRes ? roadmapRes.data : null;
+      const error = roadmapRes ? roadmapRes.error : null;
 
       if (error) {
         showMsg(msgEl, 'Error al cargar el roadmap: ' + (error.message || String(error)), 'err');
         listEl.innerHTML = '<div style="padding:16px;border:1px solid var(--red);border-radius:12px;background:var(--msg-err-bg);color:var(--red);font-size:0.9rem;"><strong>⚠️ No se pudo cargar el roadmap:</strong> ' + esc(error.message || String(error)) + '</div>';
         return;
       }
+
+      const runs = (runsRes && !runsRes.error && runsRes.data) ? runsRes.data : [];
+      window.__roadmap_runs_cache = {};
+      runs.forEach(rn => {
+        if (!rn || !rn.roadmap_id) return;
+        if (!window.__roadmap_runs_cache[rn.roadmap_id]) {
+          window.__roadmap_runs_cache[rn.roadmap_id] = [];
+        }
+        window.__roadmap_runs_cache[rn.roadmap_id].push(rn);
+      });
 
       const rows = (data || []).slice().sort((a, b) => {
         const ra = a.priority_rank != null ? a.priority_rank : Infinity;
@@ -13250,7 +13333,7 @@
       return;
     }
 
-    const prof = currentProfile || window.currentProfile;
+    const prof = (typeof currentProfile !== 'undefined' ? currentProfile : null) || (typeof window !== 'undefined' ? window.currentProfile : null);
     const isOwnerUser = prof ? isOwner(prof.role, prof.level, prof.active) : false;
 
     // B5: Count of items awaiting approval & prominent banner
@@ -13281,6 +13364,13 @@
       const st = ROADMAP_STATUSES[stKey];
       const isSuggested = stKey === 'suggested';
 
+      const runsCache = window.__roadmap_runs_cache || {};
+      const runs = r._runs || (r.dedupe_key && runsCache[r.dedupe_key]) || (r.id && runsCache[r.id]) || [];
+      const telemetryLine = formatRoadmapTelemetry(runs);
+      const telemetryHtml = telemetryLine
+        ? '<div class="roadmap-telemetry" style="font-size:0.75rem;color:var(--muted);font-weight:normal;font-family:ui-monospace,monospace;margin-top:2px;">' + esc(telemetryLine) + '</div>'
+        : '';
+
       // Status chip (B5: prominent '💡 Sugerido' chip)
       const statusChipHtml = isSuggested
         ? '<span class="roadmap-chip" style="background:rgba(26,86,219,0.18);border:1px solid rgba(26,86,219,0.4);color:#1a56db;font-weight:700;">💡 Sugerido</span>'
@@ -13294,7 +13384,10 @@
       // Desktop collapsed row (B4: dense table-like row; B2: title, category, description, status)
       const desktopRowHtml = '<div class="roadmap-desktop roadmap-row-collapsed" style="cursor:pointer;padding:10px 14px;align-items:center;user-select:none;">'
         + '<div style="font-weight:700;font-size:12px;color:var(--muted);">#' + (idx + 1) + '</div>'
-        + '<div style="font-weight:600;font-size:0.95rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(r.title || '') + '">' + esc(r.title || '(sin título)') + '</div>'
+        + '<div style="overflow:hidden;min-width:0;">'
+        +   '<div style="font-weight:600;font-size:0.95rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(r.title || '') + '">' + esc(r.title || '(sin título)') + '</div>'
+        +   telemetryHtml
+        + '</div>'
         + '<div><span class="roadmap-chip roadmap-chip-area">' + esc(r.area || 'General') + '</span></div>'
         + '<div class="roadmap-why-clamp" title="' + esc(r.why || '') + '">' + esc(r.why || '—') + '</div>'
         + '<div>' + statusChipHtml + '</div>'
@@ -13307,7 +13400,10 @@
         + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'
         +   '<div style="flex:1;min-width:0;display:flex;align-items:flex-start;gap:6px;">'
         +     '<span style="font-size:12px;color:var(--muted);font-weight:700;padding-top:2px;">#' + (idx + 1) + '</span>'
-        +     '<span style="font-weight:700;font-size:0.95rem;color:var(--ink);word-break:break-word;">' + esc(r.title || '(sin título)') + '</span>'
+        +     '<div style="flex:1;min-width:0;">'
+        +       '<div style="font-weight:700;font-size:0.95rem;color:var(--ink);word-break:break-word;">' + esc(r.title || '(sin título)') + '</div>'
+        +       telemetryHtml
+        +     '</div>'
         +   '</div>'
         +   '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
         +     statusChipHtml
@@ -13356,6 +13452,52 @@
           + '</div>';
       }
 
+      let runsSectionHtml = '';
+      if (runs && runs.length > 0) {
+        runsSectionHtml = '<div class="roadmap-runs-section" style="margin:8px 0;padding:8px 12px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);font-size:0.82rem;">'
+          + '<div style="font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
+          +   '<span>⏱️ Telemetría (' + runs.length + ' ' + (runs.length === 1 ? 'intento' : 'intentos') + ')</span>'
+          +   '<span style="font-size:0.78rem;color:var(--muted);font-weight:normal;">' + esc(telemetryLine) + '</span>'
+          + '</div>'
+          + runs.map(run => {
+              const outcomeLabel = run.outcome === 'done' ? '✅ Hecho' : (run.outcome === 'infra' ? '⚠️ Infra' : '❌ Falló');
+              const timeStr = run.elapsed_secs != null ? formatRunTime(run.elapsed_secs) : '—';
+              const tokStr = (run.tokens != null && Number(run.tokens) > 0) ? formatTokens(run.tokens) : 'sin datos de tokens';
+              const commitStr = run.commit_sha ? (' · commit <code>' + esc(run.commit_sha) + '</code>') : '';
+              const noteStr = run.note ? (' · <span style="color:var(--muted);">' + esc(run.note) + '</span>') : '';
+              return '<div class="roadmap-run-row" data-attempt="' + esc(run.attempt) + '" style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px dashed var(--border);font-size:0.8rem;flex-wrap:wrap;">'
+                + '<strong>Intento ' + esc(run.attempt) + ':</strong> '
+                + '<span>' + outcomeLabel + '</span> · '
+                + '<span>' + timeStr + '</span> · '
+                + '<span class="roadmap-run-tokens">' + esc(tokStr) + '</span>'
+                + commitStr
+                + noteStr
+                + '</div>';
+            }).join('')
+          + '</div>';
+      }
+
+      let benCommentHtml = '';
+      if (r.ben_comment && String(r.ben_comment).trim()) {
+        benCommentHtml = '<div class="roadmap-ben-comment-display" style="margin:8px 0;padding:8px 12px;border-radius:8px;background:rgba(26,86,219,0.06);border:1px solid rgba(26,86,219,0.2);font-size:0.85rem;color:var(--ink);">'
+          + '<strong style="color:#1a56db;">Solicitud de refinamiento / Nota de Ben:</strong> ' + esc(r.ben_comment)
+          + '</div>';
+      }
+
+      let refinementHtml = '';
+      if (stKey === 'done') {
+        refinementHtml = '<div class="roadmap-refine-box" style="margin-top:12px;padding:10px 12px;border-radius:8px;background:rgba(31,122,77,0.06);border:1px solid rgba(31,122,77,0.25);">'
+          + '<label style="font-size:0.85rem;font-weight:700;color:var(--green);display:block;margin-bottom:6px;">🔄 Pedir refinamiento</label>'
+          + '<div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px;">Describe qué cambios o ajustes deseas para devolver esta tarea completada a la cola:</div>'
+          + '<textarea class="roadmap-refine-input" data-id="' + esc(r.id) + '" rows="2" style="width:100%;font-size:16px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);box-sizing:border-box;resize:vertical;" placeholder="Describe las correcciones necesarias..."></textarea>'
+          + '<div style="margin-top:8px;display:flex;justify-content:flex-end;">'
+          +   '<button type="button" class="btn roadmap-refine-btn" data-roadmap-refine="' + esc(r.id) + '" style="min-height:44px;font-size:14px;padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">'
+          +     '<span>🔄 Pedir refinamiento</span>'
+          +   '</button>'
+          + '</div>'
+          + '</div>';
+      }
+
       const statusOptionsHtml = Object.keys(ROADMAP_STATUSES).map(k => {
         const opt = ROADMAP_STATUSES[k];
         const sel = (k === stKey) ? ' selected' : '';
@@ -13384,6 +13526,9 @@
         + kindBadgeHtml
         + inFlightHtml
         + resultNoteHtml
+        + runsSectionHtml
+        + benCommentHtml
+        + refinementHtml
         + '<div style="margin-top:10px;">'
         +   '<label style="font-size:0.8rem;font-weight:600;color:var(--ink);display:block;margin-bottom:4px;">Comentario de Ben:</label>'
         +   '<textarea class="roadmap-ben-comment" data-id="' + esc(r.id) + '" rows="2" style="width:100%;font-size:16px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);box-sizing:border-box;resize:vertical;" placeholder="Instrucciones o notas...">' + esc(r.ben_comment || '') + '</textarea>'
@@ -13422,6 +13567,8 @@
       rowEl.addEventListener('click', (e) => {
         if (e.target.closest('[data-no-card-open]')) return;
         if (e.target.closest('[data-roadmap-approve]')) return;
+        if (e.target.closest('[data-roadmap-refine]')) return;
+        if (e.target.closest('.roadmap-refine-box')) return;
         const itemEl = rowEl.closest('.roadmap-item');
         if (!itemEl) return;
         const id = itemEl.getAttribute('data-id');
@@ -13450,6 +13597,18 @@
         e.preventDefault();
         const id = btn.getAttribute('data-roadmap-approve');
         await approveRoadmapItem(id, btn);
+      });
+    });
+
+    // Refinement action on done items
+    container.querySelectorAll('[data-roadmap-refine]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-roadmap-refine');
+        const itemEl = btn.closest('.roadmap-item');
+        const inputEl = itemEl ? itemEl.querySelector('.roadmap-refine-input') : null;
+        const text = inputEl ? inputEl.value : '';
+        requestRoadmapRefinement(id, text, btn);
       });
     });
 
@@ -13519,6 +13678,48 @@
       if (btn) {
         btn.disabled = false;
         btn.textContent = '👍 Aprobar';
+      }
+    }
+  }
+
+  async function requestRoadmapRefinement(id, text, btn) {
+    if (!id) return;
+    const cleanText = (text || '').trim();
+    if (!cleanText) {
+      toast('Escribe el refinamiento antes de enviar');
+      return;
+    }
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span>Enviando…</span>';
+    }
+    try {
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from('roadmap')
+        .update({
+          status: 'queued',
+          ben_comment: cleanText,
+          updated_at: nowIso
+        })
+        .eq('id', id);
+      if (error) throw error;
+      const item = (window.__roadmap_cache || []).find(r => r.id === id);
+      if (item) {
+        item.status = 'queued';
+        item.ben_comment = cleanText;
+        item.updated_at = nowIso;
+      }
+      toast('Refinamiento enviado a la cola ⏳');
+      renderRoadmap(window.__roadmap_cache || []);
+    } catch (err) {
+      console.error('[nudo:roadmap-refine]', err);
+      showMsg($('roadmap-msg'), 'Error al pedir refinamiento: ' + (err.message || String(err)), 'err');
+      toast('Error al pedir refinamiento: ' + (err.message || String(err)), 3000);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origHtml || '<span>🔄 Pedir refinamiento</span>';
       }
     }
   }
