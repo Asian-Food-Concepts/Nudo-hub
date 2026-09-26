@@ -4611,6 +4611,9 @@
     if (error) {
       toast('No se pudo cargar el perfil.');
     } else if (data && data.name) {
+      if (!data.role || data.level == null) {
+        data.level = 99;
+      }
       currentProfile = data;
     }
     // v0.149 — "Visto como": the REAL identity is stashed in __realProfile and the
@@ -11321,6 +11324,7 @@
     //   is_gerente() -> active AND role ilike '%gerente%'
     // Without it, a deactivated Dueño would see a button that the DB then rejects.
     if (!coalesceActive(active)) return false;
+    if (!role) return false;
     const r = String(role || '').toLowerCase();
     if (String(role || '') === 'Admin') return true;
     if (r.includes('gerente')) return true;
@@ -11334,6 +11338,7 @@
       return isOwner(roleOrProfile.role, roleOrProfile.level, roleOrProfile.active);
     }
     if (!coalesceActive(active)) return false;
+    if (!roleOrProfile) return false;
     return String(roleOrProfile || '').trim() === 'Admin';
   }
 
@@ -11342,9 +11347,12 @@
     return v === null || v === undefined ? true : !!v;
   }
 
+  // Fail-closed: missing profile, unresolvable role, or role NULL is treated
+  // as level 99 (no access) rather than granting anything.
   function realLevel() {
     const p = VIEW_AS ? __realProfile : currentProfile;
-    return p ? Number(p.level) : null;
+    if (!p || !p.role || p.level == null) return 99;
+    return Number(p.level);
   }
 
   async function openViewAsPicker() {
@@ -11721,19 +11729,99 @@
     $('u-submit').disabled = false;
   });
 
+  // v0.192 — first name written out, every other part reduced to an initial.
+  // Roberto Yael Peregrina Cruz -> Roberto Y. P. C.
+  // Kept in sync with public.build_short_name() in the database.
+  function build_short_name(nombres, paterno, materno) {
+    let raw = '';
+    if (arguments.length > 1) {
+      raw = [nombres, paterno, materno].filter(Boolean).join(' ');
+    } else {
+      raw = String(nombres || '');
+    }
+    const mask = (part) => String(part || '')
+      .replace(/\([^)]*\)|\[[^\]]*\]/g, ' ')          // drop bracketed asides
+      .split(/\s+/)
+      .filter(t => t && !/^[().,;:-]+$/.test(t))
+      .map(t => t[0].toUpperCase() + '.')
+      .join(' ');
+    const tokens = String(raw || '')
+      .replace(/\([^)]*\)|\[[^\]]*\]/g, ' ')
+      .split(/\s+/)
+      .filter(t => t && !/^[().,;:-]+$/.test(t));
+    if (!tokens.length) return '';
+    const first = tokens[0];
+    const rest = tokens.slice(1);
+    return [
+      first,
+      rest.length ? mask(rest.join(' ')) : ''
+    ].filter(Boolean).join(' ');
+  }
+
+  // Idempotent onboarding profile activation: creates or updates public.profiles
+  // for an onboarding row reaching step 4 with an existing auth_user_id.
+  async function activateOnboardingProfile(onboardingRow, client) {
+    const sb = client || supabase;
+    if (!onboardingRow || !onboardingRow.auth_user_id) return null;
+    const nombres = (onboardingRow.nombres || '').trim() || null;
+    const paterno = (onboardingRow.apellido_paterno || '').trim() || null;
+    const materno = (onboardingRow.apellido_materno || '').trim() || null;
+    const fullName = [nombres, paterno, materno].filter(Boolean).join(' ').trim() || null;
+    const shortName = fullName ? build_short_name(fullName) : null;
+    const email = (onboardingRow.email || '').trim().toLowerCase() || null;
+    const phone = (onboardingRow.movil || '').trim() || null;
+
+    const { data: existing, error: selErr } = await sb.from('profiles')
+      .select('id,role,branch,level,area,active,name,full_name,short_name,nombres,apellido_paterno,apellido_materno,email,phone')
+      .eq('id', onboardingRow.auth_user_id)
+      .maybeSingle();
+    if (selErr) throw selErr;
+
+    if (existing) {
+      // Idempotent: UPDATE name fields, do not overwrite role, branch, level, area, active
+      const patch = {
+        nombres: nombres,
+        apellido_paterno: paterno,
+        apellido_materno: materno,
+        name: nombres || fullName,
+        full_name: fullName,
+        short_name: shortName,
+        email: email || existing.email,
+        phone: phone || existing.phone
+      };
+      const { data, error } = await sb.from('profiles').update(patch).eq('id', onboardingRow.auth_user_id).select();
+      if (error) throw error;
+      return (data && data[0]) || Object.assign({}, existing, patch);
+    } else {
+      // Insert new profile: role & branch NULL (set by human, never inferred/guessed)
+      // active = true
+      const payload = {
+        id: onboardingRow.auth_user_id,
+        nombres: nombres,
+        apellido_paterno: paterno,
+        apellido_materno: materno,
+        name: nombres || fullName,
+        full_name: fullName,
+        short_name: shortName,
+        email: email,
+        phone: phone,
+        role: null,
+        branch: null,
+        active: true
+      };
+      const { data, error } = await sb.from('profiles').insert(payload).select();
+      if (error) throw error;
+      return (data && data[0]) || payload;
+    }
+  }
+
   // Live "Se mostrará como" hint on the add form (same rule as the editor).
   (function () {
     const ids = ['u-nombres', 'u-apellido-paterno', 'u-apellido-materno'];
     const upd = () => {
       const hint = $('u-preview-hint');
       if (!hint) return;
-      const mask = part => String(part || '').split(/\s+/).filter(Boolean)
-        .map(t => t[0].toUpperCase() + '.').join(' ');
-      const toks = String(($('u-nombres') || {}).value || '').split(/\s+/).filter(Boolean);
-      const out = [toks[0] || '', toks.length > 1 ? mask(toks.slice(1).join(' ')) : '',
-                   mask(($('u-apellido-paterno') || {}).value || ''),
-                   mask(($('u-apellido-materno') || {}).value || '')]
-                  .filter(Boolean).join(' ');
+      const out = build_short_name(($('u-nombres') || {}).value, ($('u-apellido-paterno') || {}).value, ($('u-apellido-materno') || {}).value);
       hint.textContent = 'Se mostrará como: ' + (out || '—');
     };
     ids.forEach(id => { const el = $(id); if (el) el.addEventListener('input', upd); });
@@ -11812,26 +11900,11 @@
     // v0.191 — live "Se mostrará como" preview. The leader sees exactly the string
     // the rest of the team will see, so a wrong split is caught before saving.
     const updPreview = () => {
-      // v0.192 — the preview now mirrors the SERVER's rule exactly:
-      // first name written out, every other part reduced to an initial.
-      // Juan Carlos Rodríguez Heredia -> Juan C. R. H.
-      // Kept in sync with public.build_short_name() in the database.
-      const mask = (part) => String(part || '')
-        .replace(/\([^)]*\)|\[[^\]]*\]/g, ' ')          // drop bracketed asides
-        .split(/\s+/)
-        .filter(t => t && !/^[().,;:-]+$/.test(t))
-        .map(t => t[0].toUpperCase() + '.')
-        .join(' ');
-      const nRaw = String(($('ue-nombres') || {}).value || '')
-        .replace(/\([^)]*\)|\[[^\]]*\]/g, ' ').split(/\s+/).filter(t => t && !/^[().,;:-]+$/.test(t));
-      const first = nRaw[0] || '';
-      const rest = nRaw.slice(1);
-      const out = [
-        first,
-        rest.length ? mask(rest.join(' ')) : '',
-        mask(($('ue-apellido-paterno') || {}).value || ''),
-        mask(($('ue-apellido-materno') || {}).value || ''),
-      ].filter(Boolean).join(' ') || '—';
+      const out = build_short_name(
+        ($('ue-nombres') || {}).value,
+        ($('ue-apellido-paterno') || {}).value,
+        ($('ue-apellido-materno') || {}).value
+      ) || '—';
       const el = $('ue-preview');
       if (el) el.textContent = out;
     };
@@ -11997,6 +12070,15 @@
     renderNuevos(rows);
   }
 
+  function isOnboardingStalled(r, activated) {
+    if (activated || (r && r.hidden_at)) return false;
+    const ts = (r && (r.updated_at || r.created_at)) || null;
+    if (!ts) return false;
+    const t = new Date(ts).getTime();
+    if (isNaN(t) || t <= 0) return false;
+    return (Date.now() - t) > 24 * 60 * 60 * 1000;
+  }
+
   function renderNuevos(rows) {
     const list = $('nuevos-list');
     if (!list) return;
@@ -12019,6 +12101,7 @@
                    || '(sin nombre)';
       const email = (r.email || '').toLowerCase();
       const activated = haveProfile.has(email);
+      const isStalled = isOnboardingStalled(r, activated);
       const complete = isComplete(r);
       const isHidden = !!r.hidden_at;
       const isOpen = window.__nuevos_open_ids.has(r.id);
@@ -12048,6 +12131,8 @@
         statusMarker = '<span style="font-size:11px;color:var(--muted);white-space:nowrap;background:var(--border);padding:2px 6px;border-radius:6px;font-weight:600;">⛔ Desactivado</span>';
       } else if (activated) {
         statusMarker = '<span style="font-size:11px;color:var(--green);white-space:nowrap;font-weight:600;">✓ con cuenta</span>';
+      } else if (isStalled) {
+        statusMarker = '<span style="font-size:11px;color:var(--red);white-space:nowrap;font-weight:600;">⚠️ Estancado (+24h)</span>';
       } else if (!complete) {
         statusMarker = '<span style="font-size:11px;color:var(--muted);white-space:nowrap;">incompleto</span>';
       } else if (hasFailedReq) {
@@ -12074,6 +12159,12 @@
 
       const verifCountLabel = totalDocs ? (verifiedDocs + '/' + totalDocs + ' verificados') : 'Sin archivos';
 
+      const stalledLine = isStalled
+        ? '<div class="nuevo-stalled-alert" style="color:var(--red);font-size:12px;font-weight:600;margin-top:2px;">'
+          + '⚠️ Estancado en paso ' + step + ' hace más de 24h sin perfil'
+          + '</div>'
+        : '';
+
       // Summary row up front (A1)
       const summaryHtml = '<div class="nuevo-summary-row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;user-select:none;min-height:44px;padding:4px 0;">'
         + '<div style="flex:1;min-width:0;">'
@@ -12081,6 +12172,7 @@
         +   '<div style="font-size:13px;color:var(--muted);line-height:1.35;">'
         +     esc(r.puesto || 'Sin puesto') + ' · ' + esc(verifCountLabel)
         +   '</div>'
+        +   stalledLine
         + '</div>'
         + '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'
         +   statusMarker
@@ -12089,7 +12181,8 @@
         + '</div>';
 
       // Details inside (A2, A3, A4)
-      const infoHtml = '<div style="color:var(--muted);font-size:13px;margin-bottom:2px;">' + esc(r.email || '—') + '</div>'
+      const infoHtml = (isStalled ? ('<div style="color:var(--red);font-size:13px;font-weight:600;margin-bottom:6px;">⚠️ Atención: este registro lleva más de 24 horas detenido en paso ' + step + ' sin perfil en Hub.</div>') : '')
+        + '<div style="color:var(--muted);font-size:13px;margin-bottom:2px;">' + esc(r.email || '—') + '</div>'
         + '<div style="color:var(--muted);font-size:13px;margin-bottom:4px;">' + esc(r.movil || 'sin móvil') + ' · paso ' + step + '/4</div>'
         + (details ? ('<div style="color:var(--muted);font-size:13px;margin-bottom:6px;">' + details + '</div>') : '')
         + '<div style="height:6px;background:var(--border);border-radius:99px;margin:8px 0 12px;">'
