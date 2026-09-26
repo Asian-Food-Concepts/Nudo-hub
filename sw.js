@@ -1,4 +1,4 @@
-const CACHE = 'nudo-hub-v135'; // v0.209.19: 13 loop fixes — silent-failure guards (roster/docs/contracts/roles/assets), dense desktop lists, 44px tap targets.
+const CACHE = 'nudo-hub-v136'; // v0.209.19: 13 loop fixes — silent-failure guards (roster/docs/contracts/roles/assets), dense desktop lists, 44px tap targets.
 // serves the app at https://hub.asianfoodconcepts.mx/ and the old project-site URL
 // (asian-food-concepts.github.io/Nudo-hub/) 301-redirects here. The version bump is what
 // moves EXISTING clients: a stale client detects the new version, reloads, follows the
