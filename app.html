@@ -1722,6 +1722,142 @@
     }
   }
 
+  /* Proyectos de Negocio (Partner Projects — Ben) */
+  .proyectos-desktop {
+    display: none !important;
+  }
+  .proyectos-mobile {
+    display: block;
+  }
+  .proyectos-table-header {
+    display: none;
+  }
+  .proyectos-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    position: relative;
+    outline: none;
+  }
+  .proyectos-item:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(47,58,47,0.25);
+  }
+  .proyectos-deadline-overdue {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #b91c1c;
+    background: rgba(220, 38, 38, 0.12);
+    border: 1px solid rgba(220, 38, 38, 0.35);
+    white-space: nowrap;
+  }
+  .proyectos-deadline-today {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #c2410c;
+    background: rgba(234, 88, 12, 0.12);
+    border: 1px solid rgba(234, 88, 12, 0.35);
+    white-space: nowrap;
+  }
+  .proyectos-deadline-upcoming {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .proyectos-deadline-done {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #15803d;
+    background: rgba(22, 163, 74, 0.1);
+    border: 1px solid rgba(22, 163, 74, 0.25);
+    white-space: nowrap;
+  }
+  .proyectos-deadline-none {
+    color: var(--muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .proyectos-milestone-del-btn {
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    flex: 0 0 44px !important;
+    padding: 0 !important;
+    box-sizing: border-box;
+  }
+  .proyectos-add-milestone-btn,
+  .proyectos-add-comment-btn,
+  .proyectos-quick-save-status {
+    width: auto !important;
+  }
+  @media (min-width: 701px) {
+    .proyectos-table-header {
+      display: grid !important;
+      grid-template-columns: minmax(180px, 2fr) 110px 125px 120px 105px 130px 24px;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      margin: 12px 0 6px;
+      background: var(--frame-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      text-transform: uppercase;
+      box-sizing: border-box;
+    }
+    .proyectos-desktop {
+      display: grid !important;
+      grid-template-columns: minmax(180px, 2fr) 110px 125px 120px 105px 130px 24px;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .proyectos-mobile {
+      display: none !important;
+    }
+    .proyectos-item {
+      padding: 10px 14px !important;
+      margin-bottom: 8px !important;
+    }
+  }
+  @media (min-width: 1024px) {
+    .wrap:has(#form-proyectos.active) {
+      max-width: min(96vw, 1180px);
+    }
+  }
+
   /* Calendario de Mantenimiento (Ben) */
   .cal-header-row {
     display: flex;
@@ -2240,6 +2376,11 @@
 
         <div class="section-title" id="recl-section">Equipo y Reclutamiento</div>
         <div class="card-list" id="recl-list">
+          <a class="card" href="#" id="proyectos-card" data-form="proyectos" style="display:none;">
+            <div class="icon icon-form">💼</div>
+            <div class="text"><div class="title">Proyectos de Negocio</div><div class="sub">Planes, compras y proyectos de socios</div></div>
+            <div class="arrow">›</div>
+          </a>
           <a class="card" href="#" id="equipo-card" data-form="equipo" style="display:none;">
             <div class="icon icon-form">👥</div>
             <div class="text"><div class="title">Equipo</div><div class="sub">Niveles, roles y quién es quién</div></div>
@@ -3081,6 +3222,36 @@
         </div>
       </div>
 
+      <!-- PROYECTOS DE NEGOCIO / PARTNER PROJECTS (Ben) -->
+      <div id="form-proyectos" class="form-page">
+        <section class="view" id="view-proyectos">
+          <button class="back" data-back><span class="chev">‹</span> Volver</button>
+          <div class="form-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+              <h2 style="margin:0;">💼 Proyectos de Negocio</h2>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <button type="button" class="btn btn-outline" id="proyectos-refresh-btn" style="min-height:44px;padding:6px 12px;font-size:14px;margin:0;">🔄 Actualizar</button>
+                <button type="button" class="btn" id="proyectos-new-btn" style="min-height:44px;padding:6px 14px;font-size:14px;margin:0;font-weight:700;">➕ Nuevo proyecto</button>
+              </div>
+            </div>
+            <p style="font-size:0.9rem;color:var(--muted);margin-bottom:12px;">
+              Seguimiento de proyectos de empresa: instalaciones, menús, compras clave y prioridades de los socios.
+            </p>
+            <div id="proyectos-msg" class="msg hidden"></div>
+            <div class="proyectos-table-header">
+              <div>Título y Detalle</div>
+              <div>Categoría</div>
+              <div>Estado</div>
+              <div>Responsable</div>
+              <div>Fecha límite</div>
+              <div>Plazo</div>
+              <div></div>
+            </div>
+            <div id="proyectos-list"><p style="color:var(--muted);">Cargando proyectos…</p></div>
+          </div>
+        </section>
+      </div>
+
       <!-- CALENDARIO DE MANTENIMIENTO RECURRENTE (Ben) -->
       <div id="form-calendario-mant" class="form-page">
         <button class="back" data-back><span class="chev">‹</span> Volver</button>
@@ -3247,6 +3418,62 @@
           <div class="review-actions" style="margin-top:12px;display:flex;gap:8px;">
             <button type="button" class="btn" id="roadmap-modal-save" style="flex:1;min-height:44px;font-size:16px;margin:0;">Guardar cambios</button>
             <button type="button" class="btn btn-outline" id="roadmap-modal-cancel" style="flex:1;min-height:44px;font-size:16px;margin:0;">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PARTNER PROJECTS CREATE / EDIT MODAL -->
+      <div class="review-modal hidden" id="proyectos-edit-modal">
+        <div class="review-box">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <h3 id="proyectos-modal-heading" style="margin:0;font-size:1.05rem;">💼 Proyecto de socios</h3>
+            <button type="button" class="btn btn-outline" id="proyectos-modal-close-top" style="margin:0;padding:0;font-size:1.1rem;min-height:44px;min-width:44px;width:44px;max-width:44px;display:inline-flex;align-items:center;justify-content:center;" aria-label="Cerrar">✕</button>
+          </div>
+          <div id="proyectos-modal-msg" class="msg hidden" style="margin-bottom:8px;"></div>
+          <div class="review-body" id="proyectos-modal-body">
+            <div class="field" style="margin-bottom:10px;">
+              <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Título *</label>
+              <input type="text" id="proyectos-modal-title" class="input" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" placeholder="Ej. Renovación de vajilla Roma Norte" required />
+            </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Categoría</label>
+              <input type="text" id="proyectos-modal-category" list="proyectos-modal-category-list" class="input" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" placeholder="Ej. Instalaciones, Menú, Compras..." />
+              <datalist id="proyectos-modal-category-list">
+                <option value="Instalaciones">
+                <option value="Menú y Cocina">
+                <option value="Compras">
+                <option value="Tecnología">
+                <option value="Marketing">
+                <option value="Operaciones">
+                <option value="Legal y Admin">
+              </datalist>
+            </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Responsable</label>
+              <select id="proyectos-modal-owner" style="width:100%;min-height:44px;font-size:16px;padding:8px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);">
+                <option value="">(Sin asignar)</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Estado</label>
+              <select id="proyectos-modal-status" style="width:100%;min-height:44px;font-size:16px;padding:8px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);"></select>
+            </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Fecha proyectada (Límite)</label>
+              <input type="date" id="proyectos-modal-target-date" class="input" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" />
+            </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Estimado de costo (MXN)</label>
+              <input type="number" step="any" id="proyectos-modal-cost" class="input" style="width:100%;min-height:44px;font-size:16px;box-sizing:border-box;" placeholder="Ej. 25000" />
+            </div>
+            <div class="field" style="margin-bottom:10px;">
+              <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Detalle y notas</label>
+              <textarea id="proyectos-modal-detail" rows="3" style="width:100%;min-height:70px;font-size:16px;padding:8px 10px;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--ink);resize:vertical;" placeholder="Objetivo, especificaciones o enlaces..."></textarea>
+            </div>
+          </div>
+          <div class="review-actions" style="margin-top:12px;display:flex;gap:8px;">
+            <button type="button" class="btn" id="proyectos-modal-save" style="flex:1;min-height:44px;font-size:16px;margin:0;">Guardar</button>
+            <button type="button" class="btn btn-outline" id="proyectos-modal-cancel" style="flex:1;min-height:44px;font-size:16px;margin:0;">Cancelar</button>
           </div>
         </div>
       </div>
@@ -4454,6 +4681,8 @@
     // file keeps ONE definition of "management" instead of a third role list.
     const equipoCard = document.getElementById('equipo-card');
     if (equipoCard) equipoCard.style.display = isRecl ? '' : 'none';
+    const proyectosCard = document.getElementById('proyectos-card');
+    if (proyectosCard) proyectosCard.style.display = isRecl ? '' : 'none';
     const reclDisSection = document.getElementById('recl-disabled-section');
     const reclDisList = document.getElementById('recl-disabled-list');
     const reclDisCard = document.getElementById('recl-disabled-card');
@@ -5026,6 +5255,11 @@
         const isOwnerUser = prof ? isOwner(prof.role, prof.level, prof.active) : false;
         if (!isOwnerUser) return;
       }
+      if (f === 'proyectos') {
+        const prof = currentProfile || window.currentProfile;
+        const isRecl = prof ? isManagement(prof.role, prof.level, prof.active) : false;
+        if (!isRecl) return;
+      }
       document.querySelectorAll('.form-page').forEach(p => p.classList.remove('active'));
       $('home-view').style.display = 'none';
       $('form-' + f).classList.add('active');
@@ -5039,6 +5273,7 @@
       if (f === 'usuarios') { loadUsuarios(); loadRoleOptions(); }
       if (f === 'nuevos') { loadNuevos(); loadRoleOptions(); }
       if (f === 'roadmap') { loadRoadmap(); }
+      if (f === 'proyectos') { loadProyectos(); }
       if (f === 'calendario-mant') { loadCalendarioMant(); }
       if (f === 'equipo') { loadEquipo(); }
       if (f === 'plan') loadPlanner();
@@ -13469,6 +13704,792 @@
   if ($('roadmap-refresh-btn')) $('roadmap-refresh-btn').addEventListener('click', loadRoadmap);
 
   // =========================================================================
+  // PROYECTOS DE NEGOCIO / PARTNER PROJECTS (Ben)
+  // =========================================================================
+  const PROJECT_STATUSES = {
+    idea: { label: 'Idea', ico: '💡', color: '#4b5563', bg: 'rgba(107,114,128,0.14)' },
+    planeado: { label: 'Planeado', ico: '📋', color: '#1d4ed8', bg: 'rgba(37,99,235,0.14)' },
+    en_progreso: { label: 'En progreso', ico: '⚡', color: '#0369a1', bg: 'rgba(2,132,199,0.14)' },
+    bloqueado: { label: 'Bloqueado', ico: '🚫', color: '#b91c1c', bg: 'rgba(220,38,38,0.14)' },
+    hecho: { label: 'Hecho', ico: '✅', color: '#15803d', bg: 'rgba(22,163,74,0.14)' }
+  };
+
+  let proyectosCache = [];
+  let proyectosCommentsCache = {};
+  let proyectosMilestonesCache = {};
+  let proyectosOpenIds = new Set();
+  let proyectosEditTargetId = null;
+
+  function calcProjectDeadline(targetDate, status) {
+    if (status === 'hecho') {
+      return { label: '✅ Completado', isOverdue: false, isDone: true, className: 'proyectos-deadline-done' };
+    }
+    if (!targetDate) {
+      return { label: 'Sin fecha', isOverdue: false, isDone: false, className: 'proyectos-deadline-none' };
+    }
+    const cleanDate = String(targetDate).split('T')[0];
+    const parts = cleanDate.split('-');
+    if (parts.length < 3) {
+      return { label: cleanDate, isOverdue: false, isDone: false, className: 'proyectos-deadline-none' };
+    }
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    const target = new Date(y, m, d);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const diffDays = Math.round((target.getTime() - today.getTime()) / 86400000);
+
+    if (diffDays < 0) {
+      const days = Math.abs(diffDays);
+      const text = days === 1 ? '1 día atrasado' : (days + ' días atrasado');
+      return { label: '⚠️ ' + text, isOverdue: true, isDone: false, diffDays, className: 'proyectos-deadline-overdue' };
+    } else if (diffDays === 0) {
+      return { label: '⏰ Vence hoy', isOverdue: false, isDone: false, diffDays: 0, className: 'proyectos-deadline-today' };
+    } else if (diffDays === 1) {
+      return { label: 'Mañana (1 día)', isOverdue: false, isDone: false, diffDays: 1, className: 'proyectos-deadline-upcoming' };
+    } else {
+      return { label: diffDays + ' días restantes', isOverdue: false, isDone: false, diffDays, className: 'proyectos-deadline-upcoming' };
+    }
+  }
+
+  function formatProjectDate(dStr) {
+    if (!dStr) return '—';
+    const clean = String(dStr).split('T')[0];
+    const parts = clean.split('-');
+    if (parts.length < 3) return clean;
+    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const d = parseInt(parts[2], 10);
+    const m = months[parseInt(parts[1], 10) - 1] || parts[1];
+    const y = parts[0];
+    return d + ' ' + m + ' ' + y;
+  }
+
+  function formatProjectCost(val) {
+    if (val == null || val === '') return '';
+    const num = Number(val);
+    if (isNaN(num)) return String(val);
+    return '$' + num.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' MXN';
+  }
+
+  function formatCommentDate(ts) {
+    if (!ts) return '';
+    try {
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) return String(ts);
+      return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) + ', ' +
+             d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    } catch (err) {
+      nudoWarn('proyectos:date', err);
+      return String(ts);
+    }
+  }
+
+  async function loadProyectos() {
+    const listEl = $('proyectos-list');
+    const msgEl = $('proyectos-msg');
+    clearMsg(msgEl);
+
+    if (listEl) {
+      listEl.innerHTML = '<p style="color:var(--muted);padding:14px 0;">Cargando proyectos…</p>';
+    }
+
+    try {
+      const [projRes, commRes, mileRes, profRes] = await Promise.all([
+        supabase.from('partner_projects').select('*').order('created_at', { ascending: false }),
+        supabase.from('partner_project_comments').select('*').order('created_at', { ascending: false }),
+        supabase.from('partner_project_milestones').select('*').order('sort_order', { ascending: true }),
+        supabase.from('profiles').select('id, name, role').eq('active', true).order('name')
+      ]);
+
+      if (projRes.error) {
+        showMsg(msgEl, 'Error al cargar proyectos: ' + (projRes.error.message || String(projRes.error)), 'err');
+        if (listEl) {
+          listEl.innerHTML = '<div style="padding:16px;border:1px solid var(--red);border-radius:12px;background:var(--msg-err-bg);color:var(--red);font-size:0.9rem;"><strong>⚠️ No se pudieron cargar los proyectos:</strong> ' + esc(projRes.error.message || String(projRes.error)) + '</div>';
+        }
+        return;
+      }
+
+      proyectosCache = projRes.data || [];
+      window.__proyectos_cache = proyectosCache;
+
+      if (commRes.error) nudoWarn('proyectos:comments', commRes.error);
+      const commentsMap = {};
+      (commRes.data || []).forEach(c => {
+        if (!commentsMap[c.project_id]) commentsMap[c.project_id] = [];
+        commentsMap[c.project_id].push(c);
+      });
+      proyectosCommentsCache = commentsMap;
+      window.__proyectos_comments = commentsMap;
+
+      if (mileRes.error) nudoWarn('proyectos:milestones', mileRes.error);
+      const milestonesMap = {};
+      (mileRes.data || []).forEach(m => {
+        if (!milestonesMap[m.project_id]) milestonesMap[m.project_id] = [];
+        milestonesMap[m.project_id].push(m);
+      });
+      proyectosMilestonesCache = milestonesMap;
+      window.__proyectos_milestones = milestonesMap;
+
+      if (!profRes.error && profRes.data) {
+        window.__proyectos_owners_cache = profRes.data;
+      }
+
+      renderProyectos(proyectosCache, proyectosCommentsCache, proyectosMilestonesCache);
+    } catch (err) {
+      nudoWarn('proyectos', err);
+      showMsg(msgEl, 'Error de red o sistema: ' + (err.message || String(err)), 'err');
+      if (listEl) {
+        listEl.innerHTML = '<div style="padding:16px;border:1px solid var(--red);border-radius:12px;background:var(--msg-err-bg);color:var(--red);font-size:0.9rem;"><strong>⚠️ Error:</strong> ' + esc(err.message || String(err)) + '</div>';
+      }
+    }
+  }
+
+  function renderProyectos(projects, commentsByProject, milestonesByProject) {
+    if (projects) { proyectosCache = projects; window.__proyectos_cache = projects; }
+    if (commentsByProject) { proyectosCommentsCache = commentsByProject; window.__proyectos_comments = commentsByProject; }
+    if (milestonesByProject) { proyectosMilestonesCache = milestonesByProject; window.__proyectos_milestones = milestonesByProject; }
+    const listEl = $('proyectos-list');
+    if (!listEl) return;
+
+    if (!projects || !projects.length) {
+      listEl.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:12px;margin:12px 0;">'
+        + '<div style="font-size:2.2rem;margin-bottom:8px;">💼</div>'
+        + '<div style="font-weight:600;font-size:1rem;color:var(--ink);">No hay proyectos de negocio registrados.</div>'
+        + '<div style="font-size:0.85rem;margin-top:6px;max-width:400px;margin-left:auto;margin-right:auto;">Crea el primer proyecto para registrar acuerdos, compras clave, menús o instalaciones sin depender de la memoria.</div>'
+        + '<button type="button" class="btn" id="proyectos-empty-new-btn" style="width:auto;margin-top:14px;min-height:44px;padding:8px 18px;font-size:14px;font-weight:700;">➕ Registrar primer proyecto</button>'
+        + '</div>';
+      const emptyBtn = $('proyectos-empty-new-btn');
+      if (emptyBtn) emptyBtn.addEventListener('click', () => openProyectoModal(null));
+      return;
+    }
+
+    const totalCount = projects.length;
+    const inProgressCount = projects.filter(p => p.status === 'en_progreso').length;
+    const doneCount = projects.filter(p => p.status === 'hecho').length;
+    const overdueCount = projects.filter(p => {
+      const dl = calcProjectDeadline(p.target_date, p.status);
+      return dl.isOverdue;
+    }).length;
+
+    let bannerHtml = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;font-size:13px;flex-wrap:wrap;">'
+      + '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">'
+      +   '<span><strong>' + totalCount + '</strong> ' + (totalCount === 1 ? 'proyecto' : 'proyectos') + '</span>'
+      +   '<span>⚡ <strong>' + inProgressCount + '</strong> en progreso</span>'
+      +   (overdueCount > 0 ? '<span style="color:#b91c1c;font-weight:700;">⚠️ <strong>' + overdueCount + '</strong> con retraso</span>' : '<span style="color:var(--muted);">⏰ Al día</span>')
+      +   '<span>✅ <strong>' + doneCount + '</strong> hechos</span>'
+      + '</div>'
+      + '</div>';
+
+    const itemsHtml = projects.map(p => {
+      const isOpen = proyectosOpenIds.has(p.id);
+      const stKey = (p.status && PROJECT_STATUSES[p.status]) ? p.status : 'idea';
+      const st = PROJECT_STATUSES[stKey];
+      const deadline = calcProjectDeadline(p.target_date, p.status);
+      const comments = commentsByProject[p.id] || [];
+      const milestones = milestonesByProject[p.id] || [];
+      const doneMilestones = milestones.filter(m => m.done_at).length;
+
+      // Status chip
+      const statusChipHtml = '<span class="roadmap-chip" style="background:' + st.bg + ';color:' + st.color + ';white-space:nowrap;">'
+        + st.ico + ' ' + esc(st.label) + '</span>';
+
+      // Desktop collapsed row
+      const desktopRowHtml = '<div class="proyectos-desktop proyectos-row-collapsed" style="cursor:pointer;padding:12px 14px;align-items:center;user-select:none;">'
+        + '<div style="min-width:0;">'
+        +   '<div style="font-weight:600;font-size:0.95rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(p.title || '') + '">' + esc(p.title || '(sin título)') + '</div>'
+        +   (p.detail ? '<div class="roadmap-why-clamp" style="-webkit-line-clamp:1;font-size:0.8rem;color:var(--muted);margin-top:2px;" title="' + esc(p.detail) + '">' + esc(p.detail) + '</div>' : '')
+        + '</div>'
+        + '<div><span class="roadmap-chip roadmap-chip-area" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;max-width:100%;">' + esc(p.category || 'General') + '</span></div>'
+        + '<div>' + statusChipHtml + '</div>'
+        + '<div style="font-size:0.85rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(p.owner_name || 'Sin asignar') + '">👤 ' + esc(p.owner_name || '—') + '</div>'
+        + '<div style="font-size:0.85rem;color:var(--muted);white-space:nowrap;">📅 ' + formatProjectDate(p.target_date) + '</div>'
+        + '<div><span class="' + deadline.className + '">' + esc(deadline.label) + '</span></div>'
+        + '<div class="proyectos-chevron" style="color:var(--muted);text-align:right;font-size:13px;">' + (isOpen ? '▼' : '▶') + '</div>'
+        + '</div>';
+
+      // Mobile collapsed row
+      const mobileRowHtml = '<div class="proyectos-mobile proyectos-row-collapsed" style="cursor:pointer;padding:12px;user-select:none;">'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'
+        +   '<div style="font-weight:700;font-size:0.95rem;color:var(--ink);word-break:break-word;flex:1;">' + esc(p.title || '(sin título)') + '</div>'
+        +   '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
+        +     statusChipHtml
+        +     '<span class="proyectos-chevron" style="color:var(--muted);font-size:13px;padding-left:2px;">' + (isOpen ? '▼' : '▶') + '</span>'
+        +   '</div>'
+        + '</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;font-size:0.82rem;">'
+        +   '<span class="roadmap-chip roadmap-chip-area">' + esc(p.category || 'General') + '</span>'
+        +   '<span style="color:var(--ink);font-weight:500;">👤 ' + esc(p.owner_name || 'Sin asignar') + '</span>'
+        + '</div>'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap;">'
+        +   '<span style="font-size:0.82rem;color:var(--muted);">📅 ' + formatProjectDate(p.target_date) + '</span>'
+        +   '<span class="' + deadline.className + '">' + esc(deadline.label) + '</span>'
+        + '</div>'
+        + (p.detail ? '<div class="roadmap-why-clamp" style="margin-top:4px;">' + esc(p.detail) + '</div>' : '')
+        + '</div>';
+
+      // Milestones HTML
+      const milestonesListHtml = milestones.length ? milestones.map(m => {
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
+          + '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">'
+          +   '<input type="checkbox" class="proyectos-milestone-toggle" data-id="' + esc(m.id) + '" data-project-id="' + esc(p.id) + '" ' + (m.done_at ? 'checked' : '') + ' style="width:22px;height:22px;min-width:22px;min-height:22px;cursor:pointer;flex-shrink:0;margin:0;" />'
+          +   '<div style="flex:1;min-width:0;">'
+          +     '<div style="font-size:0.9rem;line-height:1.35;' + (m.done_at ? 'text-decoration:line-through;color:var(--muted);' : 'color:var(--ink);font-weight:500;') + 'overflow-wrap:break-word;">' + esc(m.title) + '</div>'
+          +     (m.due_date ? '<div style="margin-top:3px;"><span style="font-size:0.75rem;color:var(--muted);background:var(--input-bg);border:1px solid var(--border);padding:1px 6px;border-radius:4px;display:inline-block;">📅 ' + formatProjectDate(m.due_date) + '</span></div>' : '')
+          +   '</div>'
+          + '</div>'
+          + '<button type="button" class="btn btn-outline proyectos-milestone-del-btn" data-id="' + esc(m.id) + '" data-project-id="' + esc(p.id) + '" style="width:44px !important;max-width:44px;min-width:44px;height:44px;min-height:44px;flex:0 0 44px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--red);border-color:var(--border);" title="Eliminar hito">🗑️</button>'
+          + '</div>';
+      }).join('') : '<div style="font-size:0.85rem;color:var(--muted);font-style:italic;padding:4px 0;">No hay hitos definidos todavía.</div>';
+
+      // Comments HTML
+      const commentsListHtml = comments.length ? comments.map(c => {
+        return '<div style="background:var(--input-bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:8px;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px;font-size:0.8rem;">'
+          +   '<strong style="color:var(--ink);">👤 ' + esc(c.author_name || 'Socio') + '</strong>'
+          +   '<span style="color:var(--muted);font-size:0.75rem;">' + formatCommentDate(c.created_at) + '</span>'
+          + '</div>'
+          + '<div style="font-size:0.88rem;color:var(--ink);white-space:pre-wrap;line-height:1.4;">' + esc(c.body) + '</div>'
+          + '</div>';
+      }).join('') : '<div style="font-size:0.85rem;color:var(--muted);font-style:italic;margin-bottom:8px;">No hay comentarios todavía.</div>';
+
+      // Quick status options
+      const statusOptionsHtml = Object.keys(PROJECT_STATUSES).map(k => {
+        const opt = PROJECT_STATUSES[k];
+        const sel = (k === stKey) ? ' selected' : '';
+        return '<option value="' + k + '"' + sel + '>' + opt.ico + ' ' + esc(opt.label) + '</option>';
+      }).join('');
+
+      // Details container
+      const detailsHtml = '<div class="proyectos-item-details ' + (isOpen ? '' : 'hidden') + '" data-no-card-open style="'
+        + (isOpen ? '' : 'display:none;') + 'margin-top:12px;padding:14px 12px 10px;border-top:1px solid var(--border);">'
+        + (p.detail ? '<div style="font-size:0.92rem;line-height:1.45;color:var(--ink);margin-bottom:12px;white-space:pre-wrap;">' + esc(p.detail) + '</div>' : '')
+        + '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;">'
+        +   (p.cost_estimate != null ? '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;font-size:0.85rem;"><strong>💰 Presupuesto:</strong> <span>' + esc(formatProjectCost(p.cost_estimate)) + '</span></div>' : '')
+        +   '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;font-size:0.85rem;"><strong>📅 Fecha límite:</strong> <span>' + formatProjectDate(p.target_date) + '</span> (' + esc(deadline.label) + ')</div>'
+        +   (p.completed_at ? '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.25);color:#15803d;border-radius:6px;font-size:0.85rem;"><strong>✅ Hecho:</strong> <span>' + formatProjectDate(p.completed_at) + '</span></div>' : '')
+        + '</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;background:var(--frame-bg);padding:8px 12px;border-radius:8px;border:1px solid var(--border);">'
+        +   '<label style="font-size:0.85rem;font-weight:600;color:var(--ink);">Estado:</label>'
+        +   '<select class="input proyectos-quick-status" data-id="' + esc(p.id) + '" style="min-height:44px;font-size:16px;width:auto;flex:1;max-width:200px;">'
+        +     statusOptionsHtml
+        +   '</select>'
+        +   '<button type="button" class="btn proyectos-quick-save-status" data-id="' + esc(p.id) + '" style="width:auto;min-height:44px;font-size:14px;padding:6px 14px;margin:0;">Guardar estado</button>'
+        + '</div>'
+        // Milestones
+        + '<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">'
+        +   '<div style="font-weight:700;font-size:0.95rem;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:6px;">🎯 Hitos clave (' + doneMilestones + '/' + milestones.length + ')</div>'
+        +   milestonesListHtml
+        +   '<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center;">'
+        +     '<input type="text" class="input proyectos-new-milestone-title" data-project-id="' + esc(p.id) + '" placeholder="Nuevo hito..." style="flex:2;min-width:150px;min-height:44px;font-size:16px;" />'
+        +     '<input type="date" class="input proyectos-new-milestone-due" data-project-id="' + esc(p.id) + '" style="flex:1;min-width:130px;min-height:44px;font-size:16px;" title="Fecha límite" />'
+        +     '<button type="button" class="btn proyectos-add-milestone-btn" data-project-id="' + esc(p.id) + '" style="min-height:44px;font-size:14px;padding:6px 14px;white-space:nowrap;margin:0;">➕ Agregar hito</button>'
+        +   '</div>'
+        + '</div>'
+        // Comments
+        + '<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">'
+        +   '<div style="font-weight:700;font-size:0.95rem;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:6px;">💬 Comentarios (' + comments.length + ')</div>'
+        +   commentsListHtml
+        +   '<textarea class="input proyectos-new-comment-body" data-project-id="' + esc(p.id) + '" rows="2" style="width:100%;min-height:60px;font-size:16px;padding:8px 10px;box-sizing:border-box;resize:vertical;" placeholder="Escribe un comentario sobre este proyecto..."></textarea>'
+        +   '<div style="margin-top:6px;display:flex;justify-content:flex-end;">'
+        +     '<button type="button" class="btn proyectos-add-comment-btn" data-project-id="' + esc(p.id) + '" style="min-height:44px;padding:6px 16px;font-size:14px;font-weight:600;margin:0;">💬 Publicar comentario</button>'
+        +   '</div>'
+        + '</div>'
+        // Footer buttons
+        + '<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:12px;">'
+        +   '<button type="button" class="btn btn-outline proyectos-edit-btn" data-id="' + esc(p.id) + '" style="flex:1;min-height:44px;font-size:16px;margin:0;">✏️ Editar proyecto</button>'
+        +   '<button type="button" class="btn btn-outline proyectos-delete-btn" data-id="' + esc(p.id) + '" style="min-height:44px;font-size:16px;margin:0;color:var(--red);border-color:var(--red);">🗑️ Eliminar</button>'
+        + '</div>'
+        + '</div>';
+
+      return '<div class="proyectos-item" data-id="' + esc(p.id) + '" tabindex="0" style="padding:0;">'
+        + desktopRowHtml
+        + mobileRowHtml
+        + detailsHtml
+        + '</div>';
+    }).join('');
+
+    listEl.innerHTML = bannerHtml + itemsHtml;
+    attachProyectosListeners();
+  }
+
+  function attachProyectosListeners() {
+    const container = $('proyectos-list');
+    if (!container) return;
+
+    // Toggle card expansion
+    container.querySelectorAll('.proyectos-row-collapsed').forEach(rowEl => {
+      rowEl.addEventListener('click', (e) => {
+        if (e.target.closest('[data-no-card-open]')) return;
+        const itemEl = rowEl.closest('.proyectos-item');
+        if (!itemEl) return;
+        const id = itemEl.getAttribute('data-id');
+        if (!id) return;
+        if (proyectosOpenIds.has(id)) {
+          proyectosOpenIds.delete(id);
+        } else {
+          proyectosOpenIds.add(id);
+        }
+        const isOpen = proyectosOpenIds.has(id);
+        const detailsEl = itemEl.querySelector('.proyectos-item-details');
+        const chevrons = itemEl.querySelectorAll('.proyectos-chevron');
+        if (detailsEl) {
+          detailsEl.style.display = isOpen ? '' : 'none';
+          detailsEl.classList.toggle('hidden', !isOpen);
+        }
+        chevrons.forEach(ch => { ch.textContent = isOpen ? '▼' : '▶'; });
+      });
+    });
+
+    // Milestone toggle
+    container.querySelectorAll('.proyectos-milestone-toggle').forEach(chk => {
+      chk.addEventListener('change', async () => {
+        const id = chk.getAttribute('data-id');
+        await toggleProyectoMilestone(id, chk.checked);
+      });
+    });
+
+    // Milestone add
+    container.querySelectorAll('.proyectos-add-milestone-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const pId = btn.getAttribute('data-project-id');
+        const itemEl = btn.closest('.proyectos-item');
+        if (!itemEl) return;
+        const titleInput = itemEl.querySelector('.proyectos-new-milestone-title');
+        const dueInput = itemEl.querySelector('.proyectos-new-milestone-due');
+        const title = titleInput ? titleInput.value : '';
+        const due = dueInput ? dueInput.value : '';
+        await addProyectoMilestone(pId, title, due, titleInput, dueInput, btn);
+      });
+    });
+
+    // Milestone delete
+    container.querySelectorAll('.proyectos-milestone-del-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        await deleteProyectoMilestone(id);
+      });
+    });
+
+    // Comment add
+    container.querySelectorAll('.proyectos-add-comment-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const pId = btn.getAttribute('data-project-id');
+        const itemEl = btn.closest('.proyectos-item');
+        if (!itemEl) return;
+        const bodyInput = itemEl.querySelector('.proyectos-new-comment-body');
+        const body = bodyInput ? bodyInput.value : '';
+        await addProyectoComment(pId, body, bodyInput, btn);
+      });
+    });
+
+    // Quick status save
+    container.querySelectorAll('.proyectos-quick-save-status').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const itemEl = btn.closest('.proyectos-item');
+        if (!itemEl) return;
+        const sel = itemEl.querySelector('.proyectos-quick-status');
+        if (sel) await updateQuickStatus(id, sel.value, btn);
+      });
+    });
+
+    // Edit project
+    container.querySelectorAll('.proyectos-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        openProyectoModal(id);
+      });
+    });
+
+    // Delete project
+    container.querySelectorAll('.proyectos-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        await deleteProyecto(id);
+      });
+    });
+  }
+
+  function openProyectoModal(id) {
+    proyectosEditTargetId = id;
+    const isEdit = !!id;
+    const heading = $('proyectos-modal-heading');
+    if (heading) {
+      heading.textContent = isEdit ? '✏️ Editar proyecto de negocio' : '➕ Nuevo proyecto de negocio';
+    }
+
+    // Populate owners dropdown
+    const ownerEl = $('proyectos-modal-owner');
+    if (ownerEl) {
+      const owners = window.__proyectos_owners_cache || [];
+      const opts = ['<option value="">(Sin asignar)</option>'].concat(
+        owners.map(o => '<option value="' + esc(o.id) + '" data-name="' + esc(o.name) + '">' + esc(o.name) + (o.role ? ' (' + esc(o.role) + ')' : '') + '</option>')
+      );
+      ownerEl.innerHTML = opts.join('');
+    }
+
+    // Populate status dropdown
+    const stEl = $('proyectos-modal-status');
+    if (stEl) {
+      stEl.innerHTML = Object.keys(PROJECT_STATUSES).map(k => {
+        const opt = PROJECT_STATUSES[k];
+        return '<option value="' + k + '">' + opt.ico + ' ' + esc(opt.label) + '</option>';
+      }).join('');
+    }
+
+    if (isEdit) {
+      const item = (proyectosCache && proyectosCache.length ? proyectosCache : (window.__proyectos_cache || [])).find(r => r.id === id);
+      if (!item) return;
+      $('proyectos-modal-title').value = item.title || '';
+      $('proyectos-modal-category').value = item.category || '';
+      $('proyectos-modal-detail').value = item.detail || '';
+      $('proyectos-modal-target-date').value = item.target_date ? String(item.target_date).split('T')[0] : '';
+      $('proyectos-modal-cost').value = item.cost_estimate != null ? item.cost_estimate : '';
+      if (stEl) stEl.value = item.status || 'idea';
+      if (ownerEl) {
+        if (item.owner_id) {
+          ownerEl.value = item.owner_id;
+        } else if (item.owner_name) {
+          const matchOpt = Array.from(ownerEl.options).find(o => o.getAttribute('data-name') === item.owner_name);
+          if (matchOpt) ownerEl.value = matchOpt.value;
+        }
+      }
+    } else {
+      $('proyectos-modal-title').value = '';
+      $('proyectos-modal-category').value = '';
+      $('proyectos-modal-detail').value = '';
+      $('proyectos-modal-target-date').value = '';
+      $('proyectos-modal-cost').value = '';
+      if (stEl) stEl.value = 'idea';
+      if (ownerEl) {
+        const prof = currentProfile || window.currentProfile;
+        if (prof && prof.id) {
+          ownerEl.value = prof.id;
+        } else {
+          ownerEl.value = '';
+        }
+      }
+    }
+
+    clearMsg($('proyectos-modal-msg'));
+    $('proyectos-edit-modal').classList.remove('hidden');
+  }
+
+  function closeProyectoModal() {
+    proyectosEditTargetId = null;
+    $('proyectos-edit-modal').classList.add('hidden');
+  }
+
+  async function saveProyectoModal() {
+    const title = ($('proyectos-modal-title').value || '').trim();
+    const category = ($('proyectos-modal-category').value || '').trim();
+    const detail = ($('proyectos-modal-detail').value || '').trim();
+    const status = ($('proyectos-modal-status') ? $('proyectos-modal-status').value : null) || 'idea';
+    const targetDate = ($('proyectos-modal-target-date').value || '').trim();
+    const costRaw = $('proyectos-modal-cost').value;
+    const costEstimate = (costRaw !== '' && !isNaN(Number(costRaw))) ? Number(costRaw) : null;
+
+    if (!title) {
+      showMsg($('proyectos-modal-msg'), 'El título es obligatorio.', 'err');
+      return;
+    }
+
+    const ownerSelect = $('proyectos-modal-owner');
+    const ownerId = ownerSelect ? (ownerSelect.value || null) : null;
+    let ownerName = null;
+    if (ownerSelect && ownerId && ownerSelect.selectedIndex >= 0) {
+      const opt = ownerSelect.options[ownerSelect.selectedIndex];
+      ownerName = opt.getAttribute('data-name') || opt.textContent.split(' (')[0];
+    }
+
+    const saveBtn = $('proyectos-modal-save');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Guardando…';
+
+    try {
+      if (proyectosEditTargetId) {
+        const existing = (proyectosCache || []).find(r => r.id === proyectosEditTargetId);
+        let completedAt = null;
+        if (status === 'hecho') {
+          completedAt = (existing && existing.completed_at) ? existing.completed_at : new Date().toISOString();
+        }
+
+        const { error } = await supabase
+          .from('partner_projects')
+          .update({
+            title,
+            category: category || null,
+            detail: detail || null,
+            status,
+            target_date: targetDate || null,
+            cost_estimate: costEstimate,
+            owner_id: ownerId,
+            owner_name: ownerName,
+            completed_at: completedAt,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', proyectosEditTargetId);
+
+        if (error) {
+          showMsg($('proyectos-modal-msg'), 'Error: ' + error.message, 'err');
+          return;
+        }
+      } else {
+        const user = (await supabase.auth.getUser())?.data?.user;
+        const completedAt = (status === 'hecho') ? new Date().toISOString() : null;
+
+        const { error } = await supabase
+          .from('partner_projects')
+          .insert({
+            title,
+            category: category || null,
+            detail: detail || null,
+            status,
+            target_date: targetDate || null,
+            cost_estimate: costEstimate,
+            owner_id: ownerId,
+            owner_name: ownerName,
+            completed_at: completedAt,
+            created_by: user ? user.id : null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) {
+          showMsg($('proyectos-modal-msg'), 'Error: ' + error.message, 'err');
+          return;
+        }
+      }
+
+      closeProyectoModal();
+      toast('Proyecto guardado');
+      await loadProyectos();
+    } catch (err) {
+      nudoWarn('proyectos:save', err);
+      showMsg($('proyectos-modal-msg'), 'Error al guardar: ' + (err.message || String(err)), 'err');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Guardar';
+    }
+  }
+
+  async function updateQuickStatus(id, newStatus, btn) {
+    if (!newStatus) return;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Guardando…';
+    }
+    const completedAt = (newStatus === 'hecho') ? new Date().toISOString() : null;
+    try {
+      const { error } = await supabase.from('partner_projects').update({
+        status: newStatus,
+        completed_at: completedAt,
+        updated_at: new Date().toISOString()
+      }).eq('id', id);
+
+      if (error) {
+        toast('Error al guardar estado: ' + error.message, 3000);
+      } else {
+        toast('Estado actualizado');
+        const item = (proyectosCache || []).find(x => x.id === id);
+        if (item) {
+          item.status = newStatus;
+          item.completed_at = completedAt;
+          item.updated_at = new Date().toISOString();
+        }
+        renderProyectos(proyectosCache, proyectosCommentsCache, proyectosMilestonesCache);
+      }
+    } catch (err) {
+      nudoWarn('proyectos:quickStatus', err);
+      toast('Error: ' + (err.message || String(err)), 3000);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Guardar estado';
+      }
+    }
+  }
+
+  async function addProyectoMilestone(projectId, title, dueDate, titleInput, dueInput, btnEl) {
+    if (!title || !title.trim()) {
+      toast('Escribe el título del hito');
+      return;
+    }
+    if (btnEl) {
+      btnEl.disabled = true;
+      btnEl.textContent = 'Agregando…';
+    }
+    const currentMiles = proyectosMilestonesCache[projectId] || [];
+    const nextOrder = (currentMiles.length + 1) * 10;
+
+    try {
+      const { error } = await supabase.from('partner_project_milestones').insert({
+        project_id: projectId,
+        title: title.trim(),
+        due_date: dueDate || null,
+        done_at: null,
+        sort_order: nextOrder
+      });
+
+      if (error) {
+        toast('Error al agregar hito: ' + error.message, 3000);
+      } else {
+        toast('Hito agregado');
+        if (titleInput) titleInput.value = '';
+        if (dueInput) dueInput.value = '';
+        await refreshMilestones();
+      }
+    } catch (err) {
+      nudoWarn('proyectos:milestone:add', err);
+      toast('Error: ' + (err.message || String(err)), 3000);
+    } finally {
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.textContent = '➕ Agregar hito';
+      }
+    }
+  }
+
+  async function toggleProyectoMilestone(milestoneId, isDone) {
+    try {
+      const nextDone = isDone ? new Date().toISOString() : null;
+      const { error } = await supabase.from('partner_project_milestones')
+        .update({ done_at: nextDone })
+        .eq('id', milestoneId);
+
+      if (error) {
+        toast('Error al actualizar hito: ' + error.message, 3000);
+      } else {
+        await refreshMilestones();
+      }
+    } catch (err) {
+      nudoWarn('proyectos:milestone:toggle', err);
+      toast('Error: ' + (err.message || String(err)), 3000);
+    }
+  }
+
+  async function deleteProyectoMilestone(milestoneId) {
+    if (!confirm('¿Eliminar este hito?')) return;
+    try {
+      const { error } = await supabase.from('partner_project_milestones')
+        .delete()
+        .eq('id', milestoneId);
+
+      if (error) {
+        toast('Error al eliminar hito: ' + error.message, 3000);
+      } else {
+        toast('Hito eliminado');
+        await refreshMilestones();
+      }
+    } catch (err) {
+      nudoWarn('proyectos:milestone:delete', err);
+      toast('Error: ' + (err.message || String(err)), 3000);
+    }
+  }
+
+  async function refreshMilestones() {
+    try {
+      const { data: miles, error } = await supabase.from('partner_project_milestones')
+        .select('*')
+        .order('sort_order', { ascending: true });
+      if (error) {
+        nudoWarn('proyectos:milestones:refresh', error);
+        return;
+      }
+      const milestonesMap = {};
+      (miles || []).forEach(m => {
+        if (!milestonesMap[m.project_id]) milestonesMap[m.project_id] = [];
+        milestonesMap[m.project_id].push(m);
+      });
+      proyectosMilestonesCache = milestonesMap;
+      window.__proyectos_milestones = milestonesMap;
+      renderProyectos(proyectosCache, proyectosCommentsCache, proyectosMilestonesCache);
+    } catch (err) {
+      nudoWarn('proyectos:milestones:refresh', err);
+    }
+  }
+
+  async function addProyectoComment(projectId, body, inputEl, btnEl) {
+    if (!body || !body.trim()) return;
+    const user = (await supabase.auth.getUser())?.data?.user;
+    const prof = currentProfile || window.currentProfile;
+    const authorId = (prof && prof.id) ? prof.id : (user ? user.id : null);
+    const authorName = (prof && prof.name) ? prof.name : 'Socio';
+
+    if (btnEl) {
+      btnEl.disabled = true;
+      btnEl.textContent = 'Enviando…';
+    }
+
+    try {
+      const { error } = await supabase.from('partner_project_comments').insert({
+        project_id: projectId,
+        author_id: authorId,
+        author_name: authorName,
+        body: body.trim(),
+        created_at: new Date().toISOString()
+      });
+
+      if (error) {
+        toast('Error al publicar comentario: ' + error.message, 3000);
+      } else {
+        toast('Comentario publicado');
+        if (inputEl) inputEl.value = '';
+        const { data: comms, error: commErr } = await supabase.from('partner_project_comments')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (commErr) {
+          nudoWarn('proyectos:comments:refresh', commErr);
+        } else {
+          const commentsMap = {};
+          (comms || []).forEach(c => {
+            if (!commentsMap[c.project_id]) commentsMap[c.project_id] = [];
+            commentsMap[c.project_id].push(c);
+          });
+          proyectosCommentsCache = commentsMap;
+          window.__proyectos_comments = commentsMap;
+          renderProyectos(proyectosCache, proyectosCommentsCache, proyectosMilestonesCache);
+        }
+      }
+    } catch (err) {
+      nudoWarn('proyectos:comment', err);
+      toast('Error: ' + (err.message || String(err)), 3000);
+    } finally {
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.textContent = '💬 Publicar comentario';
+      }
+    }
+  }
+
+  async function deleteProyecto(id) {
+    if (!confirm('¿Eliminar este proyecto y todo su seguimiento? Esta acción no se puede deshacer.')) return;
+    try {
+      await supabase.from('partner_project_comments').delete().eq('project_id', id);
+      await supabase.from('partner_project_milestones').delete().eq('project_id', id);
+      const { error } = await supabase.from('partner_projects').delete().eq('id', id);
+      if (error) {
+        toast('Error al eliminar: ' + error.message, 3000);
+        return;
+      }
+      toast('Proyecto eliminado');
+      proyectosOpenIds.delete(id);
+      await loadProyectos();
+    } catch (err) {
+      nudoWarn('proyectos:delete', err);
+      toast('Error al eliminar: ' + (err.message || String(err)), 3000);
+    }
+  }
+
+  if ($('proyectos-modal-save')) $('proyectos-modal-save').addEventListener('click', saveProyectoModal);
+  if ($('proyectos-modal-cancel')) $('proyectos-modal-cancel').addEventListener('click', closeProyectoModal);
+  if ($('proyectos-modal-close-top')) $('proyectos-modal-close-top').addEventListener('click', closeProyectoModal);
+  if ($('proyectos-refresh-btn')) $('proyectos-refresh-btn').addEventListener('click', loadProyectos);
+  if ($('proyectos-new-btn')) $('proyectos-new-btn').addEventListener('click', () => openProyectoModal(null));
+
+  // =========================================================================
   // CALENDARIO DE MANTENIMIENTO RECURRENTE (Ben)
   // =========================================================================
   let calSchedulesCache = [];
@@ -14570,6 +15591,10 @@
   window.formatCalDate = formatCalDate;
   window.loadRoadmap = loadRoadmap;
   window.renderRoadmap = renderRoadmap;
+  window.loadProyectos = loadProyectos;
+  window.renderProyectos = renderProyectos;
+  window.openProyectoModal = openProyectoModal;
+  window.closeProyectoModal = closeProyectoModal;
   window.renderNuevos = renderNuevos;
   window.isManagement = isManagement;
   window.isOwner = isOwner;
