@@ -646,39 +646,31 @@
       border-radius: 6px;
       cursor: pointer;
     }
-    /* ── v0.209.22: Side-panel on ≥900px — modal doesn't cover the grid ─────── */
-    /* Plan modals become a fixed right-edge panel instead of a centred overlay.
-       The dark backdrop is removed so the grid stays visible and scrollable
-       while the panel is open. .hidden still sets display:none (wins via !important). */
+    /* ── Centered modal on ≥900px (Ben 2026-09-25: popup should be middle, not topright) ── */
     .wrap.wrap-wide .plan-modal {
       position: fixed;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: auto;
-      width: 320px;
-      background: transparent;
-      box-shadow: none;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
       display: flex;
-      align-items: flex-start;
-      justify-content: flex-end;
-      padding: 0;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
       z-index: 70;
     }
     .wrap.wrap-wide .plan-modal .box {
-      width: 320px;
-      max-width: 320px;
-      max-height: 100vh;
-      border-radius: 0;
-      border-left: 1px solid var(--border);
-      box-shadow: -4px 0 20px rgba(0,0,0,0.18);
+      width: 100%;
+      max-width: 340px;
+      max-height: min(90vh, 580px);
+      border-radius: 12px;
+      border: none;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
       padding: 20px 18px;
       overflow-y: auto;
       margin: 0;
       box-sizing: border-box;
       background: var(--card-bg, #fff);
     }
-    /* Keyboard hint: only show in side-panel context */
+    /* Keyboard hint: show on desktop planner modals */
     .wrap.wrap-wide .plan-kbd-hint {
       display: block;
     }
