@@ -376,4 +376,91 @@ module.exports = function (t) {
     t.includes(msgEl.textContent, 'No se pudieron cargar los comentarios', 'must explain that comments failed');
     t.includes(msgEl.className, 'msg err', 'message must have error styling');
   });
+
+  t.test('DATA: refreshMilestones reports error in proyectos-msg when read fails', async () => {
+    const dom = new (require('./fakedom.js').Document)('<div id="proyectos-msg"></div>');
+    const mockSb = {
+      from: () => ({
+        select: () => ({
+          order: () => Promise.resolve({ data: null, error: { message: 'milestones fail' } })
+        })
+      })
+    };
+    const s = t.sandbox(['refreshMilestones', 'showMsg', 'esc'], {
+      dom,
+      globals: {
+        supabase: mockSb,
+        $: (id) => dom.getElementById(id),
+        nudoWarn: () => {},
+        proyectosCache: [],
+        proyectosCommentsCache: {},
+        proyectosMilestonesCache: {},
+        renderProyectos: () => {}
+      }
+    });
+    await s.refreshMilestones();
+    const msgEl = dom.getElementById('proyectos-msg');
+    t.includes(msgEl.textContent, 'No se pudieron actualizar los hitos', 'must report that milestones refresh failed');
+    t.includes(msgEl.className, 'msg err', 'must have err class');
+  });
+
+  t.test('DATA: addProyectoComment reports error in proyectos-msg when refresh read fails', async () => {
+    const dom = new (require('./fakedom.js').Document)('<div id="proyectos-msg"></div>');
+    const mockSb = {
+      auth: { getUser: () => Promise.resolve({ data: { user: { id: 'u1' } } }) },
+      from: () => ({
+        insert: () => Promise.resolve({ error: null }),
+        select: () => ({
+          order: () => Promise.resolve({ data: null, error: { message: 'read comments err' } })
+        })
+      })
+    };
+    const s = t.sandbox(['addProyectoComment', 'showMsg', 'esc'], {
+      dom,
+      globals: {
+        supabase: mockSb,
+        $: (id) => dom.getElementById(id),
+        setTimeout: () => {},
+        clearTimeout: () => {},
+        toast: () => {},
+        nudoWarn: () => {},
+        currentProfile: { id: 'u1', name: 'Ben' },
+        proyectosCache: [],
+        proyectosCommentsCache: {},
+        proyectosMilestonesCache: {},
+        renderProyectos: () => {}
+      }
+    });
+    await s.addProyectoComment('p1', 'un comentario', null, null);
+    const msgEl = dom.getElementById('proyectos-msg');
+    t.includes(msgEl.textContent, 'Comentario publicado, pero no se pudo actualizar la lista', 'must report error when comments refresh fails');
+    t.includes(msgEl.className, 'msg err', 'must have err class');
+  });
+
+  t.test('DATA: loadUserNotifPrefs reports error via pushToast when read fails', async () => {
+    const dom = new (require('./fakedom.js').Document)('<div id="push-toast" class="hidden"></div>');
+    const mockSb = {
+      auth: { getUser: () => Promise.resolve({ data: { user: { id: 'u1' } } }) },
+      from: () => ({
+        select: () => ({
+          eq: () => Promise.resolve({ data: null, error: { message: 'prefs failed' } })
+        })
+      })
+    };
+    const s = t.sandbox(['loadUserNotifPrefs'], {
+      dom,
+      globals: {
+        supabase: mockSb,
+        $: (id) => dom.getElementById(id),
+        clearTimeout: () => {},
+        setTimeout: () => {},
+        nudoWarn: () => {},
+        NOTIF_CATEGORIES: [{ id: 'corte', name: 'Corte' }],
+        userNotifPrefs: {}
+      }
+    });
+    await s.loadUserNotifPrefs();
+    const toastEl = dom.getElementById('push-toast');
+    t.includes(toastEl.textContent, 'No se pudieron cargar tus preferencias de avisos', 'pushToast must alert user of failed read');
+  });
 };
