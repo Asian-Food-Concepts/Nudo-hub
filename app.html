@@ -7281,7 +7281,11 @@
     if (data && data.resolution_notes) updatePayload.resolution_notes = data.resolution_notes;
 
     try {
-      const { data: curRow } = await supabase.from('maintenance_requests').select('follow_ups').eq('id', reqId).maybeSingle();
+      const { data: curRow, error: curErr } = await supabase.from('maintenance_requests').select('follow_ups').eq('id', reqId).maybeSingle();
+      if (curErr) {
+        showMsg(estatusMsgEl(), 'Error al leer seguimiento previo: ' + curErr.message, 'err');
+        return;
+      }
       const cur = (curRow && curRow.follow_ups) || [];
       const noteText = data && data.resolution_notes
         ? `Marcado como Completado: ${data.resolution_notes}`
@@ -7289,6 +7293,8 @@
       updatePayload.follow_ups = [...cur, { at: nowIso, by: authorId, by_name: authorName, text: noteText, kind: 'followup' }];
     } catch (e) {
       nudoWarn('finishMaintComplete:follow_ups', e);
+      showMsg(estatusMsgEl(), 'Error al leer seguimiento previo: ' + (e.message || String(e)), 'err');
+      return;
     }
 
     const { error } = await supabase.from('maintenance_requests').update(updatePayload).eq('id', reqId);
@@ -7421,10 +7427,21 @@
 
     const submitterIds = [...new Set((reqs || []).map(r => r.submitted_by).filter(Boolean))];
     let nameById = {};
+    let submittersErr = null;
     if (submitterIds.length) {
-      const { data: people } = await supabase
-        .from('profiles').select('id, name').in('id', submitterIds);
-      (people || []).forEach(p => { nameById[p.id] = p.name; });
+      try {
+        const { data: people, error: pErr } = await supabase
+          .from('profiles').select('id, name').in('id', submitterIds);
+        if (pErr) {
+          submittersErr = pErr;
+          nudoWarn('openAssetStoryline:submitters', pErr);
+        } else {
+          (people || []).forEach(p => { nameById[p.id] = p.name; });
+        }
+      } catch (err) {
+        submittersErr = err;
+        nudoWarn('openAssetStoryline:submitters', err);
+      }
     }
 
     const assetName = (hist && hist.name) || (asset && asset.name) || 'Equipo';
@@ -7442,6 +7459,10 @@
     let errorBanner = '';
     if (!hist && assetErr) {
       errorBanner = `<div style="padding:10px 14px;margin-bottom:12px;background:var(--msg-err-bg,#fdecea);color:var(--red,#c62828);border-radius:8px;font-size:0.85rem;">⚠️ No se pudo cargar la información del equipo: ${esc(assetErr.message || String(assetErr))}</div>`;
+    }
+    if (submittersErr) {
+      const banner = `<div style="padding:10px 14px;margin-bottom:12px;background:var(--msg-err-bg,#fdecea);color:var(--red,#c62828);border-radius:8px;font-size:0.85rem;">⚠️ No se pudieron cargar los nombres del personal: ${esc(submittersErr.message || String(submittersErr))}</div>`;
+      errorBanner = errorBanner ? errorBanner + banner : banner;
     }
 
     let summaryHtml = errorBanner + `
@@ -7680,9 +7701,19 @@
     const submitterIds = [...new Set(rows.map(r => r.submitted_by).filter(Boolean))];
     let nameById = {};
     if (submitterIds.length) {
-      const { data: people } = await supabase
-        .from('profiles').select('id, name').in('id', submitterIds);
-      (people || []).forEach(p => { nameById[p.id] = p.name; });
+      try {
+        const { data: people, error: pErr } = await supabase
+          .from('profiles').select('id, name').in('id', submitterIds);
+        if (pErr) {
+          nudoWarn('loadEstatus:submitters', pErr);
+          if (msgEl) showMsg(msgEl, 'No se pudieron cargar los nombres del personal.', 'err');
+        } else {
+          (people || []).forEach(p => { nameById[p.id] = p.name; });
+        }
+      } catch (err) {
+        nudoWarn('loadEstatus:submitters', err);
+        if (msgEl) showMsg(msgEl, 'No se pudieron cargar los nombres del personal.', 'err');
+      }
     }
     rows.forEach(r => { r.submitter_name = nameById[r.submitted_by] || ''; });
 
@@ -10541,6 +10572,7 @@
         .eq('user_id', user.id);
       if (error) {
         nudoWarn('notif-prefs', error);
+        pushToast('No se pudieron cargar tus preferencias de avisos.', true);
         return userNotifPrefs;
       }
       const prefs = {};
@@ -10555,6 +10587,7 @@
       return userNotifPrefs;
     } catch (err) {
       nudoWarn('notif-prefs', err);
+      pushToast('No se pudieron cargar tus preferencias de avisos.', true);
       return userNotifPrefs;
     }
   }
@@ -14565,6 +14598,7 @@
         .order('sort_order', { ascending: true });
       if (error) {
         nudoWarn('proyectos:milestones:refresh', error);
+        showMsg($('proyectos-msg'), 'No se pudieron actualizar los hitos: ' + (error.message || String(error)), 'err');
         return;
       }
       const milestonesMap = {};
@@ -14577,6 +14611,7 @@
       renderProyectos(proyectosCache, proyectosCommentsCache, proyectosMilestonesCache);
     } catch (err) {
       nudoWarn('proyectos:milestones:refresh', err);
+      showMsg($('proyectos-msg'), 'No se pudieron actualizar los hitos: ' + (err.message || String(err)), 'err');
     }
   }
 
@@ -14611,6 +14646,7 @@
           .order('created_at', { ascending: false });
         if (commErr) {
           nudoWarn('proyectos:comments:refresh', commErr);
+          showMsg($('proyectos-msg'), 'Comentario publicado, pero no se pudo actualizar la lista: ' + (commErr.message || String(commErr)), 'err');
         } else {
           const commentsMap = {};
           (comms || []).forEach(c => {
