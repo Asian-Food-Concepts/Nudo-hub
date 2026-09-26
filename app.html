@@ -4504,7 +4504,7 @@
       mantprevCard.style.display = isLeader ? '' : 'none';
     }
     // Owner follow-up badge on Estatus de solicitudes (Dueño only)
-    if (role === 'Dueño') updateEstatusBadge();
+    if (role === 'Admin') updateEstatusBadge();
     // v0.134: access codes are fetched AFTER auth (never shipped in this file)
     loadAccessCodes();
     // v0.126: dock is role-independent now (Inicio + Seguimiento only), but the
@@ -5690,7 +5690,7 @@
     try { await requireUser(); } catch(e) { return; }
     const _planGateRole = (currentProfile && currentProfile.role) || '';
     const _planGateGroup = planRoleGroup(_planGateRole);
-    const _isLeader = ['Dueño', 'Capitán', 'Gerente'].includes(_planGateRole) || _planGateGroup === 'Capitán';
+    const _isLeader = ['Admin', 'Capitán', 'Gerente'].includes(_planGateRole) || _planGateGroup === 'Capitán';
     if (!_isLeader) {
       $('plan-grid').innerHTML = '<div class="empty-state"><div class="es-ico">🔒</div><div class="es-title">Deshabilitado temporalmente</div><div class="es-sub">El planeador de horarios pronto estará disponible.</div></div>';
       return;
@@ -5702,7 +5702,7 @@
     // capture caller identity for audit rows + gate audit log visibility
     planState.currentProfileId = (currentProfile && currentProfile.id) || null;
     const role = (currentProfile && currentProfile.role) || '';
-    planState.auditRole = (role === 'Dueño' || role.toLowerCase().includes('gerente'));
+    planState.auditRole = (role === 'Admin' || role.toLowerCase().includes('gerente'));
     $('plan-audit-section').classList.toggle('hidden', !planState.auditRole);
     // rebuild extraSlots from persisted shifts (v0.106 fix: extras survive reload)
     planState.extraSlots = {};
@@ -6811,7 +6811,7 @@
   // Look up the status meta for a row by its kind.
   function statusMeta(r) { return STATUS_META[r.kind] || {}; }
   // ADMIN_ROLES = who can CHANGE status (Dueño and Gerente Regional)
-  const ADMIN_ROLES = ['Dueño', 'Gerente Regional'];
+  const ADMIN_ROLES = ['Admin', 'Gerente Regional'];
 
   // Shared priority -> label/color map (used by both the card badge and the
   // detail modal). Single source of truth so the two never drift.
@@ -9426,7 +9426,7 @@
     const role = (prof && prof.role) || '';
     const roleGroup = planRoleGroup(role);
     // v0.125: entrevistas now Dueño/Gerente only (captains disabled)
-    isLeader = role === 'Dueño' || role.toLowerCase().includes('gerente');
+    isLeader = role === 'Admin' || role.toLowerCase().includes('gerente');
     if (!isLeader) { return; }
     const { error } = await supabase.from('interviews').update({ status }).eq('id', id);
     if (error) { showMsg($('entrevistas-msg'), 'Error al cambiar estado: ' + error.message, 'err'); return; }
@@ -9933,7 +9933,7 @@
       home.style.transform = '';
       // Refresh live sections + badge
       if (typeof loadHubLiveSections === 'function') loadHubLiveSections();
-      if (currentProfile && currentProfile.role === 'Dueño') updateEstatusBadge();
+      if (currentProfile && currentProfile.role === 'Admin') updateEstatusBadge();
     });
   })();
 
@@ -11019,21 +11019,24 @@
   function isManagement(role, level, active) {
     // `level` is accepted but deliberately NOT consulted (that was the AGF rule).
     // `active` IS consulted, because the DB predicates both use coalesce(p.active,true):
-    //   is_dueno()   -> active AND role = 'Dueño'
+    //   is_dueno()   -> active AND role = 'Admin'
     //   is_gerente() -> active AND role ilike '%gerente%'
     // Without it, a deactivated Dueño would see a button that the DB then rejects.
     if (!coalesceActive(active)) return false;
     const r = String(role || '').toLowerCase();
-    if (String(role || '') === 'Dueño') return true;
+    if (String(role || '') === 'Admin') return true;
     if (r.includes('gerente')) return true;
     return false;
   }
 
   // Single named predicate for Dueño (owner-only views, e.g. Roadmap).
-  // Matches DB is_dueno() policy: coalesce(p.active, true) AND role = 'Dueño'.
-  function isOwner(role, level, active) {
+  // Matches DB is_dueno() policy: coalesce(p.active, true) AND role = 'Admin'.
+  function isOwner(roleOrProfile, level, active) {
+    if (roleOrProfile && typeof roleOrProfile === 'object') {
+      return isOwner(roleOrProfile.role, roleOrProfile.level, roleOrProfile.active);
+    }
     if (!coalesceActive(active)) return false;
-    return String(role || '').trim() === 'Dueño';
+    return String(roleOrProfile || '').trim() === 'Admin';
   }
 
   // Mirrors the DB's coalesce(p.active, true): null/undefined mean "active".
@@ -11249,7 +11252,7 @@
   // pattern as the other edge functions, and harmless without a Dueño account).
   const MGMT_FN = SUPABASE_URL + '/functions/v1/manage-user';
   const MGMT_KEY = 'MgmtALZCCSb8BtreFTC_ja4wtSCn';
-  const MGMT_ROLES = ['Dueño','Gerente','Gerente Regional','Capitán','Capitán de Piso','Capitána de Piso','Encargado de Barra','Encargada de Barra','Cocina','Barra','Mesero'];
+  const MGMT_ROLES = ['Admin','Gerente','Gerente Regional','Capitán','Capitán de Piso','Capitána de Piso','Encargado de Barra','Encargada de Barra','Cocina','Barra','Mesero'];
 
   async function mgmtCall(op, data) {
     const { data: { session } } = await supabase.auth.getSession();
@@ -11295,7 +11298,7 @@
       return u.level > myLevel;
     };
     listEl.innerHTML = rows.map(u => {
-      const isDueño = u.role === 'Dueño';
+      const isDueño = u.role === 'Admin';   // variable name kept; the stored role string is now 'Admin'
       const activeBadge = u.active !== false
         ? '<span style="background:#e6f4ea;color:#1f7a4d;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;">Activo</span>'
         : '<span style="background:#fdecea;color:#c62828;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;">Inactivo</span>';
@@ -11762,7 +11765,9 @@
       const numTypes = Object.keys(typeMap).length;
 
       // Count wording (A4): "33 archivos · 6 tipos de documento · 28 verificados"
-      const docCountSummary = totalDocs + ' archivos · ' + numTypes + ' tipos de documento · ' + verifiedDocs + ' verificados';
+      const totalDocsStr = totalDocs === 1 ? '1 archivo' : (totalDocs + ' archivos');
+      const numTypesStr = numTypes === 1 ? '1 tipo de documento' : (numTypes + ' tipos de documento');
+      const docCountSummary = totalDocsStr + ' · ' + numTypesStr + ' · ' + verifiedDocs + ' verificados';
 
       const verifCountLabel = totalDocs ? (verifiedDocs + '/' + totalDocs + ' verificados') : 'Sin archivos';
 
@@ -11799,11 +11804,9 @@
       let docGroupSection = '';
       if (window.__nuevos_docs === null) {
         docGroupSection = '<div style="color:var(--amber);font-size:13px;margin:8px 0;">📎 no disponible / no se pudieron cargar</div>';
-      } else if (!docs.length) {
-        docGroupSection = '<div style="color:var(--muted);font-size:13px;margin:8px 0;">📎 Sin archivos subidos</div>';
       } else {
         const ORDERED_TYPES = ['ine', 'nss', 'csf', 'comprobante', 'carta', 'certificacion'];
-        const allTypes = Array.from(new Set([...ORDERED_TYPES.filter(t => typeMap[t]), ...Object.keys(typeMap)]));
+        const allTypes = Array.from(new Set([...ORDERED_TYPES, ...Object.keys(typeMap)]));
 
         const groupsHtml = allTypes.map(t => {
           const gDocs = typeMap[t] || [];
@@ -11818,28 +11821,38 @@
 
           let statusIco = '⏳';
           let tierBadge = '';
-          if (gHasFailed) {
+          let countStr = '';
+
+          if (gTotal === 0) {
+            statusIco = '❌';
+            countStr = '0 archivos · Falta subir';
+            // Mark document type ONLY when missing or failed (A3)
+            if (tierName === 'critical' || tierName === 'important') {
+              tierBadge = renderDocTierBadge(t);
+            }
+          } else if (gHasFailed) {
             statusIco = '⚠️';
+            countStr = (gTotal === 1 ? '1 archivo' : (gTotal + ' archivos')) + ' · ' + gVerified + ' verificados';
+            // Mark document type ONLY when missing or failed (A3)
             if (tierName === 'critical' || tierName === 'important') {
               tierBadge = renderDocTierBadge(t);
             }
           } else if (gAllOk || gVerified > 0) {
             statusIco = '✅';
+            countStr = (gTotal === 1 ? '1 archivo' : (gTotal + ' archivos')) + ' · ' + gVerified + ' verificados';
+            // NOT missing, NOT failed: no tier badge (A3: prevents contradictory red chip next to verified tick)
+            tierBadge = '';
           } else {
             statusIco = '⏳';
-            if (tierName === 'critical') {
-              tierBadge = renderDocTierBadge(t);
-            }
+            countStr = (gTotal === 1 ? '1 archivo' : (gTotal + ' archivos')) + ' · ' + gVerified + ' verificados';
+            tierBadge = '';
           }
-
-          const fileCountStr = gTotal === 1 ? '1 archivo' : (gTotal + ' archivos');
-          const verifCountStr = gVerified + ' verificados';
 
           return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;font-size:13px;margin-bottom:6px;">'
             + '<div style="display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;text-overflow:ellipsis;">'
             +   '<span>' + statusIco + '</span>'
             +   '<strong style="color:var(--ink);">' + esc(typeName) + '</strong>'
-            +   '<span style="color:var(--muted);font-size:12px;">· ' + esc(fileCountStr) + ' · ' + esc(verifCountStr) + '</span>'
+            +   '<span style="color:var(--muted);font-size:12px;">· ' + esc(countStr) + '</span>'
             + '</div>'
             + (tierBadge ? ('<div>' + tierBadge + '</div>') : '')
             + '</div>';
@@ -12806,6 +12819,13 @@
         + '</div>'
         + '<span style="font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;">Esperando tu decisión</span>'
         + '</div>';
+    } else {
+      waitingBannerHtml = '<div class="roadmap-waiting-banner" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;font-size:14px;color:var(--muted);">'
+        + '<div style="display:flex;align-items:center;gap:8px;">'
+        +   '<span style="font-size:18px;">💡</span>'
+        +   '<span><strong>0 sugerencias pendientes de aprobación</strong> · Todo al día</span>'
+        + '</div>'
+        + '</div>';
     }
 
     const html = rows.map((r, idx) => {
@@ -12820,9 +12840,9 @@
         ? '<span class="roadmap-chip" style="background:rgba(26,86,219,0.18);border:1px solid rgba(26,86,219,0.4);color:#1a56db;font-weight:700;">💡 Sugerido</span>'
         : '<span class="roadmap-chip" style="background:' + st.bg + ';color:' + st.color + ';">' + st.ico + ' ' + esc(st.label) + '</span>';
 
-      // Explicit approve action button in collapsed row (B5)
+      // Explicit approve action button in collapsed row (B5: primary labelled button)
       const approveBtnHtml = isSuggested
-        ? '<button type="button" class="btn btn-outline" data-roadmap-approve="' + esc(r.id) + '" data-no-card-open style="min-height:44px;font-size:13px;padding:6px 12px;margin:0;color:var(--green);font-weight:700;border-color:var(--green);white-space:nowrap;background:rgba(31,122,77,0.08);">👍 Aprobar</button>'
+        ? '<button type="button" class="btn" data-roadmap-approve="' + esc(r.id) + '" data-no-card-open style="width:auto;min-height:44px;font-size:13px;padding:6px 14px;margin:0;font-weight:700;border-radius:8px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:4px;">👍 Aprobar</button>'
         : '';
 
       // Desktop collapsed row (B4: dense table-like row; B2: title, category, description, status)
