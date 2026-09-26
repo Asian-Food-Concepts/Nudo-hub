@@ -146,6 +146,10 @@
     .wrap.wrap-wide #form-plan .form-card { padding: 18px 22px; }
     .wrap.wrap-wide .plan-grid { overflow-x: visible; }
   }
+  @media (min-width: 1024px) {
+    .wrap.wrap-wide { max-width: min(98vw, 1280px); padding-left: 8px; padding-right: 8px; }
+    .wrap.wrap-wide #form-mantestatus .form-card { padding: 16px 12px; }
+  }
   .section-title {
     font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.6px; color: var(--muted); margin: 20px 0 8px;
@@ -920,10 +924,10 @@
   @media (min-width: 1024px) {
     .estatus-mant-table-header {
       display: grid;
-      grid-template-columns: minmax(100px, 1fr) 70px 80px 105px 70px 95px minmax(180px, auto);
+      grid-template-columns: minmax(180px, 1fr) 106px 105px 83px 105px 224px;
       align-items: center;
       gap: 6px;
-      padding: 8px 14px;
+      padding: 8px 10px;
       margin: 12px 0 6px;
       background: var(--frame-bg);
       border: 1px solid var(--border);
@@ -935,11 +939,20 @@
       text-transform: uppercase;
       box-sizing: border-box;
     }
+    .estatus-mant-th {
+      text-align: left;
+      min-width: 0;
+    }
+    .estatus-mant-th-obj { text-align: left; }
+    .estatus-mant-th-branch { text-align: left; }
+    .estatus-mant-th-status { text-align: left; }
+    .estatus-mant-th-prio { text-align: left; }
+    .estatus-mant-th-date { text-align: left; }
     .estatus-mant-th-actions { text-align: right; min-width: 0; }
 
     .estatus-mant-desktop {
       display: grid !important;
-      grid-template-columns: minmax(100px, 1fr) 70px 80px 105px 70px 95px minmax(180px, auto);
+      grid-template-columns: minmax(180px, 1fr) 106px 105px 83px 105px 224px;
       align-items: center;
       gap: 6px;
       width: 100%;
@@ -948,12 +961,12 @@
     .estatus-mant-mobile { display: none !important; }
 
     .estatus-mant-card {
-      padding: 8px 14px;
+      padding: 8px 10px;
       margin-bottom: 6px;
       border-radius: 8px;
     }
     .estatus-mant-card:hover { background: var(--input-bg); }
-    .estatus-mant-card.done { padding: 8px 14px; opacity: 0.85; }
+    .estatus-mant-card.done { padding: 8px 10px; opacity: 0.85; }
 
     .estatus-mant-col-obj {
       display: flex;
@@ -986,12 +999,18 @@
     .estatus-mant-col-branch {
       font-size: 0.82rem;
       white-space: nowrap;
+      text-align: left;
+      min-width: 0;
     }
     .estatus-mant-col-status {
       white-space: nowrap;
+      text-align: left;
+      min-width: 0;
     }
     .estatus-mant-col-prio {
       white-space: nowrap;
+      text-align: left;
+      min-width: 0;
     }
     .estatus-mant-col-date {
       font-size: 0.8rem;
@@ -999,14 +1018,17 @@
       display: flex;
       flex-direction: column;
       gap: 2px;
+      text-align: left;
+      min-width: 0;
     }
     .estatus-mant-col-actions {
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 5px;
+      gap: 6px;
       white-space: nowrap;
       min-width: 0;
+      text-align: right;
     }
     .estatus-mant-col-actions .btn {
       height: 30px;
@@ -7354,25 +7376,32 @@
 
     let hist = null;
     try {
-      const { data: hData } = await supabase
+      const { data: hData, error: hErr } = await supabase
         .from('maintenance_asset_history')
         .select('*')
         .eq('asset_id', assetId)
         .maybeSingle();
+      if (hErr) nudoWarn('openAssetStoryline:history', hErr);
       hist = hData;
     } catch (e) {
       nudoWarn('openAssetStoryline:history', e);
     }
 
     let asset = null;
+    let assetErr = null;
     try {
-      const { data: aData } = await supabase
+      const { data: aData, error: aErr } = await supabase
         .from('maintenance_assets')
         .select('*')
         .eq('id', assetId)
         .maybeSingle();
+      if (aErr) {
+        assetErr = aErr;
+        nudoWarn('openAssetStoryline:asset', aErr);
+      }
       asset = aData;
     } catch (e) {
+      assetErr = e;
       nudoWarn('openAssetStoryline:asset', e);
     }
 
@@ -7407,7 +7436,12 @@
     const avgCostStr = formatMxn(hist ? hist.avg_cost : null);
     const openCount = (hist && hist.open_requests != null) ? hist.open_requests : (reqs ? reqs.filter(isOpenRequestRow).length : 0);
 
-    let summaryHtml = `
+    let errorBanner = '';
+    if (!hist && assetErr) {
+      errorBanner = `<div style="padding:10px 14px;margin-bottom:12px;background:var(--msg-err-bg,#fdecea);color:var(--red,#c62828);border-radius:8px;font-size:0.85rem;">⚠️ No se pudo cargar la información del equipo: ${esc(assetErr.message || String(assetErr))}</div>`;
+    }
+
+    let summaryHtml = errorBanner + `
       <div style="background:var(--card-bg, #f8f9fa);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
           <div>
@@ -7819,12 +7853,11 @@
   function renderMantTableHeader() {
     return `
       <div class="estatus-mant-table-header">
-        <div class="estatus-mant-th">Objeto / Asset</div>
-        <div class="estatus-mant-th">Área</div>
-        <div class="estatus-mant-th">Sucursal</div>
-        <div class="estatus-mant-th">Estatus</div>
-        <div class="estatus-mant-th">Prioridad</div>
-        <div class="estatus-mant-th">Fecha</div>
+        <div class="estatus-mant-th estatus-mant-th-obj">Objeto / Asset</div>
+        <div class="estatus-mant-th estatus-mant-th-branch">Sucursal</div>
+        <div class="estatus-mant-th estatus-mant-th-status">Estatus</div>
+        <div class="estatus-mant-th estatus-mant-th-prio">Prioridad</div>
+        <div class="estatus-mant-th estatus-mant-th-date">Fecha</div>
         <div class="estatus-mant-th estatus-mant-th-actions">Acciones</div>
       </div>
     `;
@@ -7833,12 +7866,11 @@
   function renderMantDoneTableHeader() {
     return `
       <div class="estatus-mant-table-header">
-        <div class="estatus-mant-th">Objeto / Asset</div>
-        <div class="estatus-mant-th">Área</div>
-        <div class="estatus-mant-th">Sucursal</div>
-        <div class="estatus-mant-th">Estatus</div>
-        <div class="estatus-mant-th">Prioridad</div>
-        <div class="estatus-mant-th">Fecha</div>
+        <div class="estatus-mant-th estatus-mant-th-obj">Objeto / Asset</div>
+        <div class="estatus-mant-th estatus-mant-th-branch">Sucursal</div>
+        <div class="estatus-mant-th estatus-mant-th-status">Estatus</div>
+        <div class="estatus-mant-th estatus-mant-th-prio">Prioridad</div>
+        <div class="estatus-mant-th estatus-mant-th-date">Fecha</div>
         <div class="estatus-mant-th estatus-mant-th-actions">Acciones</div>
       </div>
     `;
@@ -7879,6 +7911,7 @@
         : '';
 
       const desktopSubParts = [];
+      if (areaStr && areaStr !== '—') desktopSubParts.push(esc(areaStr));
       if (r.asset_name && r.detail) desktopSubParts.push(esc(r.detail));
       if (r.photo_urls && r.photo_urls.length) desktopSubParts.push('📷 ' + r.photo_urls.length + (r.photo_urls.length > 1 ? ' fotos' : ' foto'));
       if (r.cost != null && !isNaN(Number(r.cost))) desktopSubParts.push('💰 ' + formatMxn(r.cost));
@@ -7900,9 +7933,6 @@
             <div class="estatus-mant-col estatus-mant-col-obj">
               <span class="estatus-mant-title" title="${escAttr(r.asset_name || r.detail || r.title)}">${objDisplayTitle}</span>
               ${desktopSubStr ? `<span class="estatus-mant-sub" title="${escAttr(desktopSubStr)}">${desktopSubStr}</span>` : ''}
-            </div>
-            <div class="estatus-mant-col estatus-mant-col-area">
-              <span class="estatus-mant-area-text" title="${escAttr(areaStr)}">${esc(areaStr)}</span>
             </div>
             <div class="estatus-mant-col estatus-mant-col-branch">${branchBadgeDesktop}</div>
             <div class="estatus-mant-col estatus-mant-col-status">${badge}</div>
@@ -7935,7 +7965,7 @@
       ? `<span style="display:inline-block;font-size:0.75rem;padding:2px 8px;border-radius:999px;background:var(--input-bg);border:1px solid var(--border);color:var(--ink);font-weight:600;white-space:nowrap;">📍 ${esc(r.branch)}</span>`
       : '';
 
-    const ageBadge = `<span style="display:inline-block;background:#fce8e6;color:#d93025;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">🔴 ${formatDiasAbierto(r.created_at)}</span>`;
+    const ageBadge = `<span style="display:inline-block;background:var(--input-bg);color:var(--muted);border:1px solid var(--border);font-weight:600;font-size:0.72rem;padding:1px 7px;border-radius:999px;white-space:nowrap;">⏱️ ${formatDiasAbierto(r.created_at)}</span>`;
 
     // Asset name when asset_id resolves
     const assetTagHtml = (r.asset_id && r.asset_name)
@@ -7975,6 +8005,7 @@
       : `<span style="display:inline-block;background:#fef7e0;color:#e37400;font-weight:700;font-size:0.75rem;padding:2px 8px;border-radius:999px;white-space:nowrap;">🟡 Con proveedor</span>`;
 
     const desktopSubParts = [];
+    if (areaStr && areaStr !== '—') desktopSubParts.push(esc(areaStr));
     if (r.asset_name && r.detail) desktopSubParts.push(esc(r.detail));
     if (nextFollowUpBadge) desktopSubParts.push(nextFollowUpBadge);
     if (r.photo_urls && r.photo_urls.length) desktopSubParts.push('📷 ' + r.photo_urls.length + (r.photo_urls.length > 1 ? ' fotos' : ' foto'));
@@ -7998,9 +8029,6 @@
             <span class="estatus-mant-title" title="${escAttr(r.asset_name || r.detail || r.title)}">${objDisplayTitle}</span>
             ${desktopSubStr ? `<span class="estatus-mant-sub" title="${escAttr(desktopSubStr)}">${desktopSubStr}</span>` : ''}
           </div>
-          <div class="estatus-mant-col estatus-mant-col-area">
-            <span class="estatus-mant-area-text" title="${escAttr(areaStr)}">${esc(areaStr)}</span>
-          </div>
           <div class="estatus-mant-col estatus-mant-col-branch">${branchBadgeDesktop}</div>
           <div class="estatus-mant-col estatus-mant-col-status">${statusBadge}</div>
           <div class="estatus-mant-col estatus-mant-col-prio">${prio}</div>
@@ -8009,8 +8037,6 @@
             <span style="font-size:0.75rem;">${ageBadge}</span>
           </div>
           <div class="estatus-mant-col estatus-mant-col-actions" data-no-card-open>
-            ${canEdit ? `<button type="button" class="btn btn-outline" data-edit="${r.table}|${r.id}" title="Editar">✏️</button>` : ''}
-            <button type="button" class="btn btn-outline estatus-mant-card-note-btn" data-id="${r.id}" title="Anotar seguimiento">📝 Nota</button>
             ${canAdvance ? `<button type="button" class="btn estatus-mant-advance-btn" data-advance="${r.table}|${r.id}|${nextStep}">${nextStep === 'Comunicado con proveedor' ? 'Marcar con proveedor' : `Marcar ${nextStep}`}</button>` : ''}
             <button type="button" class="btn btn-outline estatus-mant-detail-btn" onclick="openEstatusDetail('${r.table}','${r.id}')">Detalles ›</button>
           </div>
@@ -8485,6 +8511,39 @@
       editBtn.textContent = '✏️ Editar';
       editBtn.addEventListener('click', () => openEstatusEdit(row));
       actions.appendChild(editBtn);
+    }
+
+    if (row.kind === 'mant' && !closed) {
+      const noteBtn = document.createElement('button');
+      noteBtn.className = 'btn btn-outline'; noteBtn.style.margin = '0';
+      noteBtn.textContent = '📝 Nota';
+      noteBtn.title = 'Anotar seguimiento';
+      noteBtn.addEventListener('click', async () => {
+        const noteArea = $('estatus-mant-note');
+        if (noteArea && noteArea.offsetParent !== null) {
+          noteArea.focus();
+          noteArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+        const text = (prompt('Anotar seguimiento para esta solicitud:') || '').trim();
+        if (!text) return;
+        noteBtn.disabled = true;
+        const author = await resolveCurrentUserName();
+        const cur = row.follow_ups || [];
+        const entry = { at: new Date().toISOString(), by: author.by, by_name: author.by_name, text, kind: 'followup' };
+        const updated = [...cur, entry];
+        const { error } = await supabase.from(row.table).update({ follow_ups: updated }).eq('id', row.id);
+        if (error) {
+          showMsg(estatusMsgEl(), 'Error al guardar seguimiento: ' + error.message, 'err');
+          noteBtn.disabled = false;
+          return;
+        }
+        row.follow_ups = updated;
+        toast('✅ Seguimiento agregado');
+        loadEstatus();
+        openEstatusDetail(row.table, row.id);
+      });
+      actions.appendChild(noteBtn);
     }
 
     if ((isMine || isAdmin) && !closed && row.status !== 'Cancelado') {
@@ -9657,7 +9716,11 @@
     const [id, status] = el.getAttribute('data-set-status').split('|');
     let user; try { user = await requireUser(); } catch(err) { return; }
     let isLeader = false;
-    const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    const { data: prof, error: profErr } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (profErr) {
+      showMsg($('entrevistas-msg'), 'Error al verificar permisos: ' + (profErr.message || String(profErr)), 'err');
+      return;
+    }
     const role = (prof && prof.role) || '';
     const roleGroup = planRoleGroup(role);
     // v0.125: entrevistas now Dueño/Gerente only (captains disabled)
@@ -11294,6 +11357,11 @@
       supabase.from('role_levels').select('role,level,rank_label').order('level'),
       supabase.from('profiles').select('name,role,branch,level').eq('active', true).order('name')
     ]);
+    if (lv && lv.error) nudoWarn('viewas:levels', lv.error);
+    if (pr && pr.error) {
+      list.innerHTML = '<div class="msg err">No se pudieron cargar los perfiles: ' + esc(pr.error.message || pr.error) + '</div>';
+      return;
+    }
     const meta = {};
     (lv.data || []).forEach(r => { meta[r.level] = r.rank_label; });
     const byLevel = {};
@@ -13834,6 +13902,14 @@
 
       if (!profRes.error && profRes.data) {
         window.__proyectos_owners_cache = profRes.data;
+      }
+
+      if (commRes.error && mileRes.error) {
+        showMsg(msgEl, 'No se pudieron cargar los comentarios ni los hitos.', 'err');
+      } else if (commRes.error) {
+        showMsg(msgEl, 'No se pudieron cargar los comentarios.', 'err');
+      } else if (mileRes.error) {
+        showMsg(msgEl, 'No se pudieron cargar los hitos.', 'err');
       }
 
       renderProyectos(proyectosCache, proyectosCommentsCache, proyectosMilestonesCache);

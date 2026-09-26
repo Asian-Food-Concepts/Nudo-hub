@@ -282,4 +282,98 @@ module.exports = function (t) {
     t.includes(String(rec.args[0]), 'supabase.co', 'the URL was captured but NOT requested');
     t.eq(s.__egress.filter((e) => e.fn === 'fetch').length >= 1, true);
   });
+
+  // =========================================================================
+  // SILENT FAILURE GUARDS — failed reads must report an error, not silence / empty state
+  // =========================================================================
+
+  t.test('DATA: openViewAsPicker reports error when profiles read fails instead of empty state', async () => {
+    const dom = new (require('./fakedom.js').Document)('<div id="viewas-modal" class="hidden"><div id="viewas-list"></div></div>');
+    const brokenSb = {
+      from: (tbl) => ({
+        select: () => ({
+          order: () => Promise.resolve(tbl === 'role_levels' ? { data: [], error: null } : { data: null, error: { message: 'db error' } }),
+          eq: () => ({
+            order: () => Promise.resolve({ data: null, error: { message: 'db error' } })
+          })
+        })
+      })
+    };
+    const s = t.sandbox(['openViewAsPicker', 'esc', 'escAttr'], {
+      dom,
+      globals: {
+        supabase: brokenSb,
+        VIEW_AS_ENABLED: true,
+        $: (id) => dom.getElementById(id),
+        nudoWarn: () => {}
+      }
+    });
+    await s.openViewAsPicker();
+    const listHtml = dom.getElementById('viewas-list').innerHTML;
+    t.includes(listHtml, 'msg err', 'failed profiles read must render an error message');
+    t.ok(!listHtml.includes('Sin perfiles.'), 'failed read must NEVER render the empty state "Sin perfiles."');
+  });
+
+  t.test('DATA: openAssetStoryline reports error when asset metadata fails to load', async () => {
+    const dom = new (require('./fakedom.js').Document)('<div id="maint-asset-modal" class="hidden"><div id="maint-asset-title"></div><div id="maint-asset-body"></div></div>');
+    const modalEl = dom.getElementById('maint-asset-modal');
+    const brokenSb = {
+      from: (tbl) => ({
+        select: () => ({
+          eq: () => ({
+            maybeSingle: () => Promise.resolve({ data: null, error: { message: 'asset read failure' } }),
+            order: () => Promise.resolve({ data: [], error: null })
+          })
+        })
+      })
+    };
+    const s = t.sandbox(['openAssetStoryline', 'isOpenRequestRow', 'esc', 'escAttr', 'formatAvgGapDays', 'formatDaysToFix', 'formatMxn'], {
+      dom,
+      globals: {
+        supabase: brokenSb,
+        maintAssetModal: modalEl,
+        $: (id) => dom.getElementById(id),
+        nudoWarn: () => {}
+      }
+    });
+    await s.openAssetStoryline('asset-1');
+    const bodyHtml = dom.getElementById('maint-asset-body').innerHTML;
+    t.includes(bodyHtml, 'No se pudo cargar la información del equipo', 'failed asset read must display an error banner');
+  });
+
+  t.test('DATA: loadProyectos reports error in proyectos-msg when comments or milestones fail', async () => {
+    const dom = new (require('./fakedom.js').Document)('<div id="proyectos-msg"></div><div id="proyectos-list"></div>');
+    const mockSb = {
+      from: (tbl) => ({
+        select: () => ({
+          order: () => {
+            if (tbl === 'partner_projects') return Promise.resolve({ data: [{ id: 'p1', title: 'Test' }], error: null });
+            if (tbl === 'partner_project_comments') return Promise.resolve({ data: null, error: { message: 'comments failure' } });
+            if (tbl === 'partner_project_milestones') return Promise.resolve({ data: [], error: null });
+            return Promise.resolve({ data: [], error: null });
+          },
+          eq: () => ({
+            order: () => Promise.resolve({ data: [], error: null })
+          })
+        })
+      })
+    };
+    const s = t.sandbox(['loadProyectos', 'clearMsg', 'showMsg', 'esc'], {
+      dom,
+      globals: {
+        supabase: mockSb,
+        $: (id) => dom.getElementById(id),
+        nudoWarn: () => {},
+        proyectosCache: [],
+        proyectosCommentsCache: {},
+        proyectosMilestonesCache: {},
+        proyectosOpenIds: new Set(),
+        PROJECT_STATUSES: { idea: { label: 'Idea', icon: '💡', bg: '#f1f3f4', fg: '#3c4043' } }
+      }
+    });
+    await s.loadProyectos();
+    const msgEl = dom.getElementById('proyectos-msg');
+    t.includes(msgEl.textContent, 'No se pudieron cargar los comentarios', 'must explain that comments failed');
+    t.includes(msgEl.className, 'msg err', 'message must have error styling');
+  });
 };
