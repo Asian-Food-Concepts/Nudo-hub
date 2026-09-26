@@ -33,7 +33,7 @@ ALTER TABLE public.notification_prefs ENABLE ROW LEVEL SECURITY;
 -- ---------------------------------------------------------------------
 -- RLS POLICIES
 -- A user reads and writes ONLY their own rows.
--- Management (Dueño / Gerente Regional) may read all for support.
+-- Management (Admin / Gerente Regional) may read all for support.
 -- ---------------------------------------------------------------------
 
 DROP POLICY IF EXISTS notification_prefs_select ON public.notification_prefs;
@@ -44,7 +44,7 @@ CREATE POLICY notification_prefs_select ON public.notification_prefs
         OR EXISTS (
             SELECT 1 FROM public.profiles
             WHERE profiles.id = auth.uid()
-              AND profiles.role IN ('Dueño', 'Gerente Regional')
+              AND profiles.role IN ('Admin', 'Gerente Regional', 'Dueño')
         )
     );
 

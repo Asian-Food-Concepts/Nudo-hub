@@ -313,4 +313,50 @@ module.exports = function (t) {
       t.ok(toggle, `toggle for ${cat} must exist`);
     });
   });
+
+  t.test('NOTIF-PREFS (9): loadUserNotifPrefs loads overrides and leaves missing categories enabled', async () => {
+    const s = buildSandbox({
+      notification_prefs: [
+        { id: 'p1', user_id: 'u1', category: 'mantenimiento', enabled: false },
+        { id: 'p2', user_id: 'u1', category: 'compras', enabled: true }
+      ]
+    }, { id: 'u1', email: 'ana@nudo.mx' });
+
+    const prefs = await s.loadUserNotifPrefs();
+    t.eq(prefs.mantenimiento, false, 'explicit false must be loaded as false');
+    t.eq(prefs.compras, true, 'explicit true must be loaded as true');
+    t.eq(prefs.bitacora, true, 'missing row must default to true');
+    t.eq(prefs.descansos, true, 'missing row must default to true');
+    t.eq(prefs.onboarding, true, 'missing row must default to true');
+    t.eq(prefs.entrevistas, true, 'missing row must default to true');
+
+    // isNotificationCategoryEnabled
+    t.eq(s.isNotificationCategoryEnabled('mantenimiento'), false);
+    t.eq(s.isNotificationCategoryEnabled('compras'), true);
+    t.eq(s.isNotificationCategoryEnabled('bitacora'), true);
+  });
+
+  t.test('NOTIF-PREFS (10): mobile-first rules satisfied (>=44px tap targets, 16px actions, data-no-card-open)', () => {
+    const dom = new Document(t.markup);
+    const toggle = dom.getElementById('notif-toggle');
+    t.ok(toggle, '#notif-toggle exists');
+    t.eq(toggle.getAttribute('data-no-card-open'), 'true', '#notif-toggle must carry data-no-card-open');
+
+    const closeBtn = dom.getElementById('notif-prefs-close');
+    t.ok(closeBtn, '#notif-prefs-close exists');
+    t.includes(closeBtn.getAttribute('style'), 'min-height:44px', 'close button must be >=44px height');
+    t.includes(closeBtn.getAttribute('style'), 'font-size:16px', 'close button must have 16px control font to prevent iOS zoom');
+
+    const topClose = dom.getElementById('notif-prefs-close-top');
+    t.ok(topClose, '#notif-prefs-close-top exists');
+    t.includes(topClose.getAttribute('style'), 'min-height:44px');
+    t.includes(topClose.getAttribute('style'), 'min-width:44px');
+
+    const master = dom.getElementById('notif-modal-master-toggle');
+    t.ok(master, '#notif-modal-master-toggle exists');
+    t.includes(master.getAttribute('style'), 'min-height:44px');
+    t.includes(master.getAttribute('style'), 'min-width:44px');
+  });
 };
+
+

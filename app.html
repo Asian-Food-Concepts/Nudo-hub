@@ -2056,7 +2056,7 @@
     <button type="button" class="viewas-open hidden" id="viewas-open"
             title="Ver la app como otra persona (solo lectura)">👁 Visto como…</button>
       <div class="userbar-right">
-        <div class="notif-toggle" id="notif-toggle" role="button" aria-haspopup="dialog" aria-expanded="false" aria-checked="false" aria-label="Notificaciones" title="Configurar notificaciones" tabindex="0">
+        <div class="notif-toggle" id="notif-toggle" data-no-card-open="true" role="button" aria-haspopup="dialog" aria-expanded="false" aria-checked="false" aria-label="Notificaciones" title="Configurar notificaciones" tabindex="0">
           <span class="notif-bell">🔔</span>
           <span class="notif-label">Notificaciones</span>
           <span class="switch" title="Estado de notificaciones"></span>
@@ -12735,14 +12735,24 @@
 
   // ================= ROADMAP (Ben) =================
   const ROADMAP_STATUSES = {
+    // ⚠️ FIVE STATES, AND `queued`/`building` MUST BE LISTED (Ben, 2026-09-26).
+    //
+    // The engine (agycore) writes `queued` and `building` to its own queue, and the roadmap row
+    // now uses those same words. Before this, the app map had NO entry for either, and line
+    // ~12834 does `ROADMAP_STATUSES[r.status] ? r.status : 'suggested'` — so a row that had been
+    // picked up and was actively building fell through to `suggested` and rendered a "💡 Sugerido"
+    // chip WITH AN APPROVE BUTTON for work already running. A status the UI does not know is not
+    // a cosmetic gap: it silently rewrites the state into a different one.
+    //
+    // RETIRED: approved · in_progress · review · blocked · rejected. Ben is the only roadmap user
+    // and what he adds is approved by definition, so `approved` was a state nobody could observe;
+    // `in_progress` collapsed into `building`; `review` was one bin holding both done-and-live and
+    // failed-and-forgotten rows; `blocked` in practice meant "the old dispatcher was broken".
     suggested:   { label: 'Sugerido',    ico: '💡', bg: 'rgba(26,86,219,0.1)',   color: '#1a56db' },
-    approved:    { label: 'Aprobado',    ico: '👍', bg: 'rgba(19,115,51,0.12)',  color: '#137333' },
     queued:      { label: 'En cola',     ico: '⏳', bg: 'rgba(176,96,0,0.12)',   color: '#b06000' },
-    in_progress: { label: 'En progreso', ico: '🚀', bg: 'rgba(118,39,187,0.12)', color: '#7627bb' },
-    review:      { label: 'En revisión', ico: '🔍', bg: 'rgba(194,65,12,0.12)',  color: '#c2410c' },
+    building:    { label: 'Construyendo', ico: '🚀', bg: 'rgba(118,39,187,0.12)', color: '#7627bb' },
     done:        { label: 'Hecho',       ico: '✅', bg: 'rgba(31,122,77,0.12)',  color: '#1f7a4d' },
-    rejected:    { label: 'Rechazado',   ico: '❌', bg: 'rgba(198,40,40,0.12)',  color: '#c62828' },
-    blocked:     { label: 'Bloqueado',   ico: '🚫', bg: 'rgba(185,28,28,0.15)',  color: '#b91c1c' }
+    failed:      { label: 'Falló',       ico: '❌', bg: 'rgba(198,40,40,0.12)',  color: '#c62828' }
   };
 
   let roadmapEditTargetId = null;
@@ -13053,15 +13063,18 @@
       const nowIso = new Date().toISOString();
       const { error } = await supabase
         .from('roadmap')
-        .update({ status: 'approved', updated_at: nowIso })
+        // `queued`, not `approved`: Ben is the only roadmap user and his additions are
+        // approved the moment he writes them, so `approved` was a state nobody could observe.
+        // The row goes straight to the queue — which is also the word the engine uses.
+        .update({ status: 'queued', updated_at: nowIso })
         .eq('id', id);
       if (error) throw error;
       const item = (window.__roadmap_cache || []).find(r => r.id === id);
       if (item) {
-        item.status = 'approved';
+        item.status = 'queued';
         item.updated_at = nowIso;
       }
-      toast('Tarea aprobada 👍');
+      toast('Tarea en cola ⏳');
       renderRoadmap(window.__roadmap_cache || []);
     } catch (err) {
       console.error('[nudo:roadmap-approve]', err);
