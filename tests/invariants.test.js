@@ -275,4 +275,76 @@ module.exports = function (t) {
     t.ok(/closest\('\[data-no-card-open\]'\)/.test(html),
       'the card-open listener does not check for [data-no-card-open]');
   });
+
+  // =========================================================================
+  // Admin block & Roadmap card layout (2026-09-26, Ben)
+  // =========================================================================
+  t.test('ADMIN: #roadmap-card appears exactly once in the file', () => {
+    const matches = html.match(/id=["']roadmap-card["']/g) || [];
+    t.eq(matches.length, 1, 'expected #roadmap-card to appear exactly once, found ' + matches.length);
+  });
+
+  t.test('ADMIN: #roadmap-card is inside #admin-list and NOT inside #recl-list', () => {
+    function getElementInner(id) {
+      const re = new RegExp('<div[^>]*id=["\']' + id + '["\'][^>]*>', 'i');
+      const m = re.exec(html);
+      if (!m) return null;
+      const start = m.index + m[0].length;
+      let depth = 1;
+      const tagRe = /<\/?div\b[^>]*>/gi;
+      tagRe.lastIndex = start;
+      let tagMatch;
+      while ((tagMatch = tagRe.exec(html)) !== null) {
+        if (tagMatch[0].startsWith('</')) depth--;
+        else depth++;
+        if (depth === 0) return html.slice(start, tagMatch.index);
+      }
+      return null;
+    }
+
+    const adminInner = getElementInner('admin-list');
+    const reclInner = getElementInner('recl-list');
+
+    t.ok(adminInner !== null, '#admin-list element not found in markup');
+    t.ok(adminInner.includes('id="roadmap-card"'), '#roadmap-card must be inside #admin-list');
+
+    t.ok(reclInner !== null, '#recl-list element not found in markup');
+    t.ok(!reclInner.includes('roadmap-card'), '#roadmap-card must NOT be inside #recl-list');
+  });
+
+  t.test('ADMIN: #admin-section and #admin-list both exist and both start hidden', () => {
+    const sectionMatch = html.match(/<div[^>]*id=["']admin-section["'][^>]*>([\s\S]*?)<\/div>/i);
+    t.ok(sectionMatch, '#admin-section element not found in markup');
+    if (sectionMatch) {
+      t.ok(/display:\s*none/i.test(sectionMatch[0]), '#admin-section must start with display:none');
+      t.includes(sectionMatch[1], 'Admin', '#admin-section title must be "Admin"');
+    }
+
+    const listMatch = html.match(/<div[^>]*id=["']admin-list["'][^>]*>/i);
+    t.ok(listMatch, '#admin-list element not found in markup');
+    if (listMatch) {
+      t.ok(/display:\s*none/i.test(listMatch[0]), '#admin-list must start with display:none');
+    }
+
+    // Verify position: Admin section must be above Formularios section
+    const adminIdx = html.indexOf('id="admin-section"');
+    const formIdx = html.indexOf('>Formularios<');
+    t.ok(adminIdx > -1 && formIdx > -1 && adminIdx < formIdx,
+      '#admin-section must be placed above the Formularios section');
+  });
+
+  t.test('ADMIN: Admin block is gated on isOwnerUser (same predicate roadmap-card uses)', () => {
+    const src = t.src;
+    t.ok(/const\s+adminSection\s*=\s*document\.getElementById\(['"]admin-section['"]\)/.test(src),
+      'adminSection must be queried by getElementById("admin-section")');
+    t.ok(/const\s+adminList\s*=\s*document\.getElementById\(['"]admin-list['"]\)/.test(src),
+      'adminList must be queried by getElementById("admin-list")');
+
+    t.ok(/if\s*\(adminSection\)\s*adminSection\.style\.display\s*=\s*isOwnerUser\s*\?\s*['"]['"]\s*:\s*['"]none['"]/.test(src),
+      'adminSection must be gated on isOwnerUser ? "" : "none"');
+    t.ok(/if\s*\(adminList\)\s*adminList\.style\.display\s*=\s*isOwnerUser\s*\?\s*['"]['"]\s*:\s*['"]none['"]/.test(src),
+      'adminList must be gated on isOwnerUser ? "" : "none"');
+    t.ok(/if\s*\(roadmapCard\)\s*roadmapCard\.style\.display\s*=\s*isOwnerUser\s*\?\s*['"]['"]\s*:\s*['"]none['"]/.test(src),
+      'roadmapCard must remain gated on isOwnerUser ? "" : "none"');
+  });
 };

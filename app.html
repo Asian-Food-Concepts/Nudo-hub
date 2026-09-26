@@ -2300,6 +2300,15 @@
             <div class="arrow">›</div>
           </div>
         </div>
+        <div class="section-title" id="admin-section" style="display:none;">Admin</div>
+        <div class="card-list" id="admin-list" style="display:none;">
+          <!-- Roadmap (Ben): Plan de trabajo y sugerencias -->
+          <a class="card" href="#" id="roadmap-card" data-form="roadmap" style="display:none;">
+            <div class="icon icon-form">🗺️</div>
+            <div class="text"><div class="title">Nudo Hub Roadmap</div><div class="sub">Plan de trabajo y sugerencias</div></div>
+            <div class="arrow">›</div>
+          </a>
+        </div>
         <div class="section-title">Formularios</div>
         <div class="card-list">
           <a class="card" href="#" data-form="bitacora">
@@ -2428,12 +2437,6 @@
           <a class="card" href="#" id="nuevos-card" data-form="nuevos" style="display:none;">
             <div class="icon icon-form">🆕</div>
             <div class="text"><div class="title">Nuevos ingresos</div><div class="sub">Registros del formulario, activa sus cuentas</div></div>
-            <div class="arrow">›</div>
-          </a>
-          <!-- Roadmap (Ben): Plan de trabajo y sugerencias -->
-          <a class="card" href="#" id="roadmap-card" data-form="roadmap" style="display:none;">
-            <div class="icon icon-form">🗺️</div>
-            <div class="text"><div class="title">Nudo Hub Roadmap</div><div class="sub">Plan de trabajo y sugerencias</div></div>
             <div class="arrow">›</div>
           </a>
         </div>
@@ -4698,6 +4701,10 @@
     if (usuariosCard) usuariosCard.style.display = isRecl ? '' : 'none';
     const nuevosCard = document.getElementById('nuevos-card');
     if (nuevosCard) nuevosCard.style.display = isRecl ? '' : 'none';
+    const adminSection = document.getElementById('admin-section');
+    const adminList = document.getElementById('admin-list');
+    if (adminSection) adminSection.style.display = isOwnerUser ? '' : 'none';
+    if (adminList) adminList.style.display = isOwnerUser ? '' : 'none';
     const roadmapCard = document.getElementById('roadmap-card');
     if (roadmapCard) roadmapCard.style.display = isOwnerUser ? '' : 'none';
     // v0.149 — the org chart is readable by any leader (captains and up).
