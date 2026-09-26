@@ -295,18 +295,20 @@
   }
   .theme-switch button[aria-pressed="true"] { opacity: 1; background: var(--accent); }
 
-  /* Push notification toggle (iOS-style switch) */
+  /* Push notification toggle & settings surface (v0.138, v0.209.26) */
   .notif-toggle {
     display: flex; align-items: center; gap: 8px;
     background: var(--bg); border: 1px solid var(--border);
     border-radius: 20px; padding: 4px 10px; cursor: pointer;
     user-select: none; -webkit-user-select: none;
+    min-height: 44px; box-sizing: border-box;
   }
-  .notif-toggle .notif-bell { font-size: 0.9rem; line-height: 1; }
+  .notif-toggle .notif-bell { font-size: 0.95rem; line-height: 1; }
   .notif-toggle .notif-label { font-size: 0.8rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
-  /* On very narrow screens, drop the "Notificaciones" word but keep the bell+switch */
+  .notif-toggle .notif-gear { font-size: 0.85rem; line-height: 1; opacity: 0.75; }
   @media (max-width: 420px) {
-    .notif-toggle .notif-label { display: none; }
+    .notif-toggle { padding: 4px 8px; gap: 5px; }
+    .notif-toggle .notif-label { font-size: 0.76rem; display: inline-block; }
     .userbar { flex-wrap: wrap; gap: 6px; }
   }
   .notif-toggle .switch {
@@ -321,6 +323,7 @@
   .notif-toggle.on .switch { background: var(--green); }
   .notif-toggle.on .switch::after { transform: translateX(16px); }
   .notif-toggle:active { opacity: 0.85; }
+  .notif-cat-row:active { background: var(--bg) !important; }
   /* Push toggle status toast (v0.90) — visible under the userbar when logged in */
   .push-toast {
     position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
@@ -462,6 +465,7 @@
   .plan-warn.red { background: rgba(220,80,60,0.12); color: #b33; border: 1px solid rgba(220,80,60,0.3); }
   .plan-warn.yellow { background: rgba(220,160,40,0.12); color: #a70; border: 1px solid rgba(220,160,40,0.3); }
   .plan-warn.ok { background: rgba(60,180,90,0.12); color: #2a7; border: 1px solid rgba(60,180,90,0.3); }
+  .plan-warn.info { background: rgba(70,130,220,0.08); color: var(--ink); border: 1px solid rgba(70,130,220,0.25); }
   .plan-grid { overflow-x: auto; }
   .plan-table { border-collapse: collapse; width: 100%; min-width: 640px; }
   .plan-table th, .plan-table td { border: 1px solid var(--border); padding: 6px; text-align: center; font-size: 0.8rem; }
@@ -764,13 +768,15 @@
   .plan-empty-role-msg { font-size: 0.78rem; font-weight: 500; color: var(--muted); font-style: italic; letter-spacing: 0.01em; }
   .plan-person-cards { display: flex; flex-direction: column; gap: 12px; }
   .plan-person-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--card-bg, #fff); }
-  .plan-person-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--frame, #eee); padding-bottom: 8px; }
+  .plan-person-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid var(--frame, #eee); padding-bottom: 8px; }
   .plan-person-title { font-weight: 700; font-size: 0.95rem; }
   .plan-person-role { font-weight: 400; color: var(--muted); font-size: 0.85rem; }
   .plan-warn-chip { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
   .plan-warn-chip.yellow { background: rgba(220,160,40,0.15); color: #a70; border: 1px solid rgba(220,160,40,0.3); }
   .plan-warn-chip.red { background: rgba(220,80,60,0.15); color: #b33; border: 1px solid rgba(220,80,60,0.3); }
   .plan-warn-chip.ok { background: rgba(60,180,90,0.15); color: #2a7; border: 1px solid rgba(60,180,90,0.3); }
+  .plan-pref-marker { display: inline-block; font-size: 0.74rem; font-weight: 600; color: var(--ink); background: rgba(125,125,125,0.08); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; margin-left: 8px; white-space: nowrap; vertical-align: middle; }
+  .plan-pref-marker.assumed { color: var(--muted); font-style: italic; font-weight: 400; background: transparent; border: 1px dashed var(--border); }
   .plan-person-days { display: flex; flex-direction: column; gap: 6px; }
   .plan-person-day-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; padding: 6px 0; border-bottom: 1px solid var(--frame, rgba(0,0,0,0.03)); }
   .plan-person-day-row:last-child { border-bottom: none; }
@@ -2058,10 +2064,11 @@
     <button type="button" class="viewas-open hidden" id="viewas-open"
             title="Ver la app como otra persona (solo lectura)">👁 Visto como…</button>
       <div class="userbar-right">
-        <div class="notif-toggle" id="notif-toggle" role="switch" aria-checked="false" aria-label="Notificaciones" title="Recibe avisos en tu teléfono">
+        <div class="notif-toggle" id="notif-toggle" role="button" aria-haspopup="dialog" aria-expanded="false" aria-checked="false" aria-label="Notificaciones" title="Configurar notificaciones" tabindex="0">
           <span class="notif-bell">🔔</span>
           <span class="notif-label">Notificaciones</span>
-          <span class="switch"></span>
+          <span class="switch" title="Estado de notificaciones"></span>
+          <span class="notif-gear" aria-hidden="true" title="Configurar">⚙️</span>
         </div>
         <div class="theme-switch" id="theme-switch" role="group" aria-label="Tema">
           <button type="button" data-theme-opt="light" class="ico-btn" aria-label="Tema claro" title="Cambiar tema">☀️</button>
@@ -2163,6 +2170,19 @@
           <a class="card" href="#" data-form="descansos">
             <div class="icon icon-form">🗓️</div>
             <div class="text"><div class="title">Preferencia de Descansos</div><div class="sub">Llenar antes de las 10pm cada martes</div></div>
+            <div class="arrow">›</div>
+          </a>
+        </div>
+
+        <!-- HORARIOS DE COMIDA (v0.209.26) — Ben 2026-09-25. Ambas unidades.
+             A plain reference card: capitanes need it DURING service, so it must be
+             one tap from home. Static content only — no fetch, no per-user state, so it
+             renders for every role and cannot fail closed. -->
+        <div class="section-title">Horarios de Comida</div>
+        <div class="card-list">
+          <a class="card" href="#" id="comida-card">
+            <div class="icon icon-form">🍽️</div>
+            <div class="text"><div class="title">Horarios de Comida</div><div class="sub">Primeras, segundas y últimas comidas · ambas unidades</div></div>
             <div class="arrow">›</div>
           </a>
         </div>
@@ -2781,6 +2801,7 @@
 
           <div id="plan-errors"></div>
           <div id="plan-warnings"></div>
+          <div id="plan-descanso-banner" class="hidden"></div>
           <div class="plan-grid" id="plan-grid"></div>
           <div class="plan-dayview hidden" id="plan-dayview"></div>
           <div class="plan-personview hidden" id="plan-personview"></div>
@@ -3403,6 +3424,50 @@
         </div>
       </div>
 
+      <!-- HORARIOS DE COMIDA (v0.209.26) — Ben 2026-09-25. Static reference, ambas unidades. -->
+      <div class="review-modal hidden" id="comida-modal" style="z-index:75;">
+        <div class="review-box" style="max-height:85vh;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <h3 style="margin:0;font-size:1.05rem;">🍽️ Horarios de Comida</h3>
+            <button type="button" class="btn btn-outline" id="comida-close-top" style="margin:0;padding:4px 10px;font-size:0.8rem;min-height:44px;min-width:44px;">✕</button>
+          </div>
+          <div class="review-body" style="overflow-y:auto;flex:1;">
+
+            <div class="section-title" style="margin-top:0;">Horarios</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--card2,rgba(255,255,255,0.06));">
+                <span style="font-weight:600;">Primeras comidas</span>
+                <span style="font-weight:700;font-variant-numeric:tabular-nums;">13:15</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--card2,rgba(255,255,255,0.06));">
+                <span style="font-weight:600;">Segundas comidas</span>
+                <span style="font-weight:700;font-variant-numeric:tabular-nums;">14:00</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--card2,rgba(255,255,255,0.06));">
+                <span style="font-weight:600;">Últimas comidas</span>
+                <span style="font-weight:700;font-variant-numeric:tabular-nums;">17:30</span>
+              </div>
+            </div>
+
+            <div class="section-title">Reglas</div>
+            <ul style="margin:0 0 16px 0;padding-left:20px;line-height:1.6;">
+              <li><strong>No se sirven comidas después de las horas indicadas.</strong></li>
+              <li>La comida que sobre <strong>no se regala y no se tira</strong>: se saca al día siguiente y se sirve.</li>
+            </ul>
+
+            <div class="section-title">Días de cena</div>
+            <div style="padding:12px;border-radius:10px;background:var(--card2,rgba(255,255,255,0.06));line-height:1.6;">
+              <div style="margin-bottom:6px;"><strong>Viernes, sábado y domingo</strong> — no se hace comida, se da <strong>ramen</strong>.</div>
+              <div>Si hay sobrante del sábado, se les dará.</div>
+            </div>
+
+          </div>
+          <div class="review-actions" style="margin-top:12px;">
+            <button type="button" class="btn btn-outline" id="comida-close" style="margin:0;min-height:44px;font-size:16px;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- MANTENIMIENTO ASSET STORYLINE MODAL (v0.209) -->
       <div class="review-modal hidden" id="maint-asset-modal" style="z-index:75;">
         <div class="review-box" style="max-height:85vh;display:flex;flex-direction:column;">
@@ -3445,6 +3510,51 @@
         </div>
       </div>
 
+      <!-- NOTIFICATION PREFERENCES MODAL (v0.209.26) -->
+      <div class="review-modal hidden" id="notif-prefs-modal">
+        <div class="review-box" style="max-height:85vh;display:flex;flex-direction:column;max-width:480px;width:100%;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;">
+            <h3 style="margin:0;font-size:1.05rem;display:flex;align-items:center;gap:6px;color:var(--ink);flex:1;min-width:0;">
+              <span>🔔</span>
+              <span>Ajustes de Notificaciones</span>
+            </h3>
+            <button type="button" class="btn btn-outline" id="notif-prefs-close-top" style="margin:0;padding:0;width:44px;height:44px;min-height:44px;min-width:44px;flex:0 0 44px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:1.1rem;line-height:1;" aria-label="Cerrar">✕</button>
+          </div>
+          <div class="review-body" style="flex:1;overflow-y:auto;padding-right:2px;">
+            <!-- Master switch card -->
+            <div id="notif-master-card" style="background:var(--frame-bg, rgba(125,125,125,0.06));border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:16px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <div style="flex:1;min-width:0;">
+                  <div style="font-weight:700;font-size:0.95rem;color:var(--ink);">Avisos en este teléfono</div>
+                  <div id="notif-master-status-text" style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Interruptor general</div>
+                </div>
+                <div class="notif-toggle" id="notif-modal-master-toggle" role="switch" aria-checked="false" tabindex="0" style="min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;" title="Activar o desactivar todos los avisos">
+                  <span class="switch"></span>
+                </div>
+              </div>
+              <p style="font-size:0.8rem;color:var(--muted);margin:8px 0 0;line-height:1.4;">
+                ⚠️ <b>Interruptor general:</b> si está apagado, <b>no recibirás ninguna notificación</b> en tu teléfono, sin importar las categorías activadas abajo.
+              </p>
+            </div>
+
+            <!-- Categories section -->
+            <div id="notif-categories-section">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);">Categorías por área</span>
+                <span style="font-size:0.75rem;color:var(--muted);">Elige qué avisos recibir</span>
+              </div>
+              <div id="notif-master-off-warn" class="hidden" style="background:rgba(220,100,50,0.1);border:1px solid rgba(220,100,50,0.3);border-radius:8px;padding:8px 10px;font-size:0.8rem;color:var(--ink);margin-bottom:10px;">
+                ⚠️ Avisos pausados porque el interruptor general está apagado.
+              </div>
+              <div id="notif-categories-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+            </div>
+          </div>
+          <div class="review-actions" style="margin-top:14px;">
+            <button type="button" class="btn btn-outline" id="notif-prefs-close" style="margin:0;width:100%;min-height:44px;font-size:16px;">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- CHANGELOG / NOVEDADES MODAL (v0.138) -->
       <div class="review-modal hidden" id="changelog-modal">
         <div class="review-box" style="max-height:85vh;display:flex;flex-direction:column;">
@@ -3470,7 +3580,7 @@
   function initApp(){
   const SUPABASE_URL = "https://dnzvkppytzjsipwfhafk.supabase.co";
   const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuenZrcHB5dHpqc2lwd2ZoYWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MjkwNzQsImV4cCI6MjEwMjUwNTA3NH0.0EpnyeWxf5kaloZZUuitg_h0JHXT0OpBPSR32FNnXoM";
-  const APP_VERSION = "v0.209.25";
+  const APP_VERSION = "v0.209.26";
   document.getElementById('ver').textContent = APP_VERSION;
 
   // Impersonation feature gate. "Visto como" is a LEVEL-1-ONLY control.
@@ -5375,7 +5485,7 @@
     'Producción':['Producción 1']
   };
 
-  let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [], otherBranchShifts: [], extraSlots: {}, tab: 'puesto', view: (window.innerWidth < 700 ? 'day' : 'week'), dayIdx: 0, auditRole: false, currentProfileId: null, shiftsLoadError: null, otherBranchShiftsLoadError: null };
+  let planState = { branch: 'Roma Norte', weekStart: null, staff: [], shifts: [], otherBranchShifts: [], extraSlots: {}, tab: 'puesto', view: (window.innerWidth < 700 ? 'day' : 'week'), dayIdx: 0, auditRole: false, currentProfileId: null, shiftsLoadError: null, otherBranchShiftsLoadError: null, descansoRequests: [], descansoRequestsLoadError: null, descansoNamesExpanded: false };
   let planWarningsExpanded = false;
 
   function planSlotsNeeded(role) {
@@ -5427,6 +5537,108 @@
     if (s) return `${s}–?`;
     if (e) return `?–${e}`;
     return 'sin horario';
+  }
+
+  // ---- DESCANSO / PREFERENCIAS (v0.209.26) ----
+  // Read-only derivation layer: if an active staff member has no row in descanso_requests
+  // for the week, they are treated as requesting 5 days (normal), rest days unset, assumed = true.
+  // Never write synthetic rows into descanso_requests.
+  function planStaffDescanso(staffId) {
+    if (!staffId) return null;
+    const req = (planState.descansoRequests || []).find(r => r.staff_id === staffId);
+    if (req) {
+      return {
+        days_requested: req.days_requested != null ? Number(req.days_requested) : 5,
+        rest_day_1: req.rest_day_1 || null,
+        rest_day_2: req.rest_day_2 || null,
+        special_request: req.special_request || null,
+        assumed: false
+      };
+    }
+    return {
+      days_requested: 5,
+      rest_day_1: null,
+      rest_day_2: null,
+      special_request: null,
+      assumed: true
+    };
+  }
+
+  function planDescansoStats() {
+    const staff = planState.staff || [];
+    const reqs = planState.descansoRequests || [];
+    const reqStaffIds = new Set(reqs.map(r => r.staff_id));
+    const nonResponders = staff.filter(s => !reqStaffIds.has(s.id));
+    nonResponders.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    return {
+      total: staff.length,
+      sinEnviar: nonResponders.length,
+      nonResponders
+    };
+  }
+
+  function planPersonPrefMarker(staffId) {
+    const pref = planStaffDescanso(staffId);
+    if (!pref) return '';
+    if (pref.assumed) {
+      return `<span class="plan-pref-marker assumed" title="sin preferencia enviada — se asume 5 días (normal)">5 · asumido</span>`;
+    }
+    const d = pref.days_requested;
+    let titleDesc = `${d} días`;
+    if (d === 5) {
+      const r = [pref.rest_day_1, pref.rest_day_2].filter(Boolean).join(', ');
+      titleDesc = `5 días (normal)${r ? ' · descansos: ' + r : ''}`;
+    } else if (d === 6) {
+      titleDesc = `6 días (1 descanso)${pref.rest_day_1 ? ' · descanso: ' + pref.rest_day_1 : ''}`;
+    } else if (d === 7) {
+      titleDesc = `7 días (sin descanso)`;
+    }
+    if (pref.special_request) titleDesc += ` · Nota: ${pref.special_request}`;
+    return `<span class="plan-pref-marker" title="Preferencia enviada: ${escAttr(titleDesc)}">${d} días</span>`;
+  }
+
+  function planRenderDescansoBanner() {
+    const banner = $('plan-descanso-banner');
+    if (!banner) return;
+    if (planState.shiftsLoadError || planState.descansoRequestsLoadError) {
+      banner.innerHTML = '';
+      banner.classList.add('hidden');
+      return;
+    }
+    const { total, sinEnviar, nonResponders } = planDescansoStats();
+    if (!sinEnviar) {
+      banner.innerHTML = '';
+      banner.classList.add('hidden');
+      return;
+    }
+    banner.classList.remove('hidden');
+    const namesHtml = nonResponders.map(p => {
+      const bTag = p.branch ? ` <span style="color:var(--muted);font-size:0.75rem;">(${esc(p.branch)})</span>` : '';
+      return `<span style="background:rgba(125,125,125,0.10);border-radius:6px;padding:3px 8px;font-size:0.8rem;color:var(--ink);">${esc(p.name)}${bTag}</span>`;
+    }).join('');
+
+    banner.innerHTML = `
+      <div class="plan-warn info" style="margin-bottom:12px;">
+        <button type="button" id="plan-descanso-toggle" data-no-card-open="true" style="width:100%;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;background:none;border:none;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left;min-height:44px;">
+          <span>ℹ️ Se muestran 5 días (normal) para quienes no enviaron preferencia — ${sinEnviar} de ${total} sin enviar.</span>
+          <span style="font-size:0.75rem;font-weight:600;color:var(--accent,#4a90e2);white-space:nowrap;margin-left:8px;flex-shrink:0;">${planState.descansoNamesExpanded ? '▲ Ocultar' : '▼ Ver quiénes'}</span>
+        </button>
+        <div id="plan-descanso-names" class="${planState.descansoNamesExpanded ? '' : 'hidden'}" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(70,130,220,0.18);">
+          <div style="font-size:0.75rem;color:var(--muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Personal sin preferencia enviada (${sinEnviar}):</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            ${namesHtml}
+          </div>
+        </div>
+      </div>
+    `;
+
+    const btn = $('plan-descanso-toggle');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        planState.descansoNamesExpanded = !planState.descansoNamesExpanded;
+        planRenderDescansoBanner();
+      });
+    }
   }
   async function planAudit(action, shift, oldShift) {
     try {
@@ -5517,6 +5729,7 @@
   async function planLoadShifts() {
     planState.shiftsLoadError = null;
     planState.otherBranchShiftsLoadError = null;
+    planState.descansoRequestsLoadError = null;
     const s = fmtDate(planState.weekStart);
     const e = fmtDate(new Date(planState.weekStart.getTime() + 6*86400000));
     let mainError = null;
@@ -5538,6 +5751,7 @@
       planState.shiftsLoadError = mainError;
       if (errBox) errBox.innerHTML = `<div class="plan-warn red">⚠️ No se pudo cargar los turnos: ${esc(mainError.message || mainError)}</div>`;
       planState.otherBranchShifts = [];
+      planState.descansoRequests = [];
       return;
     }
 
@@ -5557,6 +5771,21 @@
       planState.otherBranchShiftsLoadError = e2;
       if (errBox) {
         errBox.innerHTML = `<div class="plan-warn yellow">⚠️ No se pudieron cargar los turnos de la otra sucursal; la detección de duplicados entre sucursales no está disponible.</div>`;
+      }
+    }
+
+    // Rest-day preferences for the target week (read-only; non-fatal).
+    try {
+      const { data: descansos, error: descansoError } = await supabase.from('descanso_requests')
+        .select('*').eq('week_start', s);
+      if (descansoError) throw descansoError;
+      planState.descansoRequests = (descansos || []);
+      planState.descansoRequestsLoadError = null;
+    } catch (e3) {
+      planState.descansoRequests = [];
+      planState.descansoRequestsLoadError = e3;
+      if (errBox) {
+        errBox.innerHTML += `<div class="plan-warn yellow">⚠️ No se pudieron cargar las preferencias de descanso: ${esc(e3.message || e3)}</div>`;
       }
     }
   }
@@ -5662,6 +5891,8 @@
       if (grid) grid.innerHTML = '';
       if (dayView) dayView.innerHTML = '';
       if (personView) personView.innerHTML = '';
+      const banner = $('plan-descanso-banner');
+      if (banner) { banner.innerHTML = ''; banner.classList.add('hidden'); }
       const errBox = $('plan-errors');
       if (errBox && !errBox.innerHTML) {
         errBox.innerHTML = `<div class="plan-warn red">⚠️ No se pudo cargar los turnos: ${esc(planState.shiftsLoadError.message || planState.shiftsLoadError)}</div>`;
@@ -5671,9 +5902,18 @@
     }
 
     const errBox = $('plan-errors');
-    if (errBox && !errBox.innerHTML && planState.otherBranchShiftsLoadError) {
-      errBox.innerHTML = `<div class="plan-warn yellow">⚠️ No se pudieron cargar los turnos de la otra sucursal; la detección de duplicados entre sucursales no está disponible.</div>`;
+    if (errBox && !errBox.innerHTML) {
+      let errHtml = '';
+      if (planState.otherBranchShiftsLoadError) {
+        errHtml += `<div class="plan-warn yellow">⚠️ No se pudieron cargar los turnos de la otra sucursal; la detección de duplicados entre sucursales no está disponible.</div>`;
+      }
+      if (planState.descansoRequestsLoadError) {
+        errHtml += `<div class="plan-warn yellow">⚠️ No se pudieron cargar las preferencias de descanso: ${esc(planState.descansoRequestsLoadError.message || planState.descansoRequestsLoadError)}</div>`;
+      }
+      if (errHtml) errBox.innerHTML = errHtml;
     }
+
+    planRenderDescansoBanner();
 
     if (isPersonaTab) {
       if (grid) grid.classList.add('hidden');
@@ -6180,24 +6420,35 @@
       staffHours[sh.staff_id] = (staffHours[sh.staff_id] || 0) + hours;
     });
 
-    // Only people who have at least one shift that week appear; sort by name.
-    const staffWithShifts = [];
+    // Eligible staff for this branch, plus anyone with scheduled shifts here this week.
+    const people = [];
     const seenStaffIds = new Set();
     (planState.shifts || []).forEach(sh => {
       if (sh.staff_id && !seenStaffIds.has(sh.staff_id)) {
         seenStaffIds.add(sh.staff_id);
         const s = planState.staff.find(x => x.id === sh.staff_id) || { id: sh.staff_id, name: planStaffName(sh.staff_id), role: sh.role || '' };
-        staffWithShifts.push(s);
+        people.push(s);
       }
     });
-    staffWithShifts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-    if (!staffWithShifts.length) {
+    (planState.staff || []).forEach(s => {
+      if (!s || !s.id || seenStaffIds.has(s.id)) return;
+      const roleGrp = planRoleGroup(s.role);
+      if (roleGrp === 'Producción' && planState.branch !== 'Del Valle') return;
+      const isEligible = (roleGrp === 'Capitán') || s.branch === planState.branch || s.branch === 'Ambos' || !s.branch;
+      if (isEligible) {
+        seenStaffIds.add(s.id);
+        people.push(s);
+      }
+    });
+    people.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    if (!people.length) {
       return '<div class="empty-state"><div class="es-ico">👥</div><div class="es-title">Sin turnos asignados</div><div class="es-sub">Asigna turnos en la vista “Por puesto” para ver el horario por persona.</div></div>';
     }
 
     let html = '<div class="plan-person-cards">';
-    staffWithShifts.forEach(person => {
+    people.forEach(person => {
       const hrs = staffHours[person.id] || 0;
       let chip = '';
       if (hrs > 0 || Object.prototype.hasOwnProperty.call(staffHours, person.id)) {
@@ -6215,9 +6466,10 @@
       const crossBadge = isCross
         ? ` <span class="plan-cross-badge" title="Sucursal de perfil: ${esc(staffBranch)}" style="margin-left:6px;">${esc(staffBranch)}</span>`
         : '';
+      const prefMarker = planPersonPrefMarker(person.id);
       html += `<div class="plan-person-card">`;
       html += `  <div class="plan-person-head">`;
-      html += `    <div class="plan-person-title">${esc(person.name)} <span class="plan-person-role">· ${esc(planRoleGroup(person.role))}</span>${crossBadge}</div>`;
+      html += `    <div class="plan-person-title">${esc(person.name)} <span class="plan-person-role">· ${esc(planRoleGroup(person.role))}</span>${crossBadge}${prefMarker}</div>`;
       if (chip) html += `    ${chip}`;
       html += `  </div>`;
       html += `  <div class="plan-person-days">`;
@@ -6834,6 +7086,22 @@
         finishMaintComplete(null);
       }
     });
+  }
+
+  // ---- HORARIOS DE COMIDA MODAL LOGIC (v0.209.26) ----
+  // Static content. Deliberately NOT gated on role or data: capitanes open this DURING
+  // service, so it must never depend on a fetch that could fail or a permission that
+  // could hide it. Reference text only.
+  const comidaModal = $('comida-modal');
+  function closeComida() { if (comidaModal) comidaModal.classList.add('hidden'); }
+  if ($('comida-card')) $('comida-card').addEventListener('click', e => {
+    e.preventDefault();
+    if (comidaModal) comidaModal.classList.remove('hidden');
+  });
+  if ($('comida-close')) $('comida-close').addEventListener('click', closeComida);
+  if ($('comida-close-top')) $('comida-close-top').addEventListener('click', closeComida);
+  if (comidaModal) {
+    comidaModal.addEventListener('click', e => { if (e.target === comidaModal) closeComida(); });
   }
 
   // ---- MANTENIMIENTO ASSET STORYLINE MODAL LOGIC ----
@@ -9706,9 +9974,19 @@
     } catch (e) { /* presence unavailable — non-fatal */ }
   })();
 
-  // ---- PUSH NOTIFICATIONS (v0.138: iOS standalone support & robust enrollment) ----
+  // ---- PUSH NOTIFICATIONS & PREFERENCES (v0.138: iOS enrollment; v0.209.26: per-category prefs) ----
   const VAPID_PUBLIC = 'BPJwNDlmrIek1NazRqVGMbtbATMtNiNUVZEIZE1scd0itrN06iqtm2Tyz2k9uiwSG9kkeukWjpSkzgcdlpdh6EA';
   const notifToggle = $('notif-toggle');
+
+  const NOTIF_CATEGORIES = [
+    { id: 'bitacora', name: 'Bitácora', icon: '📖', desc: 'Avisos de apertura, corte, propinas y cierre de turno.' },
+    { id: 'descansos', name: 'Descansos', icon: '🏖️', desc: 'Solicitudes y cambios de días de descanso semanal.' },
+    { id: 'mantenimiento', name: 'Mantenimiento', icon: '🔧', desc: 'Cuando se reporta, atiende o completa una falla.' },
+    { id: 'compras', name: 'Compras', icon: '🛒', desc: 'Nuevas solicitudes de compra, cotizaciones y entregas.' },
+    { id: 'onboarding', name: 'Onboarding', icon: '👋', desc: 'Ingreso de nuevo personal, documentación y bienvenida.' },
+    { id: 'entrevistas', name: 'Entrevistas', icon: '🎯', desc: 'Candidatos agendados y recordatorios de entrevistas.' }
+  ];
+  let userNotifPrefs = {};
 
   // Visible toast for push feedback (login-msg is hidden when logged in).
   function pushToast(msg, isErr) {
@@ -9722,8 +10000,31 @@
   }
 
   function setNotifState(on) {
-    notifToggle.classList.toggle('on', on);
-    notifToggle.setAttribute('aria-checked', on ? 'true' : 'false');
+    if (notifToggle) {
+      notifToggle.classList.toggle('on', !!on);
+      notifToggle.setAttribute('aria-checked', on ? 'true' : 'false');
+    }
+    const modalMaster = $('notif-modal-master-toggle');
+    if (modalMaster) {
+      modalMaster.classList.toggle('on', !!on);
+      modalMaster.setAttribute('aria-checked', on ? 'true' : 'false');
+    }
+    const statusText = $('notif-master-status-text');
+    if (statusText) {
+      statusText.textContent = on
+        ? 'Activado — recibes avisos en este dispositivo'
+        : 'Desactivado — no recibirás ningún aviso';
+      statusText.style.color = on ? 'var(--green)' : 'var(--muted)';
+    }
+    const catSection = $('notif-categories-section');
+    const masterWarn = $('notif-master-off-warn');
+    if (catSection) {
+      catSection.style.opacity = on ? '1' : '0.55';
+      catSection.style.pointerEvents = on ? 'auto' : 'none';
+    }
+    if (masterWarn) {
+      masterWarn.classList.toggle('hidden', !!on);
+    }
   }
 
   function checkIOSStandalone() {
@@ -9812,9 +10113,7 @@
     } catch (e) { /* non-fatal */ }
   }
 
-  notifToggle.addEventListener('click', async () => {
-    // 1. iOS detection: In Safari browser tabs, Apple disables Web Push.
-    // Must be installed as standalone PWA on Home Screen.
+  async function togglePushSubscription() {
     const { isIOS, isStandalone } = checkIOSStandalone();
     if (isIOS && !isStandalone) {
       setNotifState(false);
@@ -9827,14 +10126,12 @@
       return;
     }
 
-    // 2. Browser feature check
     if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
       setNotifState(false);
       pushToast('Tu navegador o modo actual no soporta notificaciones.', true);
       return;
     }
 
-    // 3. Permission check & request (synchronous gesture in WebKit)
     let perm = Notification.permission;
     if (perm === 'denied') {
       setNotifState(false);
@@ -9847,7 +10144,8 @@
           const res = Notification.requestPermission(resolve);
           if (res && typeof res.then === 'function') res.then(resolve);
         });
-      } catch (_) {
+      } catch (ePerm) {
+        nudoWarn('push-perm', ePerm);
         setNotifState(false);
         pushToast('Permiso de notificaciones denegado.', true);
         return;
@@ -9859,11 +10157,210 @@
       }
     }
 
-    // 4. Decide subscribe or unsubscribe
     const sub = await getPushSubscription();
     if (sub) await unsubscribeFromPush();
     else await subscribeToPush();
-  });
+  }
+
+  function renderNotifPrefsUI() {
+    const list = $('notif-categories-list');
+    if (!list) return;
+    list.innerHTML = NOTIF_CATEGORIES.map(cat => {
+      const isEnabled = userNotifPrefs[cat.id] !== false;
+      return `
+        <div class="notif-cat-row" data-cat="${esc(cat.id)}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card, #fff);min-height:44px;box-sizing:border-box;cursor:pointer;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:0.9rem;color:var(--ink);display:flex;align-items:center;gap:6px;">
+              <span style="font-size:1rem;">${cat.icon}</span>
+              <span>${esc(cat.name)}</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:2px;line-height:1.35;">
+              ${esc(cat.desc)}
+            </div>
+          </div>
+          <div class="notif-toggle notif-cat-toggle ${isEnabled ? 'on' : ''}" id="notif-cat-toggle-${esc(cat.id)}" role="switch" aria-checked="${isEnabled ? 'true' : 'false'}" data-cat="${esc(cat.id)}" tabindex="0" style="min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;" title="Alternar avisos de ${esc(cat.name)}">
+            <span class="switch"></span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    list.querySelectorAll('.notif-cat-row').forEach(row => {
+      row.addEventListener('click', async () => {
+        const catId = row.getAttribute('data-cat');
+        if (!catId) return;
+        const current = userNotifPrefs[catId] !== false;
+        await saveUserNotifPref(catId, !current);
+      });
+    });
+  }
+
+  async function openNotifPrefsModal() {
+    const m = $('notif-prefs-modal');
+    if (!m) return;
+    const sub = await getPushSubscription();
+    setNotifState(!!sub);
+    await loadUserNotifPrefs();
+    renderNotifPrefsUI();
+    m.classList.remove('hidden');
+    if (notifToggle) notifToggle.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeNotifPrefsModal() {
+    const m = $('notif-prefs-modal');
+    if (m) m.classList.add('hidden');
+    if (notifToggle) notifToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (notifToggle) {
+    notifToggle.addEventListener('click', () => {
+      openNotifPrefsModal();
+    });
+    notifToggle.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openNotifPrefsModal();
+      }
+    });
+  }
+
+  const modalMasterToggle = $('notif-modal-master-toggle');
+  if (modalMasterToggle) {
+    modalMasterToggle.addEventListener('click', async () => {
+      await togglePushSubscription();
+    });
+  }
+  if ($('notif-prefs-close')) $('notif-prefs-close').addEventListener('click', closeNotifPrefsModal);
+  if ($('notif-prefs-close-top')) $('notif-prefs-close-top').addEventListener('click', closeNotifPrefsModal);
+  if ($('notif-prefs-modal')) {
+    $('notif-prefs-modal').addEventListener('click', (e) => {
+      if (e.target === $('notif-prefs-modal')) closeNotifPrefsModal();
+    });
+  }
+
+  async function loadUserNotifPrefs(client) {
+    const sb = client || supabase;
+    try {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) return userNotifPrefs;
+      const { data, error } = await sb.from('notification_prefs')
+        .select('category, enabled')
+        .eq('user_id', user.id);
+      if (error) {
+        nudoWarn('notif-prefs', error);
+        return userNotifPrefs;
+      }
+      const prefs = {};
+      NOTIF_CATEGORIES.forEach(c => { prefs[c.id] = true; });
+      (data || []).forEach(row => {
+        if (row && row.category) {
+          prefs[row.category] = (row.enabled !== false);
+        }
+      });
+      userNotifPrefs = prefs;
+      renderNotifPrefsUI();
+      return userNotifPrefs;
+    } catch (err) {
+      nudoWarn('notif-prefs', err);
+      return userNotifPrefs;
+    }
+  }
+
+  async function saveUserNotifPref(cat, enabled, client) {
+    const sb = client || supabase;
+    try {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) {
+        pushToast('No estás conectado.', true);
+        return false;
+      }
+      userNotifPrefs[cat] = enabled;
+      renderNotifPrefsUI();
+      haptic(8);
+      const { error } = await sb.from('notification_prefs').upsert({
+        user_id: user.id,
+        category: cat,
+        enabled: enabled,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,category' });
+      if (error) {
+        nudoDiag('notif-prefs', error);
+        pushToast('No se pudo guardar la preferencia: ' + (error.message || error), true);
+        userNotifPrefs[cat] = !enabled;
+        renderNotifPrefsUI();
+        return false;
+      }
+      pushToast(enabled ? `🔔 Avisos de ${cat} activados` : `🔕 Avisos de ${cat} desactivados`);
+      return true;
+    } catch (err) {
+      nudoDiag('notif-prefs', err);
+      pushToast('Error al guardar preferencia', true);
+      userNotifPrefs[cat] = !enabled;
+      renderNotifPrefsUI();
+      return false;
+    }
+  }
+
+  async function checkUserNotifPref(userId, category, client) {
+    const sb = client || supabase;
+    if (!userId || !category) return true;
+    try {
+      const { data, error } = await sb.from('notification_prefs')
+        .select('enabled')
+        .eq('user_id', userId)
+        .eq('category', category)
+        .maybeSingle();
+      if (error) {
+        console.warn('[nudo:notif-prefs] preference lookup failed for ' + userId + ' / ' + category + ':', error);
+        return true;
+      }
+      if (!data) return true;
+      return data.enabled !== false;
+    } catch (err) {
+      console.warn('[nudo:notif-prefs] preference lookup threw for ' + userId + ' / ' + category + ':', err);
+      return true;
+    }
+  }
+
+  async function serverFilterPushSubscriptions(category, client, targetUserIds) {
+    const sb = client || supabase;
+    try {
+      let q = sb.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth');
+      if (Array.isArray(targetUserIds) && targetUserIds.length > 0) {
+        q = q.in('user_id', targetUserIds);
+      }
+      const { data: subs, error: subsErr } = await q;
+      if (subsErr) {
+        console.warn('[nudo:server-push] failed to fetch subscriptions:', subsErr);
+        return [];
+      }
+      const eligible = [];
+      for (const sub of (subs || [])) {
+        if (!sub.user_id) continue;
+        const ok = await checkUserNotifPref(sub.user_id, category, sb);
+        if (ok) eligible.push(sub);
+      }
+      return eligible;
+    } catch (err) {
+      console.warn('[nudo:server-push] error filtering subscriptions:', err);
+      return [];
+    }
+  }
+
+  function isNotificationCategoryEnabled(category) {
+    if (!userNotifPrefs) return true;
+    return userNotifPrefs[category] !== false;
+  }
+
+  try {
+    window.openNotifPrefsModal = openNotifPrefsModal;
+    window.renderNotifPrefsUI = renderNotifPrefsUI;
+    window.checkUserNotifPref = checkUserNotifPref;
+    window.serverFilterPushSubscriptions = serverFilterPushSubscriptions;
+    window.loadUserNotifPrefs = loadUserNotifPrefs;
+    window.saveUserNotifPref = saveUserNotifPref;
+    window.NOTIF_CATEGORIES = NOTIF_CATEGORIES;
+  } catch (eWin) { nudoWarn('notif-export', eWin); }
 
   // On load: reflect the current subscription state, claim persistent storage, and
   // RE-UPLOAD the live subscription.
@@ -9883,6 +10380,7 @@
     let sub = null;
     try { sub = await getPushSubscription(); } catch (_) {}
     setNotifState(!!sub);
+    try { await loadUserNotifPrefs(); } catch (ePrefs) { nudoWarn('notif-prefs', ePrefs); }
 
     // The local subscription stays valid even if this write fails, so the catch
     // must NOT be fatal — but it must not be silent either: a device that never
@@ -10107,8 +10605,13 @@
   (async () => {
     await supabase.auth.getSession();
     supabase.auth.onAuthStateChange((ev, sess) => {
-      if (ev === 'SIGNED_IN' && sess) setupRealtime();
-      if (ev === 'SIGNED_OUT') { if (rtChannel) supabase.removeChannel(rtChannel).catch(() => {}); rtChannel = null; }
+      if (ev === 'SIGNED_IN' && sess) { setupRealtime(); loadUserNotifPrefs(); }
+      if (ev === 'SIGNED_OUT') {
+        if (rtChannel) supabase.removeChannel(rtChannel).catch(() => {});
+        rtChannel = null;
+        userNotifPrefs = {};
+        renderNotifPrefsUI();
+      }
     });
   })();
 
